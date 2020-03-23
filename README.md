@@ -11,6 +11,34 @@ See also the [private repository](https://github.com/graphistry/ProjectDomino-in
 * Detecting misinformation campaigns
 * Automating high-precision interventions
 
+## How to help
+
+We are actively seeking several forms of support:
+
+* **Volunteers**: Most immediate priority is on data engineering and advisors on marketing/public health
+  * Data engineers: streaming (Kafka, Nifi, ...), graph (ex: Neo4j), GPU (RAPIDS), ML (NLP libs), and databases
+  * Analysts: OSINT, threat intel, campaign tracking, ...
+  * Data scientists: especially around graph, misinformation, neural networks, NLP, with backgrounds such as security, fraud,  misinformation, marketing
+  * Developers & designers: web, automation
+  * Marketing
+  * Public health and communications: Especially around intervention design
+
+* **APIs and Data**: 
+  * Scoring: Anything to help classify Twitter content for being artificial, misinformation, etc.
+  * Twitter and misinformation threat feeds: Known-bad actors and content
+
+* **Software Licenses**:
+  * **SaaS preferred**
+  * Project management
+  * Analytics
+  * Marketing automation
+
+* **Hardware**: Especially high-memory GPU servers. Ex: V100s with 16-32 GB RAM)
+
+* **Sponsors**: Near-term funding until the project finds a more sustainable path is welcome!
+
 ## Contact
 
 Please contact [Leo Meyerovich, CEO @ Graphistry](https://www.linkedin.com/in/leo-meyerovich-09649219) and [Sean Griffin, CEO @ DisasterTech](https://www.linkedin.com/in/seanmichaelgriffin/) for support and information
+
+Slack channel: #COVID on [https://thedataridealongs.slack.com/](https://thedataridealongs.slack.com/)
