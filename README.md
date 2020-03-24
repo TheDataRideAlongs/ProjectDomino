@@ -41,6 +41,7 @@ We are actively seeking several forms of support:
     * GPUs: Nvidia Pascal or later, 12GB minimum
   * 3 x Analyst stations (GPU) - 8+ CPU cores, 64GB+ CPU RAM, 1 TB attached SSD, 1-2 GPUs
     * GPUs: Nvidia Pascal or later, 12GB minimum, with 32GB **strongly** preferred (Ex: 32GB Volta)
+  Additional: Preferred - Ubuntu with remote SSH admin, Nvidia drivers, & (Nvidia-enabled) Docker
 
 * **Sponsors**: Near-term funding until the project finds a more sustainable path is welcome!
 
