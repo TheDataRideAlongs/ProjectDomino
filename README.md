@@ -33,7 +33,14 @@ We are actively seeking several forms of support:
   * Analytics
   * Marketing automation
 
-* **Hardware**: Especially high-memory GPU servers. Ex: V100s with 16-32 GB RAM)
+* **Hardware**: Anything you can provide along the lines of:
+  * 1 x Database server (CPU): 32+ cores, Ubuntu 18, 64GB+ RAM, ideally backups
+  * 1 x Primary analytics server (GPU) - 32+ CPU cores, 128GB+ CPU RAM, 2-8 GPUs, 64GB+ disk, 2-10TB attached SSD
+    * GPUs: Nvidia Pascal or later, 12GB minimum, with 32GB **strongly** preferred (Ex: 32GB Volta)
+  * 2 x Secondary / developer servers (GPU) - 8+ CPU cores, 64GB+ CPU RAM, 2-4 GPUs, 64GB+ disk, 1TB attached SSD
+    * GPUs: Nvidia Pascal or later, 12GB minimum
+  * 3 x Analyst stations (GPU) - 8+ CPU cores, 64GB+ CPU RAM, 1 TB attached SSD, 1-2 GPUs
+    * GPUs: Nvidia Pascal or later, 12GB minimum, with 32GB **strongly** preferred (Ex: 32GB Volta)
 
 * **Sponsors**: Near-term funding until the project finds a more sustainable path is welcome!
 
