@@ -11,6 +11,29 @@ See also the [private repository](https://github.com/graphistry/ProjectDomino-in
 * Detecting misinformation campaigns
 * Automating high-precision interventions
 
+## The interventions
+
+We are working with ethics groups to identify safe interventions along the following lines:
+
+* **Help top social platforms harden themselves**: Trust and safety teams at top social networks need to be able to warn users about misinformation, de-trend it, and potentially take it down before it has served its purpose. The status quo is handling incidents months after the fact. We will provide real-time alert feeds and scoring APIs to help take action during the critical minutes before misinformation gains significant reach.
+
+* **Enable top analysts to investigate coordinated activity**: A minority of groups cause the bulk of the misinformation that gets shared. We are building a high-scale analyst environment featuring technology such as GPU-accelerated visual graph analytics and high-memory notebook servers.
+
+* **Help leaders clean up their community**: Identify and invite community leaders of at-risk groups to use our tools to detect trending misinformation and sift it out from their regular community content.
+
+* **Alert individuals as they are being manipulated**: For manipulated conversations where we have clear intelligence, we are exploring an alert bot that will post the misinformation report directly on the thread, or enable community participants or project partners to do so.
+
+* **Enable other platforms**: We expect a growing number of initiatives to benefit from our intelligence and automation capabilities.
+
+## The technologies
+
+* Twitter firehose monitor
+* Data integration pipeline for sources of known scams, fraud, lies, bots, propaganda, extremism, and other misinformation sources
+* Misinformation knowledge graph connecting accounts, posts, reports, and models
+* Automated GPU / graph / machine learning pipeline
+* Automated alerting & reporting pipeline
+* Interactive visual analytics environment for data scientists and analysts: GPU, graph, notebooks, ML, ...
+
 ## How to help
 
 We are actively seeking several forms of support:
