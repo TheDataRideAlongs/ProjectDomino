@@ -2,7 +2,9 @@
 
 ## Scaling COVID public behavior change and anti-misinformation
 
-See also the [private repository](https://github.com/graphistry/ProjectDomino-internal)
+* [Private repository](https://github.com/graphistry/ProjectDomino-internal)
+
+* [Slack channel: #COVID on https://thedataridealongs.slack.com/](https://thedataridealongs.slack.com/)
 
 **One of the most important steps in stopping the COVID-19 pandemic is influencing mass behavior change for citizens to take appropriate, swift action on mitigating infection and human-to-human contact.** Government officials at all levels have advocated misinformed practices such as dining out or participating in outdoor gatherings that have contributed to amplifying the curve rather than flattening it. At time of writing, the result of poor crisis emergency risk communication has led to over 14,000 US citizens testing positive, 2-20X more are likely untested, and over 200 deaths. The need to influence appropriate behavior and mitigation actions are extreme: The US has shot up from untouched to become the 6th most infected nation. 
 
