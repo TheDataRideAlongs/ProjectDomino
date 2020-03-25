@@ -39,7 +39,7 @@ We are working with ethics groups to identify safe interventions along the follo
 We are actively seeking several forms of support:
 
 * **Volunteers**: Most immediate priority is on data engineering and advisors on marketing/public health
-  * Data engineers: streaming (Kafka, Nifi, ...), graph (ex: Neo4j), GPU (RAPIDS), ML (NLP libs), and databases
+  * Data engineers: Orchestration (Airflow, Prefect.io, Nifi, ...), streaming (Kafka, ...),  graph (Neo4j, cuGraph), GPU (RAPIDS), ML (NLP libs), and databases
   * Analysts: OSINT, threat intel, campaign tracking, ...
   * Data scientists: especially around graph, misinformation, neural networks, NLP, with backgrounds such as security, fraud,  misinformation, marketing
   * Developers & designers: web, automation
