@@ -6,6 +6,8 @@
 
 * [Community Slack channel: #COVID](https://thedataridealongs.slack.com/) via an [open invite link](https://join.slack.com/t/thedataridealongs/shared_invite/zt-d06nq64h-P1_3sENXG4Gg0MjWh1jPEw)
 
+* **Graph4good contributors:** We're excited to work with you! Check out the subprojects below we are actively seeking help on, and ping on Slack for which you're curious about tackling so we can share our current thoughts and tips for getting started. (Most will be useful as pure Python (Google Collab notebook)[https://colab.research.google.com/] proveouts and local neo4j Docker + Python proveouts, so you can move quickly and we can then more easily integrate.)
+
 **One of the most important steps in stopping the COVID-19 pandemic is influencing mass behavior change for citizens to take appropriate, swift action on mitigating infection and human-to-human contact.** Government officials at all levels have advocated misinformed practices such as dining out or participating in outdoor gatherings that have contributed to amplifying the curve rather than flattening it. At time of writing, the result of poor crisis emergency risk communication has led to over 14,000 US citizens testing positive, 2-20X more are likely untested, and over 200 deaths. The need to influence appropriate behavior and mitigation actions are extreme: The US has shot up from untouched to become the 6th most infected nation. 
 
 **Project Domino accelerates research on developing capabilities for information hygiene at the mass scale necessary for the current national disaster and for future ones.** We develop and enable the use of 3 key data capabilities for modern social discourse: 
