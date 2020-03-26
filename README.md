@@ -17,6 +17,8 @@
 
 We are working with ethics groups to identify safe interventions along the following lines:
 
+* **Targeting of specific underserved issues**: Primary COVID issues such as unsafe social behavior, unsafe medicine, unsafe sicence, harmful policies, and adjacent issues such as campaigns driven by cybercriminals and hate groups   
+
 * **Help top social platforms harden themselves**: Trust and safety teams at top social networks need to be able to warn users about misinformation, de-trend it, and potentially take it down before it has served its purpose. The status quo is handling incidents months after the fact. We will provide real-time alert feeds and scoring APIs to help take action during the critical minutes before misinformation gains significant reach.
 
 * **Enable top analysts to investigate coordinated activity**: A minority of groups cause the bulk of the misinformation that gets shared. We are building a high-scale analyst environment featuring technology such as GPU-accelerated visual graph analytics and high-memory notebook servers.
