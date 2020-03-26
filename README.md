@@ -4,7 +4,7 @@
 
 * [Private repository](https://github.com/graphistry/ProjectDomino-internal)
 
-* [Slack channel: #COVID on https://thedataridealongs.slack.com/](https://thedataridealongs.slack.com/)
+* [Community Slack channel: #COVID](https://thedataridealongs.slack.com/) via an [open invite link](https://join.slack.com/t/thedataridealongs/shared_invite/zt-d06nq64h-P1_3sENXG4Gg0MjWh1jPEw)
 
 **One of the most important steps in stopping the COVID-19 pandemic is influencing mass behavior change for citizens to take appropriate, swift action on mitigating infection and human-to-human contact.** Government officials at all levels have advocated misinformed practices such as dining out or participating in outdoor gatherings that have contributed to amplifying the curve rather than flattening it. At time of writing, the result of poor crisis emergency risk communication has led to over 14,000 US citizens testing positive, 2-20X more are likely untested, and over 200 deaths. The need to influence appropriate behavior and mitigation actions are extreme: The US has shot up from untouched to become the 6th most infected nation. 
 
@@ -41,7 +41,7 @@ We are working with ethics groups to identify safe interventions along the follo
 We are actively seeking several forms of support:
 
 * **Volunteers**: Most immediate priority is on data engineering and advisors on marketing/public health
-  * Data engineers: Orchestration (Airflow, Prefect.io, Nifi, ...), streaming (Kafka, ...),  graph (Neo4j, cuGraph), GPU (RAPIDS), ML (NLP libs), and databases
+  * **Data engineers: Orchestration (Airflow, Prefect.io, Nifi, ...), streaming (Kafka, ...),  graph (Neo4j, cuGraph), GPU (RAPIDS), ML (NLP libs), and databases**
   * Analysts: OSINT, threat intel, campaign tracking, ...
   * Data scientists: especially around graph, misinformation, neural networks, NLP, with backgrounds such as security, fraud,  misinformation, marketing
   * Developers & designers: web, automation
@@ -74,4 +74,4 @@ We are actively seeking several forms of support:
 
 Please contact [Leo Meyerovich, CEO @ Graphistry](https://www.linkedin.com/in/leo-meyerovich-09649219) and [Sean Griffin, CEO @ DisasterTech](https://www.linkedin.com/in/seanmichaelgriffin/) for support and information
 
-Slack channel: #COVID on [https://thedataridealongs.slack.com/](https://thedataridealongs.slack.com/)
+[Community Slack channel: #COVID](https://thedataridealongs.slack.com/) via an [open invite link](https://join.slack.com/t/thedataridealongs/shared_invite/zt-d06nq64h-P1_3sENXG4Gg0MjWh1jPEw)
