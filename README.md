@@ -17,7 +17,7 @@
 
 We are working with ethics groups to identify safe interventions along the following lines:
 
-* **Targeting of specific underserved issues**: Primary COVID issues such as unsafe social behavior, unsafe medicine, unsafe sicence, harmful policies, and adjacent issues such as campaigns driven by cybercriminals and hate groups   
+* **Targeting of specific underserved issues**: Primary COVID public health issues such as unsafe social behavior, unsafe medicine, unsafe science, dangerous government policy influence, and adjacent issues such as fake charities, phishing,  malware, and hate groups
 
 * **Help top social platforms harden themselves**: Trust and safety teams at top social networks need to be able to warn users about misinformation, de-trend it, and potentially take it down before it has served its purpose. The status quo is handling incidents months after the fact. We will provide real-time alert feeds and scoring APIs to help take action during the critical minutes before misinformation gains significant reach.
 
@@ -46,19 +46,20 @@ We are actively seeking several forms of support:
   * **Data engineers: Orchestration (Airflow, Prefect.io, Nifi, ...), streaming (Kafka, ...),  graph (Neo4j, cuGraph), GPU (RAPIDS), ML (NLP libs), and databases**
   * Analysts: OSINT, threat intel, campaign tracking, ...
   * Data scientists: especially around graph, misinformation, neural networks, NLP, with backgrounds such as security, fraud,  misinformation, marketing
-  * Developers & designers: web, automation
-  * Marketing
+  * Developers & designers: intelligence integrations, website for search & reports, automations, intervention bots, API
+  * Marketing: Strategy & implementation
   * Public health and communications: Especially around intervention design
 
 * **APIs and Data**: 
-  * Scoring: Anything to help classify Twitter content for being artificial, misinformation, etc.
-  * Twitter and misinformation threat feeds: Known-bad actors and content
+  * Feeds & enriching APIs: Lists and intel on URLs, domains, keywords, emails, topics, blockchain accounts, social media accounts & content, esp. if tunable on topic
+  * Scoring: Libraries and APIs around social networks (initially Twitter) structure & content, websites, and news: bot scores, fingerprinting, topic extraction & classification
+  * Crawling tech: Social networks and web
 
 * **Software Licenses**:
-  * **SaaS preferred**
+  * **SaaS, OSS, Docker preferred**
   * Project management
   * Analytics
-  * Marketing automation
+  * Automation
 
 * **Hardware**: Anything you can provide along the lines of:
   * 1 x Database server (CPU): 32+ cores, Ubuntu 18, 64GB+ RAM, ideally backups
