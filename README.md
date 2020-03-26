@@ -73,6 +73,25 @@ We are actively seeking several forms of support:
 
 * **Sponsors**: Near-term funding until the project finds a more sustainable path is welcome!
 
+* **Subprojects**: We are focusing near-term on core data pipeline and simple analyses while building up to the discourse-graph-level ones
+
+  * Firehose pipeline: 
+     * Cleaning up Twitter -> Neo4j/Parquet data conversions
+     * Prefect.io/Airflow Firehose tasks: usertimeline, topic search, ... => Parquet/Neo4j
+  * Orchestration tasks:
+     * Python entity extractors: tweet -> text, URLs, bitcoin address, topics, ...
+     * Python enrichment tasks: external APIs (factcheck, ...) and lightweight NLP algs (sentiment) and feed back to neo4j
+     * Python data feed collectors: scripts that download feeds (factcheck, phishing, ...) and feed back to neo4j
+  * Neo4j scaling: Enabling neo4j to quickly export 100M+ rows to PyData tasks, e.g., via Arrow/Parquet export
+  * Analysis: 
+     * Path blazing: Trying out and documenting misinformation analysis, like specific Twitter searches worth perpetually running and enrichments for scoring them. See above topics like fake medicine for inspiration.
+     * Data science: Implementing simple algorithms as pure PyData/cypher functions - bot scoring, troll scoring, ...
+  * Automation: Prototypes of
+     * Alert feed + scoring API: Misinfo intel for trust & safety teams that is powered by Neo4j and/or Prefect.io/Airflow
+     * Anti-misinfo chatbot: Upon a misinfo detection, respond to a Twitter thread with a misinfo report URL + WHO safety guide
+     * Community leader tools: Personalized alerting for community leaders to detect & respond to misinfo in their close social networks
+  
+
 ## Contact
 
 Please contact [Leo Meyerovich, CEO @ Graphistry](https://www.linkedin.com/in/leo-meyerovich-09649219) and [Sean Griffin, CEO @ DisasterTech](https://www.linkedin.com/in/seanmichaelgriffin/) for support and information
