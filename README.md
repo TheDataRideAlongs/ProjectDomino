@@ -80,14 +80,16 @@ We are actively seeking several forms of support:
   * Firehose pipeline: 
      * Cleaning up Twitter -> Neo4j/Parquet data conversions
      * Prefect.io/Airflow Firehose tasks: usertimeline, topic search, ... => Parquet/Neo4j
+     * Switching from Twarc to Twint for higher-volume ingest
+     * Fast large graph (100M row) export of cypher->neo4j->parquet
   * Orchestration tasks:
      * Python entity extractors: tweet -> text, URLs, bitcoin address, topics, ...
-     * Python enrichment tasks: external APIs (factcheck, ...) and lightweight NLP algs (sentiment) and feed back to neo4j
+     * Python enrichment tasks: external APIs (factcheck, crypto, ...) and lightweight NLP algs (sentiment) and feed back to neo4j
      * Python data feed collectors: scripts that download feeds (factcheck, phishing, ...) and feed back to neo4j
-  * Neo4j scaling: Enabling neo4j to quickly export 100M+ rows to PyData tasks, e.g., via Arrow/Parquet export
-  * Analysis: 
-     * Path blazing: Trying out and documenting misinformation analysis, like specific Twitter searches worth perpetually running and enrichments for scoring them. See above topics like fake medicine for inspiration. Ex: Identify if a tweet is about a drug, and then if any synonyms for that drug are in a COVID-related clinical trial database.
-     * Data science: Implementing simple algorithms as pure PyData/cypher functions - bot scoring, troll scoring, ...
+  * Intervention campaigns: 
+     * **Priority**: Untrialed drug misinformation - modeling, detection, analysis, report, & alert
+     * Scams: Check URLs & blockchain addresses for known badness
+     * Mapping bots & misinformers
   * Automation: Prototypes of
      * Alert feed + scoring API: Misinfo intel for trust & safety teams that is powered by Neo4j and/or Prefect.io/Airflow
      * Anti-misinfo chatbot: Upon a misinfo detection, respond to a Twitter thread with a misinfo report URL + WHO safety guide
