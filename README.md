@@ -53,7 +53,7 @@ We are actively seeking several forms of support:
   * Public health and communications: Especially around intervention design
 
 * **APIs and Data**: 
-  * Feeds & enriching APIs: Lists and intel on URLs, domains, keywords, emails, topics, blockchain accounts, social media accounts & content, esp. if tunable on topic
+  * Feeds & enriching APIs: Lists and intel on URLs, domains, keywords, emails, topics, blockchain accounts, social media accounts & content, clinical trials, esp. if tunable on topic
   * Scoring: Libraries and APIs around social networks (initially Twitter) structure & content, websites, and news: bot scores, fingerprinting, topic extraction & classification
   * Crawling tech: Social networks and web
 
@@ -86,7 +86,7 @@ We are actively seeking several forms of support:
      * Python data feed collectors: scripts that download feeds (factcheck, phishing, ...) and feed back to neo4j
   * Neo4j scaling: Enabling neo4j to quickly export 100M+ rows to PyData tasks, e.g., via Arrow/Parquet export
   * Analysis: 
-     * Path blazing: Trying out and documenting misinformation analysis, like specific Twitter searches worth perpetually running and enrichments for scoring them. See above topics like fake medicine for inspiration.
+     * Path blazing: Trying out and documenting misinformation analysis, like specific Twitter searches worth perpetually running and enrichments for scoring them. See above topics like fake medicine for inspiration. Ex: Identify if a tweet is about a drug, and then if any synonyms for that drug are in a COVID-related clinical trial database.
      * Data science: Implementing simple algorithms as pure PyData/cypher functions - bot scoring, troll scoring, ...
   * Automation: Prototypes of
      * Alert feed + scoring API: Misinfo intel for trust & safety teams that is powered by Neo4j and/or Prefect.io/Airflow
