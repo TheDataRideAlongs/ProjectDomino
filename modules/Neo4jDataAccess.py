@@ -23,7 +23,7 @@ class Neo4jDataAccess:
                             tweet.record_created_at = timestamp(),
                             tweet.job_id = t.job_id,
                             tweet.hashtags = t.hashtags,
-                            tweet.hydrated = t.hydrated,
+                            tweet.hydrated = 'FULL',
                             tweet.type = t.tweet_type
                         ON MATCH SET 
                             tweet.text = t.text,
@@ -32,7 +32,7 @@ class Neo4jDataAccess:
                             tweet.record_updated_at = timestamp(),
                             tweet.job_id = t.job_id,
                             tweet.hashtags = t.hashtags,
-                            tweet.hydrated = t.hydrated,
+                            tweet.hydrated = 'FULL',
                             tweet.type = t.tweet_type
                     
                     //Add Account
@@ -144,28 +144,45 @@ class Neo4jDataAccess:
                     WITH url, tweet                                        
                     MERGE (tweet)-[:INCLUDES]->(url)                  
         """
+        
+        self.fetch_tweet_status = """UNWIND $ids AS i                    
+                    MATCH (tweet:Tweet {id:i.id})
+                    RETURN tweet.id, tweet.hydrated
+        """
 
     
-    def __get_neo4j_creds(self, role_type):
+    def __get_neo4j_graph(self, role_type):
         with open('neo4jcreds.json') as json_file:
             creds = json.load(json_file)
             res = list(filter(lambda c: c["type"]==role_type, creds))
             if len(res): 
-                return res[0]["creds"]
+                creds = res[0]["creds"]
+                self.graph = Graph(host=creds['host'], port=creds['port'], user=creds['user'], password=creds['password'])
             else: 
-                return None
+                self.graph = None
+            return self.graph
     
     def save_parquet_df_to_graph(self, df, job_name):
         pdf = DfHelper(self.debug).normalize_parquet_dataframe(df)
         if self.debug: print('Saving to Neo4j')
         self.__save_df_to_graph(pdf, job_name)
+
+    # Get the status of a DataFrame of Tweets by id.  Returns a dataframe with the hydrated status
+    def get_tweet_hydrated_status_by_id(self, df, job_name='generic_job'):
+        if 'id' in df:
+            graph = self.__get_neo4j_graph('reader')  
+            ids=[]
+            for index, row in df.iterrows():
+                ids.append({'id': int(row['id'])})
+            res = graph.run(self.fetch_tweet_status, ids = ids).to_data_frame()
+            res=res.rename(columns={'tweet.id': 'id', 'tweet.hydrated': 'hydrated'})
+            return res
+        else:
+            raise Exception('Parameter df must be a DataFrame with a column named "id" ')
         
     # This saves the User and Tweet data right now
     def __save_df_to_graph(self, df, job_name):
-        creds = self.__get_neo4j_creds('writer')        
-        # connect to authenticated graph database
-        self.graph = Graph(host=creds['host'], port=creds['port'], user=creds['user'], password=creds['password'])
-
+        graph = self.__get_neo4j_graph('writer')  
         global_tic=time.perf_counter()      
         params = []
         mention_params = []
@@ -187,7 +204,7 @@ class Neo4jDataAccess:
                            'retweet_count': row['retweet_count'],         
                            'tweet_type': tweet_type,                                              
                            'job_id': job_name,                                              
-                           'hashtags': self.__normalize_hashtags(row['hashtags']),                     
+                           'hashtags': self.__normalize_hashtags(row['hashtags']),  
                            'user_id': row['user_id'],                            
                            'user_name': row['user_name'],                       
                            'user_location': row['user_location'],                                              
