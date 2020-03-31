@@ -146,7 +146,7 @@ class FirehoseJob:
     DROP_COLS = DROP_COLS
     
     
-    def __init__(self, creds = [], TWEETS_PER_PROCESS=100, TWEETS_PER_ROWGROUP=5000, save_to_neo=False, PARQUET_SAMPLE_RATE_TIME_S=None):
+    def __init__(self, creds = [], neo4j_creds = None, TWEETS_PER_PROCESS=100, TWEETS_PER_ROWGROUP=5000, save_to_neo=False, PARQUET_SAMPLE_RATE_TIME_S=None):
         self.queue = deque()
         self.writers = {
             'snappy': None
@@ -169,6 +169,8 @@ class FirehoseJob:
         self.last_arr = None
         self.last_write_arr = None
         self.last_writes_arr = []
+
+        self.neo4j_creds = neo4j_creds
 
         self.needs_to_flush = False
 
@@ -359,20 +361,31 @@ class FirehoseJob:
 
         finally:
             self.timer.toc('write')
-            
+
     def flush(self, job_name="generic_job"):
         try:
             if self.current_table is None or self.current_table.num_rows == 0:
                 return
             print('writing to parquet then clearing current_table..')
-            self.pq_writer(self.current_table, job_name)
-            if self.save_to_neo:
-                print('Writing to Neo4j')
-                Neo4jDataAccess(True).save_parquet_df_to_graph(self.current_table.to_pandas(), job_name)
+            deferred_pq_exn = None
+            try:
+                self.pq_writer(self.current_table, job_name)
+            except Exception as e:
+                deferred_pq_exn = e
+            try:
+                if self.save_to_neo:
+                    print('Writing to Neo4j')
+                    Neo4jDataAccess(True, self.neo4j_creds).save_parquet_df_to_graph(self.current_table.to_pandas(), job_name)
+                else:
+                    print('Skipping Neo4j write')
+            except Exception as e:
+                print('Neo4j write exn', e)
+                raise e
+            if not (deferred_pq_exn is None):
+                raise deferred_pq_exn
         finally:
             print('flush clearing self.current_table')
             self.current_table = None
-
             
     def tweets_to_df(self, tweets):
         try:

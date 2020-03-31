@@ -10,8 +10,8 @@ from .DfHelper import DfHelper
 class Neo4jDataAccess:
     BATCH_SIZE=2000
     
-    def __init__(self, debug=False): 
-        self.creds = {}
+    def __init__(self, debug=False, neo4j_creds = None): 
+        self.creds = neo4j_creds
         self.debug=debug
         self.tweetsandaccounts = """
                   UNWIND $tweets AS t
@@ -154,15 +154,19 @@ class Neo4jDataAccess:
 
     
     def __get_neo4j_graph(self, role_type):
-        with open('neo4jcreds.json') as json_file:
-            creds = json.load(json_file)
-            res = list(filter(lambda c: c["type"]==role_type, creds))
-            if len(res): 
-                creds = res[0]["creds"]
-                self.graph = Graph(host=creds['host'], port=creds['port'], user=creds['user'], password=creds['password'])
-            else: 
-                self.graph = None
-            return self.graph
+        creds = None
+        if not (self.creds is None):
+            creds = self.creds
+        else:
+            with open('neo4jcreds.json') as json_file:
+                creds = json.load(json_file)
+        res = list(filter(lambda c: c["type"]==role_type, creds))
+        if len(res): 
+            creds = res[0]["creds"]
+            self.graph = Graph(host=creds['host'], port=creds['port'], user=creds['user'], password=creds['password'])
+        else: 
+            self.graph = None
+        return self.graph
     
     def save_parquet_df_to_graph(self, df, job_name):
         pdf = DfHelper(self.debug).normalize_parquet_dataframe(df)
