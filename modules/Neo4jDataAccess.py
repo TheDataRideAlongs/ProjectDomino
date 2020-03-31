@@ -1,15 +1,17 @@
+import ast, json, time
+
+from datetime import datetime
 import pandas as pd
 from py2neo import Graph
-from datetime import datetime
-import time, ast, json
-from Firehose_v2.DfHelper import DfHelper
 from urllib.parse import urlparse
+
+from .DfHelper import DfHelper
 
 class Neo4jDataAccess:
     BATCH_SIZE=2000
     
-    def __init__(self, debug=False): 
-        self.creds = {}
+    def __init__(self, debug=False, neo4j_creds = None): 
+        self.creds = neo4j_creds
         self.debug=debug
         self.tweetsandaccounts = """
                   UNWIND $tweets AS t
@@ -152,15 +154,19 @@ class Neo4jDataAccess:
 
     
     def __get_neo4j_graph(self, role_type):
-        with open('neo4jcreds.json') as json_file:
-            creds = json.load(json_file)
-            res = list(filter(lambda c: c["type"]==role_type, creds))
-            if len(res): 
-                creds = res[0]["creds"]
-                self.graph = Graph(host=creds['host'], port=creds['port'], user=creds['user'], password=creds['password'])
-            else: 
-                self.graph = None
-            return self.graph
+        creds = None
+        if not (self.creds is None):
+            creds = self.creds
+        else:
+            with open('neo4jcreds.json') as json_file:
+                creds = json.load(json_file)
+        res = list(filter(lambda c: c["type"]==role_type, creds))
+        if len(res): 
+            creds = res[0]["creds"]
+            self.graph = Graph(host=creds['host'], port=creds['port'], user=creds['user'], password=creds['password'])
+        else: 
+            self.graph = None
+        return self.graph
     
     def save_parquet_df_to_graph(self, df, job_name):
         pdf = DfHelper(self.debug).normalize_parquet_dataframe(df)
@@ -175,8 +181,14 @@ class Neo4jDataAccess:
             for index, row in df.iterrows():
                 ids.append({'id': int(row['id'])})
             res = graph.run(self.fetch_tweet_status, ids = ids).to_data_frame()
-            res=res.rename(columns={'tweet.id': 'id', 'tweet.hydrated': 'hydrated'})
-            return res
+
+            print('Response info: %s rows, %s columns: %s' % (len(res), len(res.columns), res.columns))
+            if len(res) == 0:
+                return df[['id']].assign(hydrated=None)
+            else:
+                res=res.rename(columns={'tweet.id': 'id', 'tweet.hydrated': 'hydrated'})
+                res = df[['id']].merge(res, how='left', on='id') #ensures hydrated=None if Neo4j does not answer for id
+                return res
         else:
             raise Exception('Parameter df must be a DataFrame with a column named "id" ')
         
