@@ -182,6 +182,7 @@ class Neo4jDataAccess:
                 ids.append({'id': int(row['id'])})
             res = graph.run(self.fetch_tweet_status, ids = ids).to_data_frame()
             res=res.rename(columns={'tweet.id': 'id', 'tweet.hydrated': 'hydrated'})
+            res = df[['id']].merge(res, how='left', on='id') #ensures None for merge misses
             return res
         else:
             raise Exception('Parameter df must be a DataFrame with a column named "id" ')
