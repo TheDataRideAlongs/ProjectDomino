@@ -627,7 +627,16 @@ class FirehoseJob:
         if job_name is None:
             job_name = "process_ids_%s" % (ids_to_process[0] if len(ids_to_process) > 0 else "none")
 
-        tweets = ( tweet for tweet in self.twarc_pool.next_twarc().hydrate(ids_to_process) )
+        hydration_statuses_df = Neo4jDataAccess(True, self.neo4j_creds)\
+            .get_tweet_hydrated_status_by_id(pd.DataFrame({'id': ids_to_process}))
+        missing_ids = hydration_statuses_df[ hydration_statuses_df['hydrated'] != 'FULL' ]['id'].tolist()
+                                             
+        print('Skipping cached %s, fetching %s, of requested %s' % (
+            len(ids_to_process) - len(missing_ids),
+            len(missing_ids),
+            len(ids_to_process)))
+            
+        tweets = ( tweet for tweet in self.twarc_pool.next_twarc().hydrate(missing_ids) )
         
         for arr in self.process_tweets_generator(tweets, job_name):
             yield arr
