@@ -30,9 +30,13 @@ class DfHelper:
 
     def __clean_datetimes(self, pdf):
         if self.debug: print('cleaning datetimes...')
-        
-        pdf = pdf.assign(created_at=pd.to_datetime(pdf['created_at']))
-        pdf = pdf.assign(created_date=pdf['created_at'].apply(lambda dt: dt.timestamp()))
+        try:
+            pdf = pdf.assign(created_at=pd.to_datetime(pdf['created_at']))
+            pdf = pdf.assign(created_date=pdf['created_at'].apply(lambda dt: dt.timestamp()))
+        except Exception as e:
+            print('Error __clean_datetimes', e)
+            print(pdf)
+            raise e
         if self.debug: print('   ...cleaned')
         return pdf
 
