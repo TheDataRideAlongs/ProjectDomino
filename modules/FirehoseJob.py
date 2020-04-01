@@ -100,13 +100,17 @@ DROP_COLS = [ 'withheld_in_countries' ]
 
 ### When dtype -> arrow ambiguious, override
 KNOWN_FIELDS = [    
-    #[0, 'contributors', ??],
+    [0, 'contributors', pa.string()],
     [1, 'coordinates', pa.string()],
     [2, 'created_at', pa.string()],
-    [3, 'display_text_range', pa.list_(pa.int64())],
+    
+    #[3, 'display_text_range', pa.list_(pa.int64())],
+    [3, 'display_text_range', pa.string()],
+    
     [4, 'entities', pa.string()],
     [5, 'extended_entities', pa.string()], #extended_entities_t ],
     [7, 'favorited', pa.bool_()],
+    [8, 'favorite_count', pa.int64()],
     [9, 'full_text', pa.string()],
     [10, 'geo', pa.string()],
     [11, 'id', pa.int64() ],
@@ -118,20 +122,25 @@ KNOWN_FIELDS = [
     [17, 'in_reply_to_user_id_str', pa.string() ],
     [18, 'is_quote_status', pa.bool_() ],
     [19, 'lang', pa.string() ],
-   # [20, 'place', pa.string()],
-   # [21, 'possibly_sensitive', pa.bool_()],
-    #[22, 'quoted_status', pa.string()],
-    #[23, 'quoted_status_id', pa.int64()],
-    #[24, 'quoted_status_id_str', pa.string()],
-    #[25, 'quoted_status_permalink', pa.string()],
-   # [26, 'retweet_count', pa.int64()],
-   # [27, 'retweeted', pa.bool_()],
-    #[28, 'retweeted_status', pa.string()],
-   # [29, 'scopes', pa.string()],  # pa.struct({'followers': pa.bool_()})],
-    #[30, 'source', pa.string()],
-   # [31, 'truncated', pa.bool_()],
-   # [32, 'user', pa.string()],
+    [20, 'place', pa.string()],
+    [21, 'possibly_sensitive', pa.bool_()],
+    [22, 'quoted_status', pa.string()],
+    [23, 'quoted_status_id', pa.int64()],
+    [24, 'quoted_status_id_str', pa.string()],
+    [25, 'quoted_status_permalink', pa.string()],
+    [26, 'retweet_count', pa.int64()],
+    [27, 'retweeted', pa.bool_()],
+    [28, 'retweeted_status', pa.string()],
+    [29, 'scopes', pa.string()],
+    [30, 'source', pa.string()],
+    [31, 'truncated', pa.bool_()],
+    [32, 'user', pa.string()],
+    
     #[33, 'withheld_in_countries', pa.list_(pa.string())],
+    [33, 'withheld_in_countries', pa.string()],
+
+    #[34, 'followers', pa.struct({'followers': pa.bool_()})]
+    [34, 'followers', pa.string()]
 ]
 
 #############################
@@ -149,16 +158,17 @@ class FirehoseJob:
     DROP_COLS = DROP_COLS
     
     
-    def __init__(self, creds = [], neo4j_creds = None, TWEETS_PER_PROCESS=100, TWEETS_PER_ROWGROUP=5000, save_to_neo=False, PARQUET_SAMPLE_RATE_TIME_S=None):
+    def __init__(self, creds = [], neo4j_creds = None, TWEETS_PER_PROCESS=100, TWEETS_PER_ROWGROUP=5000, save_to_neo=False, PARQUET_SAMPLE_RATE_TIME_S=None, debug=False, BATCH_LEN=100, writers = {'snappy': None}):
         self.queue = deque()
-        self.writers = {
-            'snappy': None
-            #,'vanilla': None
-        }
+        self.writers = writers
         self.last_write_epoch = ''
         self.current_table = None
-        self.schema = None
+        self.schema = pa.schema([
+            (name, t)
+            for (i, name, t) in KNOWN_FIELDS
+        ])
         self.timer = Timer()
+        self.debug = debug
         
         self.twarc_pool = TwarcPool([ 
             Twarc(o['consumer_key'], o['consumer_secret'], o['access_token'], o['access_token_secret'])
@@ -175,6 +185,8 @@ class FirehoseJob:
 
         self.neo4j_creds = neo4j_creds
 
+        self.BATCH_LEN = BATCH_LEN
+        
         self.needs_to_flush = False
 
         self.__file_names = []
@@ -229,7 +241,7 @@ class FirehoseJob:
             
             ##objects: put here to skip str coercion
             coercions = {
-                'display_text_range': identity,
+                'display_text_range': series_to_json_string,
                 'contributors': identity,
                 'created_at': lambda series: series.values.astype('unicode'),
                 'possibly_sensitive': (lambda series: series.fillna(False)),
@@ -238,8 +250,8 @@ class FirehoseJob:
                 'in_reply_to_status_id': (lambda series: series.fillna(0).astype('int64')),
                 'in_reply_to_user_id': (lambda series: series.fillna(0).astype('int64')),
                 'scopes': series_to_json_string,
-                'followers': identity, #(lambda series: pd.Series([str(x) for x in series.tolist()]).values.astype('unicode')),
-                'withheld_in_countries': identity,
+                'followers': series_to_json_string,
+                'withheld_in_countries': series_to_json_string
             }
             if series.name in coercions.keys():
                 return coercions[series.name](series)
@@ -497,40 +509,6 @@ class FirehoseJob:
         finally:
             self.timer.toc('concat_tables')
             
-                
-    def df_to_arrow(self, df):
-        
-        print('first process..')
-        table = pa.Table.from_pandas(df)
-
-        print('patching lossy dtypes...')        
-        schema = table.schema
-        for [i, name, field_t] in FirehoseJob.KNOWN_FIELDS:
-            if schema[i].name != name:
-                raise Exception('Mismatched index %s: %s -> %s' % (
-                    i, schema[i].name, name
-                ))
-            schema = schema.set(i, pa.field(name, field_t))
-            
-        print('re-coercing..')
-        table_2 = pa.Table.from_pandas(df, schema)
-        #if not table_2.schema.equals(schema):
-        for i in range(0, len(schema)):
-            if not (schema[i].equals(table_2.schema[i])):
-                print('=======================')
-                print('EXN: schema mismatch %s' % i)
-                print(schema[i])
-                print('-----')
-                print(table_2.schema[i])
-                print('-----')
-                raise Exception('schema mismatch %s' % i)
-        print('Success!')
-        print('=========')
-        print('First tweets arrow schema')
-        for i in range(0, len(table_2.schema)):
-            print(i, table_2.schema[i])
-        print('////////////')
-        return table_2
     
     def process_tweets_notify_hydrating(self):
         if not (self.current_table is None):
@@ -551,16 +529,12 @@ class FirehoseJob:
         df = self.clean_df(raw_df)
 
         table = None
-        if self.schema is None:
-            table = self.df_to_arrow(df)
-            self.schema = table.schema
-        else:
-            try:
-                table = self.df_with_schema_to_arrow(df, self.schema)
-            except:
-                print('conversion failed, skipping batch...')
-                self.timer.toc('overall_compute')
-                return
+        try:
+            table = self.df_with_schema_to_arrow(df, self.schema)
+        except Exception as e:
+            #logger.error('conversion failed, skipping batch...')
+            self.timer.toc('overall_compute')
+            raise e
             
         self.last_arr = table
 
@@ -572,7 +546,8 @@ class FirehoseJob:
         out = self.current_table #or just table (without intermediate concats since last flush?)
             
         if not (self.current_table is None) \
-            and ((self.current_table.num_rows > self.TWEETS_PER_ROWGROUP) or self.needs_to_flush):
+            and ((self.current_table.num_rows > self.TWEETS_PER_ROWGROUP) or self.needs_to_flush) \
+            and self.current_table.num_rows > 0:
             self.flush(job_name)
             self.needs_to_flush = False
         else:
@@ -591,8 +566,9 @@ class FirehoseJob:
             try:
                 self.needs_to_flush = True
                 return self.process_tweets(tweets_batch, job_name)
-            except:
-                print('failed processing batch, continuing...')
+            except Exception as e:
+                #logger.debug('failed processing batch, continuing...')
+                raise e
     
         tweets_batch = []
         last_flush_time_s = time.time()
@@ -611,8 +587,9 @@ class FirehoseJob:
                 if self.needs_to_flush:
                     try:
                         yield flusher(tweets_batch)
-                    except:
-                        print('Write fail, continuing..')
+                    except Exception as e:
+                        #logger.debug('Write fail, continuing..')
+                        raise e
                     finally:
                         tweets_batch = []
             logger.debug('===== PROCESSED ALL GENERATOR TASKS, FINISHING ====')
@@ -621,7 +598,6 @@ class FirehoseJob:
         except KeyboardInterrupt as e:
             logger.debug('========== FLUSH IF SLEEP INTERRUPTED')
             self.destroy()
-            del fh
             gc.collect()
             logger.debug('explicit GC...')
             logger.debug('Safely exited!')
@@ -635,20 +611,25 @@ class FirehoseJob:
         
         if job_name is None:
             job_name = "process_ids_%s" % (ids_to_process[0] if len(ids_to_process) > 0 else "none")
-
-        hydration_statuses_df = Neo4jDataAccess(True, self.neo4j_creds)\
-            .get_tweet_hydrated_status_by_id(pd.DataFrame({'id': ids_to_process}))
-        missing_ids = hydration_statuses_df[ hydration_statuses_df['hydrated'] != 'FULL' ]['id'].tolist()
-                                             
-        print('Skipping cached %s, fetching %s, of requested %s' % (
-            len(ids_to_process) - len(missing_ids),
-            len(missing_ids),
-            len(ids_to_process)))
-            
-        tweets = ( tweet for tweet in self.twarc_pool.next_twarc().hydrate(missing_ids) )
         
-        for arr in self.process_tweets_generator(tweets, job_name):
-            yield arr
+        for i in range(0, len(ids_to_process), self.BATCH_LEN):
+            ids_to_process_batch = ids_to_process[i : (i + self.BATCH_LEN)]
+            
+            logger.info('Starting batch offset %s ( + %s) of %s', i, self.BATCH_LEN, len(ids_to_process))
+            
+            hydration_statuses_df = Neo4jDataAccess(self.debug, self.neo4j_creds)\
+                .get_tweet_hydrated_status_by_id(pd.DataFrame({'id': ids_to_process_batch}))
+            missing_ids = hydration_statuses_df[ hydration_statuses_df['hydrated'] != 'FULL' ]['id'].tolist()
+
+            logger.debug('Skipping cached %s, fetching %s, of requested %s' % (
+                len(ids_to_process_batch) - len(missing_ids),
+                len(missing_ids),
+                len(ids_to_process_batch)))
+
+            tweets = ( tweet for tweet in self.twarc_pool.next_twarc().hydrate(missing_ids) )
+
+            for arr in self.process_tweets_generator(tweets, job_name):
+                yield arr
         
     def process_id_file(self, path, job_name=None):
         
