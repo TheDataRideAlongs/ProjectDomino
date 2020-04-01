@@ -1,5 +1,8 @@
 import time
 
+import logging
+logger = logging.getLogger('Timer')
+
 class Timer:
     def __init__(self):
         self.counters = {}
@@ -42,11 +45,11 @@ class Timer:
             counter['rolling_val_sum'] = counter['rolling_val_sum'] + sum_val
             if counter['print_freq'] > 0 and (k % counter['print_freq'] == 0):
                 if sum_s > 0:
-                    print('%s : %s / s (%s total)' % (name, sum_val / sum_s, counter['rolling_val_sum']))
+                    logger.info('%s : %s / s (%s total)' % (name, sum_val / sum_s, counter['rolling_val_sum']))
         else:
             if counter['print_freq'] > 0 and (k % counter['print_freq'] == 0):
                 lastN = counter['lastN']
                 sum_s = 0.0 + sum([lastN[i % n ] for i in range(max(k - n,0), k)])
-                print('%s : %ss' % (name, sum_s / min(n, k + 1)))
+                logger.info('%s : %ss' % (name, sum_s / min(n, k + 1)))
 
         

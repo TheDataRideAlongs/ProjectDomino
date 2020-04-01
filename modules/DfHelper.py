@@ -3,6 +3,9 @@ import pandas as pd
 from datetime import datetime
 import time
 
+import logging
+logger = logging.getLogger('DfHelper')
+
 class DfHelper:    
     def __init__(self, debug=False): 
         self.debug=debug
@@ -27,9 +30,13 @@ class DfHelper:
 
     def __clean_datetimes(self, pdf):
         if self.debug: print('cleaning datetimes...')
-        
-        pdf = pdf.assign(created_at=pd.to_datetime(pdf['created_at']))
-        pdf = pdf.assign(created_date=pdf['created_at'].apply(lambda dt: dt.timestamp()))
+        try:
+            pdf = pdf.assign(created_at=pd.to_datetime(pdf['created_at']))
+            pdf = pdf.assign(created_date=pdf['created_at'].apply(lambda dt: dt.timestamp()))
+        except Exception as e:
+            print('Error __clean_datetimes', e)
+            print(pdf)
+            raise e
         if self.debug: print('   ...cleaned')
         return pdf
 
@@ -56,30 +63,66 @@ class DfHelper:
         return pdf2
 
     def __flatten_status_col(self, pdf, col, status_type, prefix):
-        if self.debug: print('flattening %s...' % col)
-        if self.debug: print('    ', pdf.columns)
-        #retweet_status -> hash -> lookup json for hash -> pull out id/created_at/user_id
-        pdf_hashed = pdf.assign(hashed=pdf[col].apply(hash))
-        retweets = pdf_hashed[ pdf_hashed['status_type'] == status_type ][['hashed', col]]\
-            .drop_duplicates('hashed').reset_index(drop=True)
-        #print('sample', retweets[col].head(10), retweets[col].apply(type))
-        retweets_flattened = pd.io.json.json_normalize(
-            retweets[col].replace("(").replace(")")\
-                .apply(self.__try_load))
-        if self.debug: print('   ... fixing dates')
-        retweets_flattened = retweets_flattened.assign(
-            created_at = pd.to_datetime(retweets_flattened['created_at']).apply(lambda dt: dt.timestamp),
-            user_id = retweets_flattened['user.id'])   
-        if self.debug: print('   ... fixing dates') 
-        retweets = retweets[['hashed']]\
-            .assign(**{
-                prefix + c: retweets_flattened[c] 
-                for c in retweets_flattened if c in ['id', 'created_at', 'user_id']
-            })
-        if self.debug: print('   ... remerging')
-        pdf_with_flat_retweets = pdf_hashed.merge(retweets, on='hashed', how='left').drop(columns='hashed')
-        if self.debug: print('   ...flattened', pdf_with_flat_retweets.shape)    
-        return pdf_with_flat_retweets
+        debug_retweets_flattened = None
+        debug_retweets = None
+        try:
+            logger.debug('flattening %s...', col)
+            logger.debug('    %s x %s: %s', len(pdf), len(pdf.columns), pdf.columns)
+            if len(pdf) == 0:
+                logger.debug('Warning: did not add mt case col output addition - pdf')
+                return pdf
+            #retweet_status -> hash -> lookup json for hash -> pull out id/created_at/user_id
+            pdf_hashed = pdf.assign(hashed=pdf[col].apply(hash))
+            retweets = pdf_hashed[ pdf_hashed['status_type'] == status_type ][['hashed', col]]\
+                .drop_duplicates('hashed').reset_index(drop=True)
+            if len(retweets) == 0:
+                logger.debug('Warning: did not add mt case col output addition - retweets')
+                return pdf
+            #print('sample', retweets[col].head(10), retweets[col].apply(type))
+            retweets_flattened = pd.io.json.json_normalize(
+                retweets[col].replace("(").replace(")")\
+                    .apply(self.__try_load))
+            if len(retweets_flattened.columns) == 0:
+                logger.debug('No tweets of type %s, early exit', status_type)
+                return pdf
+            debug_retweets_flattened = retweets_flattened
+            debug_retweets = retweets
+            logger.debug('   ... fixing dates')
+            logger.debug('avail cols of %s x %s: %s', len(retweets_flattened), len(retweets_flattened.columns), retweets_flattened.columns)
+            logger.debug(retweets_flattened)
+            if 'created_at' in retweets_flattened:
+                retweets_flattened = retweets_flattened.assign(
+                    created_at = pd.to_datetime(retweets_flattened['created_at']).apply(lambda dt: dt.timestamp))
+            if 'user.id' in retweets_flattened:
+                retweets_flattened = retweets_flattened.assign(                
+                    user_id = retweets_flattened['user.id'])
+            logger.debug('   ... fixing dates') 
+            retweets = retweets[['hashed']]\
+                .assign(**{
+                    prefix + c: retweets_flattened[c] 
+                    for c in retweets_flattened if c in ['id', 'created_at', 'user_id']
+                })
+            logger.debug('   ... remerging')
+            pdf_with_flat_retweets = pdf_hashed.merge(retweets, on='hashed', how='left').drop(columns='hashed')
+            logger.debug('   ...flattened: %s', pdf_with_flat_retweets.shape)    
+            return pdf_with_flat_retweets
+        except Exception as e:
+            logger.error(('Exception __flatten_status_col', e))
+            logger.error(('params', col, status_type, prefix))
+            #print(pdf[:10])
+            logger.error('cols debug_retweets %s x %s : %s',
+                len(debug_retweets), len(debug_retweets.columns), debug_retweets.columns)
+            logger.error('--------')
+            logger.error(debug_retweets[:3])
+            logger.error('--------')            
+            logger.error('cols debug_retweets_flattened %s x %s : %s',
+                len(debug_retweets_flattened), len(debug_retweets_flattened.columns), debug_retweets_flattened.columns)
+            logger.error('--------')
+            logger.error(debug_retweets_flattened[:3])
+            logger.error('--------')
+            logger.error(debug_retweets_flattened['created_at'])
+            logger.error('--------')
+            raise e
 
     def __flatten_retweets(self, pdf):
         if self.debug: print('flattening retweets...')
@@ -123,5 +166,5 @@ class DfHelper:
             }
         except:
             if s != 0.0:
-                print('bad s',s)
+                if self.debug: print('bad s',s)
             return {}

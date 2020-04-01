@@ -182,7 +182,7 @@ class Neo4jDataAccess:
                 ids.append({'id': int(row['id'])})
             res = graph.run(self.fetch_tweet_status, ids = ids).to_data_frame()
 
-            print('Response info: %s rows, %s columns: %s' % (len(res), len(res.columns), res.columns))
+            if self.debug: print('Response info: %s rows, %s columns: %s' % (len(res), len(res.columns), res.columns))
             if len(res) == 0:
                 return df[['id']].assign(hydrated=None)
             else:
@@ -205,30 +205,35 @@ class Neo4jDataAccess:
             tweet_type='TWEET'
             if row["in_reply_to_status_id"] is not None and row["in_reply_to_status_id"] >0:
                 tweet_type="REPLY"
-            elif row["quoted_status_id"] is not None and row["quoted_status_id"] >0:
-                tweet_type="QUOTE_RETWEET"                
-            elif row["retweet_id"] is not None and row["retweet_id"] >0:
+            elif "quoted_status_id" in row and row["quoted_status_id"] is not None and row["quoted_status_id"] >0:
+                tweet_type="QUOTE_RETWEET"
+            elif "retweet_id" in row and row["retweet_id"] is not None and row["retweet_id"] >0:
                 tweet_type="RETWEET"
-            params.append({'tweet_id': row['status_id'], 
-                           'text': row['full_text'],    
-                           'tweet_created_at': row['created_at'].to_pydatetime(),  
-                           'favorite_count': row['favorite_count'],        
-                           'retweet_count': row['retweet_count'],         
-                           'tweet_type': tweet_type,                                              
-                           'job_id': job_name,                                              
-                           'hashtags': self.__normalize_hashtags(row['hashtags']),  
-                           'user_id': row['user_id'],                            
-                           'user_name': row['user_name'],                       
-                           'user_location': row['user_location'],                                              
-                           'user_screen_name': row['user_screen_name'],                 
-                           'user_followers_count': row['user_followers_count'],           
-                           'user_friends_count': row['user_friends_count'],    
-                           'user_created_at': pd.Timestamp(row['user_created_at'], unit='s').to_pydatetime(), 
-                           'user_profile_image_url': row['user_profile_image_url'],
-                           'reply_tweet_id': row['in_reply_to_status_id'],    
-                           'quoted_status_id': row['quoted_status_id'],    
-                           'retweet_id': row['retweet_id'],    
-                          })
+            try:
+                params.append({'tweet_id': row['status_id'], 
+                               'text': row['full_text'],    
+                               'tweet_created_at': row['created_at'].to_pydatetime(),  
+                               'favorite_count': row['favorite_count'],        
+                               'retweet_count': row['retweet_count'],         
+                               'tweet_type': tweet_type,                                              
+                               'job_id': job_name,                                              
+                               'hashtags': self.__normalize_hashtags(row['hashtags']),  
+                               'user_id': row['user_id'],                            
+                               'user_name': row['user_name'],                       
+                               'user_location': row['user_location'],                                              
+                               'user_screen_name': row['user_screen_name'],                 
+                               'user_followers_count': row['user_followers_count'],           
+                               'user_friends_count': row['user_friends_count'],    
+                               'user_created_at': pd.Timestamp(row['user_created_at'], unit='s').to_pydatetime(), 
+                               'user_profile_image_url': row['user_profile_image_url'],
+                               'reply_tweet_id': row['in_reply_to_status_id'],    
+                               'quoted_status_id': row['quoted_status_id'],    
+                               'retweet_id': row['retweet_id'] if 'retweet_id' in row else None,
+                              })
+            except Exception as e:
+                print('params.append exn', e)
+                print('row', row)
+                raise e
             
             #if there are urls then populate the url_params
             if row['urls']:
@@ -254,7 +259,7 @@ class Neo4jDataAccess:
         
         self.__write_to_neo(params, url_params, mention_params)
         toc=time.perf_counter()
-        print(f"Neo4j Import Complete in  {toc - global_tic:0.4f} seconds")
+        if self.debug: print(f"Neo4j Import Complete in  {toc - global_tic:0.4f} seconds")
         
     def __write_to_neo(self, params, url_params, mention_params):
         try: 
@@ -265,9 +270,11 @@ class Neo4jDataAccess:
             tx.run(self.urls, urls = url_params)                   
             tx.commit()
         except Exception as inst:
+            print('Neo4j Transaction error')
             print(type(inst))    # the exception instance
             print(inst.args)     # arguments stored in .args
             print(inst)          # __str__ allows args to be printed directly,
+            raise inst
     
     def __normalize_hashtags(self, value):
         if value:
