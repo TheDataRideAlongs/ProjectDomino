@@ -182,7 +182,7 @@ class Neo4jDataAccess:
                 ids.append({'id': int(row['id'])})
             res = graph.run(self.fetch_tweet_status, ids = ids).to_data_frame()
 
-            print('Response info: %s rows, %s columns: %s' % (len(res), len(res.columns), res.columns))
+            if self.debug: print('Response info: %s rows, %s columns: %s' % (len(res), len(res.columns), res.columns))
             if len(res) == 0:
                 return df[['id']].assign(hydrated=None)
             else:
@@ -254,7 +254,7 @@ class Neo4jDataAccess:
         
         self.__write_to_neo(params, url_params, mention_params)
         toc=time.perf_counter()
-        print(f"Neo4j Import Complete in  {toc - global_tic:0.4f} seconds")
+        if self.debug: print(f"Neo4j Import Complete in  {toc - global_tic:0.4f} seconds")
         
     def __write_to_neo(self, params, url_params, mention_params):
         try: 
@@ -265,9 +265,11 @@ class Neo4jDataAccess:
             tx.run(self.urls, urls = url_params)                   
             tx.commit()
         except Exception as inst:
+            print('Neo4j Transaction error')
             print(type(inst))    # the exception instance
             print(inst.args)     # arguments stored in .args
             print(inst)          # __str__ allows args to be printed directly,
+            raise inst
     
     def __normalize_hashtags(self, value):
         if value:
