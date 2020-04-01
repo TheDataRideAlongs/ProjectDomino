@@ -1,18 +1,24 @@
-import ast, json, time
+import ast
+import json
+import time
 
 from datetime import datetime
 import pandas as pd
 from py2neo import Graph
 from urllib.parse import urlparse
+import logging
 
 from .DfHelper import DfHelper
 
+logger = logging.getLogger('Neo4jDataAccess')
+
+
 class Neo4jDataAccess:
-    BATCH_SIZE=2000
-    
-    def __init__(self, debug=False, neo4j_creds = None): 
+
+    def __init__(self, debug=False, neo4j_creds=None, batch_size=2000):
         self.creds = neo4j_creds
-        self.debug=debug
+        self.debug = debug
+        self.batch_size = batch_size
         self.tweetsandaccounts = """
                   UNWIND $tweets AS t
                       //Add the Tweet 
@@ -88,7 +94,7 @@ class Neo4jDataAccess:
                             retweet.hydrated = 'PARTIAL'
                     )
         """
-        
+
         self.tweeted_rel = """UNWIND $tweets AS t
                     MATCH (user:Account {id:t.user_id})
                     MATCH (tweet:Tweet {id:t.tweet_id})  
@@ -112,7 +118,7 @@ class Neo4jDataAccess:
                     )
                    
         """
-        
+
         self.mentions = """UNWIND $mentions AS t                    
                     MATCH (tweet:Tweet {id:t.tweet_id})
                     MERGE (user:Account {id:t.user_id})                    
@@ -125,7 +131,7 @@ class Neo4jDataAccess:
                     WITH user, tweet                                        
                     MERGE (tweet)-[:MENTIONED]->(user)                  
         """
-        
+
         self.urls = """UNWIND $urls AS t                    
                     MATCH (tweet:Tweet {id:t.tweet_id})
                     MERGE (url:Url {full_url:t.url})                    
@@ -146,166 +152,178 @@ class Neo4jDataAccess:
                     WITH url, tweet                                        
                     MERGE (tweet)-[:INCLUDES]->(url)                  
         """
-        
+
         self.fetch_tweet_status = """UNWIND $ids AS i                    
                     MATCH (tweet:Tweet {id:i.id})
                     RETURN tweet.id, tweet.hydrated
         """
 
-    
     def __get_neo4j_graph(self, role_type):
         creds = None
+        logging.debug('role_type: %s', role_type)
         if not (self.creds is None):
             creds = self.creds
         else:
             with open('neo4jcreds.json') as json_file:
                 creds = json.load(json_file)
-        res = list(filter(lambda c: c["type"]==role_type, creds))
-        if len(res): 
+        res = list(filter(lambda c: c["type"] == role_type, creds))
+        if len(res):
+            logging.debug("creds %s", res)
             creds = res[0]["creds"]
-            self.graph = Graph(host=creds['host'], port=creds['port'], user=creds['user'], password=creds['password'])
-        else: 
+            self.graph = Graph(
+                host=creds['host'], port=creds['port'], user=creds['user'], password=creds['password'])
+        else:
             self.graph = None
         return self.graph
-    
+
     def save_parquet_df_to_graph(self, df, job_name):
-        pdf = DfHelper(self.debug).normalize_parquet_dataframe(df)
-        if self.debug: print('Saving to Neo4j')
+        pdf = DfHelper().normalize_parquet_dataframe(df)
+        logging.info('Saving to Neo4j')
         self.__save_df_to_graph(pdf, job_name)
 
     # Get the status of a DataFrame of Tweets by id.  Returns a dataframe with the hydrated status
     def get_tweet_hydrated_status_by_id(self, df, job_name='generic_job'):
         if 'id' in df:
-            graph = self.__get_neo4j_graph('reader')  
-            ids=[]
+            graph = self.__get_neo4j_graph('reader')
+            ids = []
             for index, row in df.iterrows():
                 ids.append({'id': int(row['id'])})
-            res = graph.run(self.fetch_tweet_status, ids = ids).to_data_frame()
+            res = graph.run(self.fetch_tweet_status, ids=ids).to_data_frame()
 
-            if self.debug: print('Response info: %s rows, %s columns: %s' % (len(res), len(res.columns), res.columns))
+            logging.debug('Response info: %s rows, %s columns: %s' %
+                          (len(res), len(res.columns), res.columns))
             if len(res) == 0:
                 return df[['id']].assign(hydrated=None)
             else:
-                res=res.rename(columns={'tweet.id': 'id', 'tweet.hydrated': 'hydrated'})
-                res = df[['id']].merge(res, how='left', on='id') #ensures hydrated=None if Neo4j does not answer for id
+                res = res.rename(
+                    columns={'tweet.id': 'id', 'tweet.hydrated': 'hydrated'})
+                # ensures hydrated=None if Neo4j does not answer for id
+                res = df[['id']].merge(res, how='left', on='id')
                 return res
         else:
-            raise Exception('Parameter df must be a DataFrame with a column named "id" ')
-        
+            logging.debug('df columns %s', df.columns)
+            raise Exception(
+                'Parameter df must be a DataFrame with a column named "id" ')
+
     # This saves the User and Tweet data right now
     def __save_df_to_graph(self, df, job_name):
-        graph = self.__get_neo4j_graph('writer')  
-        global_tic=time.perf_counter()      
+        graph = self.__get_neo4j_graph('writer')
+        global_tic = time.perf_counter()
         params = []
         mention_params = []
         url_params = []
-        tic=time.perf_counter()
+        tic = time.perf_counter()
+        logging.debug('df columns %s', df.columns)
         for index, row in df.iterrows():
-            #determine the type of tweet
-            tweet_type='TWEET'
-            if row["in_reply_to_status_id"] is not None and row["in_reply_to_status_id"] >0:
-                tweet_type="REPLY"
-            elif "quoted_status_id" in row and row["quoted_status_id"] is not None and row["quoted_status_id"] >0:
-                tweet_type="QUOTE_RETWEET"
-            elif "retweet_id" in row and row["retweet_id"] is not None and row["retweet_id"] >0:
-                tweet_type="RETWEET"
+            # determine the type of tweet
+            tweet_type = 'TWEET'
+            if row["in_reply_to_status_id"] is not None and row["in_reply_to_status_id"] > 0:
+                tweet_type = "REPLY"
+            elif "quoted_status_id" in row and row["quoted_status_id"] is not None and row["quoted_status_id"] > 0:
+                tweet_type = "QUOTE_RETWEET"
+            elif "retweet_id" in row and row["retweet_id"] is not None and row["retweet_id"] > 0:
+                tweet_type = "RETWEET"
             try:
-                params.append({'tweet_id': row['status_id'], 
-                               'text': row['full_text'],    
-                               'tweet_created_at': row['created_at'].to_pydatetime(),  
-                               'favorite_count': row['favorite_count'],        
-                               'retweet_count': row['retweet_count'],         
-                               'tweet_type': tweet_type,                                              
-                               'job_id': job_name,                                              
-                               'hashtags': self.__normalize_hashtags(row['hashtags']),  
-                               'user_id': row['user_id'],                            
-                               'user_name': row['user_name'],                       
-                               'user_location': row['user_location'],                                              
-                               'user_screen_name': row['user_screen_name'],                 
-                               'user_followers_count': row['user_followers_count'],           
-                               'user_friends_count': row['user_friends_count'],    
-                               'user_created_at': pd.Timestamp(row['user_created_at'], unit='s').to_pydatetime(), 
+                params.append({'tweet_id': row['status_id'],
+                               'text': row['full_text'],
+                               'tweet_created_at': row['created_at'].to_pydatetime(),
+                               'favorite_count': row['favorite_count'],
+                               'retweet_count': row['retweet_count'],
+                               'tweet_type': tweet_type,
+                               'job_id': job_name,
+                               'hashtags': self.__normalize_hashtags(row['hashtags']),
+                               'user_id': row['user_id'],
+                               'user_name': row['user_name'],
+                               'user_location': row['user_location'],
+                               'user_screen_name': row['user_screen_name'],
+                               'user_followers_count': row['user_followers_count'],
+                               'user_friends_count': row['user_friends_count'],
+                               'user_created_at': pd.Timestamp(row['user_created_at'], unit='s').to_pydatetime(),
                                'user_profile_image_url': row['user_profile_image_url'],
-                               'reply_tweet_id': row['in_reply_to_status_id'],    
-                               'quoted_status_id': row['quoted_status_id'],    
+                               'reply_tweet_id': row['in_reply_to_status_id'],
+                               'quoted_status_id': row['quoted_status_id'],
                                'retweet_id': row['retweet_id'] if 'retweet_id' in row else None,
-                              })
+                               })
             except Exception as e:
-                print('params.append exn', e)
-                print('row', row)
+                logging.error('params.append exn', e)
+                logging.error('row', row)
                 raise e
-            
-            #if there are urls then populate the url_params
+
+            # if there are urls then populate the url_params
             if row['urls']:
                 url_params = self.__parse_urls(row, url_params, job_name)
-            #if there are user_mentions then populate the mentions_params
+            # if there are user_mentions then populate the mentions_params
             if row['user_mentions']:
                 for m in row['user_mentions']:
                     mention_params.append({
-                        'tweet_id': row['status_id'], 
-                        'user_id': m['id'],                            
-                        'user_name': m['name'],                                                      
-                        'user_screen_name': m['screen_name'],                                           
-                        'job_id': job_name,    
+                        'tweet_id': row['status_id'],
+                        'user_id': m['id'],
+                        'user_name': m['name'],
+                        'user_screen_name': m['screen_name'],
+                        'job_id': job_name,
                     })
-            if index % self.BATCH_SIZE == 0 and index>0:
+            if index % self.batch_size == 0 and index > 0:
                 self.__write_to_neo(params, url_params, mention_params)
-                toc=time.perf_counter()
-                if self.debug: print(f"Neo4j Periodic Save Complete in  {toc - tic:0.4f} seconds")
+                toc = time.perf_counter()
+                logging.info(
+                    f"Neo4j Periodic Save Complete in  {toc - tic:0.4f} seconds")
                 params = []
                 mention_params = []
                 url_params = []
-                tic=time.perf_counter()
-        
+                tic = time.perf_counter()
+
         self.__write_to_neo(params, url_params, mention_params)
-        toc=time.perf_counter()
-        if self.debug: print(f"Neo4j Import Complete in  {toc - global_tic:0.4f} seconds")
-        
+        toc = time.perf_counter()
+        logging.info(
+            f"Neo4j Import Complete in  {toc - global_tic:0.4f} seconds")
+
     def __write_to_neo(self, params, url_params, mention_params):
-        try: 
+        try:
             tx = self.graph.begin(autocommit=False)
-            tx.run(self.tweetsandaccounts, tweets = params)
-            tx.run(self.tweeted_rel, tweets = params)   
-            tx.run(self.mentions, mentions = mention_params) 
-            tx.run(self.urls, urls = url_params)                   
+            tx.run(self.tweetsandaccounts, tweets=params)
+            tx.run(self.tweeted_rel, tweets=params)
+            tx.run(self.mentions, mentions=mention_params)
+            tx.run(self.urls, urls=url_params)
             tx.commit()
         except Exception as inst:
-            print('Neo4j Transaction error')
-            print(type(inst))    # the exception instance
-            print(inst.args)     # arguments stored in .args
-            print(inst)          # __str__ allows args to be printed directly,
+            logging.error('Neo4j Transaction error')
+            logging.error(type(inst))    # the exception instance
+            logging.error(inst.args)     # arguments stored in .args
+            # __str__ allows args to be printed directly,
+            logging.error(inst)
             raise inst
-    
+
     def __normalize_hashtags(self, value):
         if value:
-            hashtags=[]
+            hashtags = []
             for h in value:
                 hashtags.append(h['text'])
             return ','.join(hashtags)
         else:
             return None
-    
+
     def __parse_urls(self, row, url_params, job_name):
         for u in row['urls']:
-            try: 
+            try:
                 parsed = urlparse(u['expanded_url'])
                 url_params.append({
-                    'tweet_id': row['status_id'], 
-                    'url': u['expanded_url'],     
-                    'job_id': job_name,        
-                    'schema': parsed.scheme,   
-                    'netloc': parsed.netloc,   
-                    'path': parsed.path,   
-                    'params': parsed.params,   
-                    'query': parsed.query,       
-                    'fragment': parsed.fragment,       
-                    'username': parsed.username,       
-                    'password': parsed.password,       
-                    'hostname': parsed.hostname,      
-                    'port': parsed.port,     
+                    'tweet_id': row['status_id'],
+                    'url': u['expanded_url'],
+                    'job_id': job_name,
+                    'schema': parsed.scheme,
+                    'netloc': parsed.netloc,
+                    'path': parsed.path,
+                    'params': parsed.params,
+                    'query': parsed.query,
+                    'fragment': parsed.fragment,
+                    'username': parsed.username,
+                    'password': parsed.password,
+                    'hostname': parsed.hostname,
+                    'port': parsed.port,
                 })
             except Exception as inst:
                 print(type(inst))    # the exception instance
                 print(inst.args)     # arguments stored in .args
-                print(inst)          # __str__ allows args to be printed directly,
+                # __str__ allows args to be printed directly,
+                print(inst)
         return url_params
