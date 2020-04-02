@@ -1,10 +1,11 @@
 import ast
 import json
 import time
+import re
 
 from datetime import datetime
 import pandas as pd
-from py2neo import Graph
+from neo4j import GraphDatabase, basic_auth
 from urllib.parse import urlparse
 import logging
 
@@ -15,9 +16,10 @@ logger = logging.getLogger('Neo4jDataAccess')
 
 class Neo4jDataAccess:
 
-    def __init__(self, debug=False, neo4j_creds=None, batch_size=2000):
+    def __init__(self, debug=False, neo4j_creds=None, batch_size=2000, timeout="60s"):
         self.creds = neo4j_creds
         self.debug = debug
+        self.timeout = timeout
         self.batch_size = batch_size
         self.tweetsandaccounts = """
                   UNWIND $tweets AS t
@@ -184,16 +186,23 @@ class Neo4jDataAccess:
         if len(res):
             logging.debug("creds %s", res)
             creds = res[0]["creds"]
-            self.graph = Graph(
-                host=creds['host'], port=creds['port'], user=creds['user'], password=creds['password'])
+            uri = f'bolt://{creds["host"]}:{creds["port"]}'
+            self.graph = GraphDatabase.driver(
+                uri, auth=basic_auth(creds['user'], creds['password']), encrypted=False)
         else:
             self.graph = None
         return self.graph
 
-    def get_from_neo(self, cypher, limit=100):
+    def get_from_neo(self, cypher, limit=1000):
         graph = self.__get_neo4j_graph('reader')
-        df = graph.run(cypher).to_data_frame()
-        return df.head(limit)
+        # If the limit isn't set in the traversal then add it
+        if not re.search('LIMIT', cypher, re.IGNORECASE):
+            cypher = cypher + " LIMIT " + str(limit)
+        with graph.session() as session:
+            result = session.run(cypher, timeout=self.timeout)
+            df = pd.DataFrame([dict(record) for record in result])
+        rdf = df.head(limit)
+        return rdf
 
     def get_tweet_by_id(self, df, cols=[]):
         if 'id' in df:
@@ -201,8 +210,10 @@ class Neo4jDataAccess:
             ids = []
             for index, row in df.iterrows():
                 ids.append({'id': int(row['id'])})
-            res = graph.run(self.fetch_tweet, ids=ids).to_data_frame()
-
+            with graph.session() as session:
+                result = session.run(
+                    self.fetch_tweet, ids=ids, timeout=self.timeout)
+                res = pd.DataFrame([dict(record) for record in result])
             logging.debug('Response info: %s rows, %s columns: %s' %
                           (len(res), len(res.columns), res.columns))
             pdf = pd.DataFrame()
@@ -233,8 +244,9 @@ class Neo4jDataAccess:
             ids = []
             for index, row in df.iterrows():
                 ids.append({'id': int(row['id'])})
-            res = graph.run(self.fetch_tweet_status, ids=ids).to_data_frame()
-
+            with graph.session() as session:
+                result = session.run(self.fetch_tweet_status, ids=ids)
+                res = pd.DataFrame([dict(record) for record in result])
             logging.debug('Response info: %s rows, %s columns: %s' %
                           (len(res), len(res.columns), res.columns))
             if len(res) == 0:
@@ -327,12 +339,14 @@ class Neo4jDataAccess:
 
     def __write_to_neo(self, params, url_params, mention_params):
         try:
-            tx = self.graph.begin(autocommit=False)
-            tx.run(self.tweetsandaccounts, tweets=params)
-            tx.run(self.tweeted_rel, tweets=params)
-            tx.run(self.mentions, mentions=mention_params)
-            tx.run(self.urls, urls=url_params)
-            tx.commit()
+            with self.graph.session() as session:
+                session.run(self.tweetsandaccounts,
+                            tweets=params, timeout=self.timeout)
+                session.run(self.tweeted_rel, tweets=params,
+                            timeout=self.timeout)
+                session.run(self.mentions, mentions=mention_params,
+                            timeout=self.timeout)
+                session.run(self.urls, urls=url_params, timeout=self.timeout)
         except Exception as inst:
             logging.error('Neo4j Transaction error')
             logging.error(type(inst))    # the exception instance

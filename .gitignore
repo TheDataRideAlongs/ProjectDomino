@@ -1,0 +1,5 @@
+neo4jcreds.json
+
+.vscode/
+data/
+__pycache__/
