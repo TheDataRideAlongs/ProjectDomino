@@ -192,26 +192,26 @@ class FirehoseJob:
         self.__file_names = []
         
     def __del__(self):
-        print('__del__')
+        logger.debug('__del__')
         self.destroy()        
         
     def destroy(self, job_name='generic_job'):
-        print('flush before destroying..')
+        logger.debug('flush before destroying..')
         self.flush(job_name)
-        print('destroy', self.writers.keys())        
+        logger.debug('destroy', self.writers.keys())        
         for k in self.writers.keys():
             if not (self.writers[k] is None):
-                print('Closing parquet writer %s' % k)
+                logger.debug('Closing parquet writer %s' % k)
                 writer = self.writers[k]
                 writer.close()
-                print('... sleep 1s...')
+                logger.debug('... sleep 1s...')
                 time.sleep(1)
                 self.writers[k] = None
-                print('... sleep 1s...')
+                logger.debug('... sleep 1s...')
                 time.sleep(1)
-                print('... Safely closed %s' % k)
+                logger.debug('... Safely closed %s' % k)
             else:
-                print('Nothing to close for writer %s' % k)
+                logger.debug('Nothing to close for writer %s' % k)
                 
     ###################
 
@@ -260,9 +260,9 @@ class FirehoseJob:
             else:
                 return series
         except Exception as exn:
-            print('coerce exn on col', series.name, series.dtype)
-            print('first', series[:1])
-            print(exn)
+            logger.error('coerce exn on col', series.name, series.dtype)
+            logger.error('first', series[:1])
+            logger.error(exn)
             return series
 
     #clean df before reaches arrow
