@@ -9,16 +9,16 @@ from datetime import timedelta, datetime
 from prefect.schedules import IntervalSchedule
 import prefect
 from prefect.engine.signals import ENDRUN
-from prefect.engine.state import Cancelled
+from prefect.engine.state import Skipped
 
-@task(log_stdout=True)
+@task(log_stdout=True, skip_on_upstream_skip=True)
 def load_creds():
     with open('twittercreds.json') as json_file:
         creds = json.load(json_file)
     print([{k: "zzz" for k in creds[0].keys()}])
     return creds
 
-@task(log_stdout=True)
+@task(log_stdout=True, skip_on_upstream_skip=True)
 def load_path():
     data_dirs = ['COVID-19-TweetIDs/2020-01', 'COVID-19-TweetIDs/2020-02', 'COVID-19-TweetIDs/2020-03']
 
@@ -39,13 +39,13 @@ def load_path():
         else:
             print('WARNING: not a dir', data_dir)
     # TODO: (wzy) Figure out how to cancel this gracefully
-    raise ENDRUN(state=Cancelled())
+    raise ENDRUN(state=Skipped())
 
-@task(log_stdout=True)
+@task(log_stdout=True, skip_on_upstream_skip=True)
 def clean_timeline_tweets(pdf):
     return pdf.rename(columns={'id': 'status_id', 'id_str': 'status_id_str'})
 
-@task(log_stdout=True)
+@task(log_stdout=True, skip_on_upstream_skip=True)
 def clean_datetimes(pdf):
     print('cleaning datetimes...')
     pdf = pdf.assign(created_at=pd.to_datetime(pdf['created_at']))
@@ -55,7 +55,7 @@ def clean_datetimes(pdf):
 
 #some reason always False
 #this seems to match full_text[:2] == 'RT'
-@task(log_stdout=True)
+@task(log_stdout=True, skip_on_upstream_skip=True)
 def clean_retweeted(pdf):
     return pdf.assign(retweeted=pdf['retweeted_status'] != 'None')
 
@@ -68,7 +68,7 @@ def update_to_type(row):
         return 'reply'
     return 'original'
 
-@task(log_stdout=True)
+@task(log_stdout=True, skip_on_upstream_skip=True)
 def tag_status_type(pdf):
     ##only materialize required fields..
     print('tagging status...')
@@ -116,21 +116,21 @@ def flatten_status_col(pdf, col, status_type, prefix):
     print('   ...flattened', pdf_with_flat_retweets.shape)
     return pdf_with_flat_retweets
 
-@task(log_stdout=True)
+@task(log_stdout=True, skip_on_upstream_skip=True)
 def flatten_retweets(pdf):
     print('flattening retweets...')
     pdf2 = flatten_status_col(pdf, 'retweeted_status', 'retweet', 'retweet_')
     print('   ...flattened', pdf2.shape)
     return pdf2
 
-@task(log_stdout=True)
+@task(log_stdout=True, skip_on_upstream_skip=True)
 def flatten_quotes(pdf):
     print('flattening quotes...')
     pdf2 = flatten_status_col(pdf, 'quoted_status', 'retweet_quote', 'quote_')
     print('   ...flattened', pdf2.shape)
     return pdf2
 
-@task(log_stdout=True)
+@task(log_stdout=True, skip_on_upstream_skip=True)
 def flatten_users(pdf):
     print('flattening users')
     pdf_user_cols = pd.io.json.json_normalize(pdf['user'].replace("(").replace(")").apply(ast.literal_eval))
@@ -146,28 +146,33 @@ def flatten_users(pdf):
     print('   ...flattened')
     return pdf2
 
-@task(log_stdout=True)
+@task(log_stdout=True, skip_on_upstream_skip=True)
 def load_tweets(creds, path):
     print(path)
     fh = FirehoseJob(creds, PARQUET_SAMPLE_RATE_TIME_S=30)
+    cnt = 0
     data = []
     for arr in fh.process_id_file(path, job_name="500m_COVID-REHYDRATE"):
         data.append(arr.to_pandas())
         print('{}/{}'.format(len(data), len(arr)))
-        break
-    return pd.concat(data, ignore_index=True, sort=False)
+        cnt += len(arr)
+        print('TOTAL: ' + str(cnt))
+    data = pd.concat(data, ignore_index=True, sort=False)
+    if len(data) == 0:
+        raise ENDRUN(state=Skipped())
+    return data
 
-@task(log_stdout=True)
+@task(log_stdout=True, skip_on_upstream_skip=True)
 def sample(tweets):
     print('responses shape', tweets.shape)
     print(tweets.columns)
     print(tweets.sample(5))
 
 schedule = IntervalSchedule(
-    start_date=datetime(2020, 1, 20),
+    # start_date=datetime(2020, 1, 20),
+    # interval=timedelta(hours=1),
+    start_date=datetime.now() + timedelta(seconds=1),
     interval=timedelta(hours=1),
-    # start_date=datetime.now() + timedelta(seconds=1),
-    # interval=timedelta(minutes=1),
 )
 
 with Flow("Rehydration Pipeline", schedule=schedule) as flow:
@@ -188,7 +193,7 @@ LOCAL_MODE = True
 
 if LOCAL_MODE:
     with prefect.context(
-        backfill_timestamp=datetime(2020, 1, 29),
+        backfill_timestamp=datetime(2020, 2, 6, 9),
         ):
         flow.run()
 else:
