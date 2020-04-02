@@ -13,6 +13,9 @@ from .Timer import Timer
 from .TwarcPool import TwarcPool
 from .Neo4jDataAccess import Neo4jDataAccess
 
+import logging
+logger = logging.getLogger('fh')
+
 #############################
 
 ###################
@@ -97,13 +100,17 @@ DROP_COLS = [ 'withheld_in_countries' ]
 
 ### When dtype -> arrow ambiguious, override
 KNOWN_FIELDS = [    
-    #[0, 'contributors', ??],
+    [0, 'contributors', pa.string()],
     [1, 'coordinates', pa.string()],
     [2, 'created_at', pa.string()],
-    [3, 'display_text_range', pa.list_(pa.int64())],
+    
+    #[3, 'display_text_range', pa.list_(pa.int64())],
+    [3, 'display_text_range', pa.string()],
+    
     [4, 'entities', pa.string()],
     [5, 'extended_entities', pa.string()], #extended_entities_t ],
     [7, 'favorited', pa.bool_()],
+    [8, 'favorite_count', pa.int64()],
     [9, 'full_text', pa.string()],
     [10, 'geo', pa.string()],
     [11, 'id', pa.int64() ],
@@ -115,20 +122,25 @@ KNOWN_FIELDS = [
     [17, 'in_reply_to_user_id_str', pa.string() ],
     [18, 'is_quote_status', pa.bool_() ],
     [19, 'lang', pa.string() ],
-   # [20, 'place', pa.string()],
-   # [21, 'possibly_sensitive', pa.bool_()],
-    #[22, 'quoted_status', pa.string()],
-    #[23, 'quoted_status_id', pa.int64()],
-    #[24, 'quoted_status_id_str', pa.string()],
-    #[25, 'quoted_status_permalink', pa.string()],
-   # [26, 'retweet_count', pa.int64()],
-   # [27, 'retweeted', pa.bool_()],
-    #[28, 'retweeted_status', pa.string()],
-   # [29, 'scopes', pa.string()],  # pa.struct({'followers': pa.bool_()})],
-    #[30, 'source', pa.string()],
-   # [31, 'truncated', pa.bool_()],
-   # [32, 'user', pa.string()],
+    [20, 'place', pa.string()],
+    [21, 'possibly_sensitive', pa.bool_()],
+    [22, 'quoted_status', pa.string()],
+    [23, 'quoted_status_id', pa.int64()],
+    [24, 'quoted_status_id_str', pa.string()],
+    [25, 'quoted_status_permalink', pa.string()],
+    [26, 'retweet_count', pa.int64()],
+    [27, 'retweeted', pa.bool_()],
+    [28, 'retweeted_status', pa.string()],
+    [29, 'scopes', pa.string()],
+    [30, 'source', pa.string()],
+    [31, 'truncated', pa.bool_()],
+    [32, 'user', pa.string()],
+    
     #[33, 'withheld_in_countries', pa.list_(pa.string())],
+    [33, 'withheld_in_countries', pa.string()],
+
+    #[34, 'followers', pa.struct({'followers': pa.bool_()})]
+    [34, 'followers', pa.string()]
 ]
 
 #############################
@@ -146,16 +158,17 @@ class FirehoseJob:
     DROP_COLS = DROP_COLS
     
     
-    def __init__(self, creds = [], neo4j_creds = None, TWEETS_PER_PROCESS=100, TWEETS_PER_ROWGROUP=5000, save_to_neo=False, PARQUET_SAMPLE_RATE_TIME_S=None):
+    def __init__(self, creds = [], neo4j_creds = None, TWEETS_PER_PROCESS=100, TWEETS_PER_ROWGROUP=5000, save_to_neo=False, PARQUET_SAMPLE_RATE_TIME_S=None, debug=False, BATCH_LEN=100, writers = {'snappy': None}):
         self.queue = deque()
-        self.writers = {
-            'snappy': None
-            #,'vanilla': None
-        }
+        self.writers = writers
         self.last_write_epoch = ''
         self.current_table = None
-        self.schema = None
+        self.schema = pa.schema([
+            (name, t)
+            for (i, name, t) in KNOWN_FIELDS
+        ])
         self.timer = Timer()
+        self.debug = debug
         
         self.twarc_pool = TwarcPool([ 
             Twarc(o['consumer_key'], o['consumer_secret'], o['access_token'], o['access_token_secret'])
@@ -172,6 +185,8 @@ class FirehoseJob:
 
         self.neo4j_creds = neo4j_creds
 
+        self.BATCH_LEN = BATCH_LEN
+        
         self.needs_to_flush = False
 
         self.__file_names = []
@@ -226,7 +241,7 @@ class FirehoseJob:
             
             ##objects: put here to skip str coercion
             coercions = {
-                'display_text_range': identity,
+                'display_text_range': series_to_json_string,
                 'contributors': identity,
                 'created_at': lambda series: series.values.astype('unicode'),
                 'possibly_sensitive': (lambda series: series.fillna(False)),
@@ -235,8 +250,8 @@ class FirehoseJob:
                 'in_reply_to_status_id': (lambda series: series.fillna(0).astype('int64')),
                 'in_reply_to_user_id': (lambda series: series.fillna(0).astype('int64')),
                 'scopes': series_to_json_string,
-                'followers': identity, #(lambda series: pd.Series([str(x) for x in series.tolist()]).values.astype('unicode')),
-                'withheld_in_countries': identity,
+                'followers': series_to_json_string,
+                'withheld_in_countries': series_to_json_string
             }
             if series.name in coercions.keys():
                 return coercions[series.name](series)
@@ -263,8 +278,8 @@ class FirehoseJob:
             sorted_df = all_cols_df.reindex(sorted(all_cols_df.columns), axis=1)
             return pd.DataFrame({c: self.clean_series(sorted_df[c]) for c in sorted_df.columns})
         except Exception as exn:
-            print('failed clean')
-            print(exn)
+            logger.error('failed clean')
+            logger.error(exn)
             raise exn
         finally:
             self.timer.toc('clean')
@@ -285,7 +300,7 @@ class FirehoseJob:
             job_name = self.clean_file_name(job_name)
             
             folder = "firehose_data/%s" % job_name            
-            print('make folder if not exists: %s' % folder)            
+            logger.debug('make folder if not exists: %s' % folder)            
             os.makedirs(folder, exist_ok=True)
             self.__folder_last = folder
             
@@ -300,7 +315,7 @@ class FirehoseJob:
                 run = run + 1
                 file_prefix = "%s/%s_b%s." % ( folder, time_prefix, run )
             if run > 1:
-                print('Starting new batch for existing hour')
+                logger.debug('Starting new batch for existing hour')
             vanilla_file_name = file_prefix + vanilla_file_suffix
             snappy_file_name = file_prefix + snappy_file_suffix
             
@@ -309,13 +324,13 @@ class FirehoseJob:
                           
             #########################################################
             if ('vanilla' in self.writers) and ( (self.writers['vanilla'] is None) or self.last_write_epoch != file_prefix ):
-                print('Creating vanilla writer', vanilla_file_name)
+                logger.debug('Creating vanilla writer: %s', vanilla_file_name)
                 try:
                     #first write
                     #os.remove(vanilla_file_name)
                     1
                 except Exception as exn:
-                    print('Could not rm vanilla parquet', exn)
+                    logger.debug(('Could not rm vanilla parquet', exn))
                 self.writers['vanilla'] = pq.ParquetWriter(
                     vanilla_file_name, 
                     schema=table.schema,
@@ -323,12 +338,12 @@ class FirehoseJob:
                 self.__file_names.append(vanilla_file_name)
                 
             if ('snappy' in self.writers) and ( (self.writers['snappy'] is None) or self.last_write_epoch != file_prefix ):
-                print('Creating snappy writer', snappy_file_name)
+                logger.debug('Creating snappy writer: %s', snappy_file_name)
                 try:
                     #os.remove(snappy_file_name)
                     1
                 except Exception as exn:
-                    print('Could not rm snappy parquet', exn)                
+                    logger.error(('Could not rm snappy parquet', exn))
                 self.writers['snappy'] = pq.ParquetWriter(
                     snappy_file_name, 
                     schema=table.schema,
@@ -343,21 +358,27 @@ class FirehoseJob:
                 
             for name in self.writers.keys():
                 try:
-                    print('Writing %s (%s x %s)' % (
+                    logger.debug('Writing %s (%s x %s)' % (
                         name, table.num_rows, table.num_columns))
                     self.timer.tic('writing_%s' % name, 20, 1)
                     writer = self.writers[name]
                     writer.write_table(table)
+                    logger.debug('========')
+                    logger.debug(table.schema)
+                    logger.debug('--------')                    
+                    logger.debug(table.to_pandas()[:10])
+                    logger.debug('--------')                    
                     self.timer.toc('writing_%s' % name, table.num_rows)
                     #########
-                    print('######## TRANSACTING')
+                    logger.debug('######## TRANSACTING')
                     self.last_write_arr = table
                     self.last_writes_arr.append(table)
                     #########
                 except Exception as exn:
-                    print('... failed to write to parquet')
-                    print(exn)
-            print('######### ALL WRITTEN #######')
+                    logger.error('... failed to write to parquet')
+                    logger.error(exn)
+                    raise exn
+            logger.debug('######### ALL WRITTEN #######')
 
         finally:
             self.timer.toc('write')
@@ -366,7 +387,7 @@ class FirehoseJob:
         try:
             if self.current_table is None or self.current_table.num_rows == 0:
                 return
-            print('writing to parquet then clearing current_table..')
+            logger.debug('writing to parquet then clearing current_table..')
             deferred_pq_exn = None
             try:
                 self.pq_writer(self.current_table, job_name)
@@ -374,17 +395,17 @@ class FirehoseJob:
                 deferred_pq_exn = e
             try:
                 if self.save_to_neo:
-                    print('Writing to Neo4j')
-                    Neo4jDataAccess(True, self.neo4j_creds).save_parquet_df_to_graph(self.current_table.to_pandas(), job_name)
+                    logger.debug('Writing to Neo4j')
+                    Neo4jDataAccess(self.debug, self.neo4j_creds).save_parquet_df_to_graph(self.current_table.to_pandas(), job_name)
                 else:
-                    print('Skipping Neo4j write')
+                    logger.debug('Skipping Neo4j write')
             except Exception as e:
-                print('Neo4j write exn', e)
+                logger.error('Neo4j write exn', e)
                 raise e
             if not (deferred_pq_exn is None):
                 raise deferred_pq_exn
         finally:
-            print('flush clearing self.current_table')
+            logger.debug('flush clearing self.current_table')
             self.current_table = None
             
     def tweets_to_df(self, tweets):
@@ -395,8 +416,8 @@ class FirehoseJob:
             self.last_df = df
             return df
         except Exception as exn:
-            print('Failed tweets->pandas')
-            print(exn)
+            logger.error('Failed tweets->pandas')
+            logger.error(exn)
             raise exn
         finally:
             self.timer.toc('to_pandas')
@@ -412,55 +433,55 @@ class FirehoseJob:
                 #    raise Exception('ok')
                 table = pa.Table.from_pandas(df, schema)
                 if len(df.columns) != len(schema):
-                    print('=========================')
-                    print('DATA LOSS WARNING: df has cols not in schema, dropping') #reverse is an exn
+                    logger.debug('=========================')
+                    logger.debug('DATA LOSS WARNING: df has cols not in schema, dropping') #reverse is an exn
                     for col_name in df.columns:
                         hits = [field for field in schema if field.name==col_name]
                         if len(hits) == 0:
-                            print('-------')
-                            print('arrow schema missing col %s ' % col_name)
-                            print('df dtype',df[col_name].dtype)
-                            print(df[col_name].dropna())
-                            print('-------')
+                            logger.debug('-------')
+                            logger.debug('arrow schema missing col %s ' % col_name)
+                            logger.debug('df dtype',df[col_name].dtype)
+                            logger.debug(df[col_name].dropna())
+                            logger.debug('-------')
             except Exception as exn:
-                print('============================')
-                print('failed nth arrow from_pandas')
-                print('-------')
-                print(exn)
-                print('-------')
+                logger.error('============================')
+                logger.error('failed nth arrow from_pandas')
+                logger.error('-------')
+                logger.error(exn)
+                logger.error('-------')
                 try:
-                    print('followers', df['followers'].dropna())
-                    print('--------')
-                    print('coordinates', df['coordinates'].dropna())
-                    print('--------')
-                    print('dtypes', df.dtypes)
-                    print('--------')
-                    print(df.sample(min(5, len(df))))
-                    print('--------')
-                    print('arrow')
-                    print([schema[k] for k in range(0, len(schema))])
-                    print('~~~~~~~~')
+                    logger.error(('followers', df['followers'].dropna()))
+                    logger.error('--------')
+                    logger.error(('coordinates', df['coordinates'].dropna()))
+                    logger.error('--------')
+                    logger.error('dtypes: %s', df.dtypes)
+                    logger.error('--------')
+                    logger.error(df.sample(min(5, len(df))))
+                    logger.error('--------')
+                    logger.error('arrow')
+                    logger.error([schema[k] for k in range(0, len(schema))])
+                    logger.error('~~~~~~~~')
                     if not (self.current_table is None):
                         try:
-                            print(self.current_table.to_pandas()[:3])
-                            print('----')
-                            print([self.current_table.schema[k] for k in range(0, self.current_table.num_columns)])
+                            logger.error(self.current_table.to_pandas()[:3])
+                            logger.error('----')
+                            logger.error([self.current_table.schema[k] for k in range(0, self.current_table.num_columns)])
                         except Exception as exn2:
-                            print('cannot to_pandas print..', exn2)
+                            logger.error(('cannot to_pandas print..', exn2))
                 except:
                     1
-                print('-------')
+                logger.error('-------')
                 err_file_name = 'fail_' + str(uuid.uuid1())
-                print('Log failed batch and try to continue! %s' % err_file_name)
+                logger.error('Log failed batch and try to continue! %s' % err_file_name)
                 df.to_csv('./' + err_file_name)
                 raise exn
             for i in range(len(schema)):
                 if not (schema[i].equals(table.schema[i])):
-                    print('EXN: Schema mismatch on col # %s', i)
-                    print(schema[i])
-                    print('-----')
-                    print(table.schema[i])
-                    print('-----')
+                    logger.error('EXN: Schema mismatch on col # %s', i)
+                    logger.error(schema[i])
+                    logger.error('-----')
+                    logger.error(table.schema[i])
+                    logger.error('-----')
                     raise Exception('mismatch on col # ' % i)
             return table
         finally:
@@ -472,56 +493,22 @@ class FirehoseJob:
             self.timer.tic('concat_tables', 1000)
             return pa.concat_tables([table_old, table_new]) #promote..
         except Exception as exn:
-            print('=========================')
-            print('Error combining arrow tables, likely new table mismatches old')
-            print('------- cmp')
+            logger.error('=========================')
+            logger.error('Error combining arrow tables, likely new table mismatches old')
+            logger.error('------- cmp')
             for i in range(0, table_old.num_columns):
                 if i >= table_new.num_columns:
-                    print('new table does not have enough columns to handle %i' % i)
+                    logger.error('new table does not have enough columns to handle %i' % i)
                 elif table_old.schema[i].name != table_new.schema[i].name:
-                    print('ith col name mismatch', i, 
-                          'old', (table_old.schema[i]), 'vs new', table_new.schema[i])
-            print('------- exn')
-            print(exn)
-            print('-------')
+                    logger.error(('ith col name mismatch', i, 
+                          'old', (table_old.schema[i]), 'vs new', table_new.schema[i]))
+            logger.error('------- exn')
+            logger.error(exn)
+            logger.error('-------')
             raise exn
         finally:
             self.timer.toc('concat_tables')
             
-                
-    def df_to_arrow(self, df):
-        
-        print('first process..')
-        table = pa.Table.from_pandas(df)
-
-        print('patching lossy dtypes...')        
-        schema = table.schema
-        for [i, name, field_t] in FirehoseJob.KNOWN_FIELDS:
-            if schema[i].name != name:
-                raise Exception('Mismatched index %s: %s -> %s' % (
-                    i, schema[i].name, name
-                ))
-            schema = schema.set(i, pa.field(name, field_t))
-            
-        print('re-coercing..')
-        table_2 = pa.Table.from_pandas(df, schema)
-        #if not table_2.schema.equals(schema):
-        for i in range(0, len(schema)):
-            if not (schema[i].equals(table_2.schema[i])):
-                print('=======================')
-                print('EXN: schema mismatch %s' % i)
-                print(schema[i])
-                print('-----')
-                print(table_2.schema[i])
-                print('-----')
-                raise Exception('schema mismatch %s' % i)
-        print('Success!')
-        print('=========')
-        print('First tweets arrow schema')
-        for i in range(0, len(table_2.schema)):
-            print(i, table_2.schema[i])
-        print('////////////')
-        return table_2
     
     def process_tweets_notify_hydrating(self):
         if not (self.current_table is None):
@@ -542,16 +529,12 @@ class FirehoseJob:
         df = self.clean_df(raw_df)
 
         table = None
-        if self.schema is None:
-            table = self.df_to_arrow(df)
-            self.schema = table.schema
-        else:
-            try:
-                table = self.df_with_schema_to_arrow(df, self.schema)
-            except:
-                print('conversion failed, skipping batch...')
-                self.timer.toc('overall_compute')
-                return
+        try:
+            table = self.df_with_schema_to_arrow(df, self.schema)
+        except Exception as e:
+            #logger.error('conversion failed, skipping batch...')
+            self.timer.toc('overall_compute')
+            raise e
             
         self.last_arr = table
 
@@ -563,7 +546,8 @@ class FirehoseJob:
         out = self.current_table #or just table (without intermediate concats since last flush?)
             
         if not (self.current_table is None) \
-            and ((self.current_table.num_rows > self.TWEETS_PER_ROWGROUP) or self.needs_to_flush):
+            and ((self.current_table.num_rows > self.TWEETS_PER_ROWGROUP) or self.needs_to_flush) \
+            and self.current_table.num_rows > 0:
             self.flush(job_name)
             self.needs_to_flush = False
         else:
@@ -582,8 +566,9 @@ class FirehoseJob:
             try:
                 self.needs_to_flush = True
                 return self.process_tweets(tweets_batch, job_name)
-            except:
-                print('failed processing batch, continuing...')
+            except Exception as e:
+                #logger.debug('failed processing batch, continuing...')
+                raise e
     
         tweets_batch = []
         last_flush_time_s = time.time()
@@ -602,20 +587,20 @@ class FirehoseJob:
                 if self.needs_to_flush:
                     try:
                         yield flusher(tweets_batch)
-                    except:
-                        print('Write fail, continuing..')
+                    except Exception as e:
+                        #logger.debug('Write fail, continuing..')
+                        raise e
                     finally:
                         tweets_batch = []
-            print('===== PROCESSED ALL GENERATOR TASKS, FINISHING ====')
+            logger.debug('===== PROCESSED ALL GENERATOR TASKS, FINISHING ====')
             yield flusher(tweets_batch)
-            print('/// FLUSHED, DONE')
+            logger.debug('/// FLUSHED, DONE')
         except KeyboardInterrupt as e:
-            print('========== FLUSH IF SLEEP INTERRUPTED')
+            logger.debug('========== FLUSH IF SLEEP INTERRUPTED')
             self.destroy()
-            del fh
             gc.collect()
-            print('explicit GC...')
-            print('Safely exited!')
+            logger.debug('explicit GC...')
+            logger.debug('Safely exited!')
             
         
     ################################################################################
@@ -626,20 +611,25 @@ class FirehoseJob:
         
         if job_name is None:
             job_name = "process_ids_%s" % (ids_to_process[0] if len(ids_to_process) > 0 else "none")
-
-        hydration_statuses_df = Neo4jDataAccess(True, self.neo4j_creds)\
-            .get_tweet_hydrated_status_by_id(pd.DataFrame({'id': ids_to_process}))
-        missing_ids = hydration_statuses_df[ hydration_statuses_df['hydrated'] != 'FULL' ]['id'].tolist()
-                                             
-        print('Skipping cached %s, fetching %s, of requested %s' % (
-            len(ids_to_process) - len(missing_ids),
-            len(missing_ids),
-            len(ids_to_process)))
-            
-        tweets = ( tweet for tweet in self.twarc_pool.next_twarc().hydrate(missing_ids) )
         
-        for arr in self.process_tweets_generator(tweets, job_name):
-            yield arr
+        for i in range(0, len(ids_to_process), self.BATCH_LEN):
+            ids_to_process_batch = ids_to_process[i : (i + self.BATCH_LEN)]
+            
+            logger.info('Starting batch offset %s ( + %s) of %s', i, self.BATCH_LEN, len(ids_to_process))
+            
+            hydration_statuses_df = Neo4jDataAccess(self.debug, self.neo4j_creds)\
+                .get_tweet_hydrated_status_by_id(pd.DataFrame({'id': ids_to_process_batch}))
+            missing_ids = hydration_statuses_df[ hydration_statuses_df['hydrated'] != 'FULL' ]['id'].tolist()
+
+            logger.debug('Skipping cached %s, fetching %s, of requested %s' % (
+                len(ids_to_process_batch) - len(missing_ids),
+                len(missing_ids),
+                len(ids_to_process_batch)))
+
+            tweets = ( tweet for tweet in self.twarc_pool.next_twarc().hydrate(missing_ids) )
+
+            for arr in self.process_tweets_generator(tweets, job_name):
+                yield arr
         
     def process_id_file(self, path, job_name=None):
         
@@ -647,7 +637,7 @@ class FirehoseJob:
         lst = pdf['0'].to_list()
         if job_name is None:
             job_name = "id_file_%s" % path
-        print('loaded %s ids, hydrating..' % len(lst))
+        logger.debug('loaded %s ids, hydrating..' % len(lst))
             
         for arr in self.process_ids(lst, job_name):
             yield arr
@@ -700,21 +690,21 @@ class FirehoseJob:
                 job_name = "user_timeline_%s_%s" % ( len(input), '_'.join(input) )
 
             for user in input:
-                print('starting user %s' % user)
+                logger.debug('starting user %s' % user)
                 tweet_count = 0
                 for tweet in self.twarc_pool.next_twarc().timeline(screen_name=user, **kwargs):                    
-                    #print('got user', user, 'tweet', str(tweet)[:50])
+                    #logger.debug('got user', user, 'tweet', str(tweet)[:50])
                     self.process_tweets([tweet], job_name)
                     tweet_count = tweet_count + 1
-                print('    ... %s tweets' % tweet_count)
+                logger.debug('    ... %s tweets' % tweet_count)
                 
             self.destroy()
         except KeyboardInterrupt as e:
-            print('Flushing..')
+            logger.debug('Flushing..')
             self.destroy(job_name)
-            print('Explicit GC')
+            logger.debug('Explicit GC')
             gc.collect()
-            print('Safely exited!')
+            logger.debug('Safely exited!')
 
 
     def ingest_range(self, begin, end, job_name=None):  # This method is where the magic happens
