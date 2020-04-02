@@ -100,9 +100,11 @@ def flatten_status_col(pdf, col, status_type, prefix):
         retweets[col].replace("(").replace(")")\
             .apply(try_load))
     print('   ... fixing dates')
-    import pdb; pdb.set_trace()
+    created_at_datetime = pd.to_datetime(retweets_flattened['created_at'])
+    created_at = np.full_like(created_at_datetime, np.nan, dtype=np.float64)
+    created_at[created_at_datetime.notnull()] = created_at_datetime[created_at_datetime.notnull()].apply(lambda dt: dt.timestamp())
     retweets_flattened = retweets_flattened.assign(
-        created_at = pd.to_datetime(retweets_flattened['created_at']).apply(lambda dt: dt.timestamp()),
+        created_at = created_at,
         user_id = retweets_flattened['user.id'])
     retweets = retweets[['hashed']]\
         .assign(**{
@@ -119,7 +121,6 @@ def flatten_retweets(pdf):
     print('flattening retweets...')
     pdf2 = flatten_status_col(pdf, 'retweeted_status', 'retweet', 'retweet_')
     print('   ...flattened', pdf2.shape)
-    import pdb; pdb.set_trace()
     return pdf2
 
 @task(log_stdout=True)
@@ -141,7 +142,6 @@ def flatten_users(pdf):
             'name', 'description'
         ]})
     print('   ... fixing dates')
-    import pdb; pdb.set_trace()
     pdf2 = pdf2.assign(user_created_at=pd.to_datetime(pdf2['user_created_at']).apply(lambda dt: dt.timestamp()))
     print('   ...flattened')
     return pdf2
@@ -170,8 +170,7 @@ schedule = IntervalSchedule(
     # interval=timedelta(minutes=1),
 )
 
-with Flow("Rehydration Pipeline") as flow:
-# with Flow("Rehydration Pipeline", schedule=schedule) as flow:
+with Flow("Rehydration Pipeline", schedule=schedule) as flow:
     creds = load_creds()
     path_list = load_path()
     tweets = load_tweets(creds, path_list)
@@ -185,9 +184,13 @@ with Flow("Rehydration Pipeline") as flow:
 
     sample(tweets)
 
-with prefect.context(
-    backfill_timestamp=datetime(2020, 1, 29),
-    ):
-    flow.run()
+LOCAL_MODE = True
+
+if LOCAL_MODE:
+    with prefect.context(
+        backfill_timestamp=datetime(2020, 1, 29),
+        ):
+        flow.run()
+else:
     flow.register(project_name="rehydrate")
     flow.run_agent()
