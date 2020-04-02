@@ -145,3 +145,4 @@ static
 # Env files
 .DominoEnv/
 .vscode/
+data/
