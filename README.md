@@ -6,6 +6,8 @@
 
 * [Community Slack channel: #COVID](https://thedataridealongs.slack.com/) via an [open invite link](https://join.slack.com/t/thedataridealongs/shared_invite/zt-d06nq64h-P1_3sENXG4Gg0MjWh1jPEw)
 
+* [Meetings: Google calendar](https://calendar.google.com/calendar?cid=Z3JhcGhpc3RyeS5jb21fdTQ3bmQ3YTdiZzB0aTJtaW9kYTJybGx2cTBAZ3JvdXAuY2FsZW5kYXIuZ29vZ2xlLmNvbQ)
+
 * **Graph4good contributors:** We're excited to work with you! Check out the subprojects below we are actively seeking help on, and ping on Slack for which you're curious about tackling. We can then share our current thoughts and tips for getting started. Most will be useful as pure Python [Google Collab notebook](https://colab.research.google.com) proveouts and local Neo4j Docker + Python proveouts: You can move quickly, and we can more easily integrate into our automation pipelines.
 
 **One of the most important steps in stopping the COVID-19 pandemic is influencing mass behavior change for citizens to take appropriate, swift action on mitigating infection and human-to-human contact.** Government officials at all levels have advocated misinformed practices such as dining out or participating in outdoor gatherings that have contributed to amplifying the curve rather than flattening it. At time of writing, the result of poor crisis emergency risk communication has led to over 14,000 US citizens testing positive, 2-20X more are likely untested, and over 200 deaths. The need to influence appropriate behavior and mitigation actions are extreme: The US has shot up from untouched to become the 6th most infected nation. 
