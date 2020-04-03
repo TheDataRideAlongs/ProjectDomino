@@ -8,20 +8,20 @@
 
 * [Meetings: Google calendar](https://calendar.google.com/calendar?cid=Z3JhcGhpc3RyeS5jb21fdTQ3bmQ3YTdiZzB0aTJtaW9kYTJybGx2cTBAZ3JvdXAuY2FsZW5kYXIuZ29vZ2xlLmNvbQ)
 
-* **Graph4good contributors:** We're excited to work with you! Check out the subprojects below we are actively seeking help on, and ping on Slack for which you're curious about tackling. We can then share our current thoughts and tips for getting started. Most will be useful as pure Python [Google Collab notebook](https://colab.research.google.com) proveouts and local Neo4j Docker + Python proveouts: You can move quickly, and we can more easily integrate into our automation pipelines.
+* **Graph4good contributors:** We're excited to work with you! Check out the subprojects below we are actively seeking help on, look at some of the Github Issues, and ping on Slack for which you're curious about tackling and others not here. We can then share our current thoughts and tips for getting started. Most will be useful as pure Python [Google Collab notebook](https://colab.research.google.com) proveouts and local Neo4j Docker + Python proveouts: You can move quickly, and we can more easily integrate into our automation pipelines.
 
 **One of the most important steps in stopping the COVID-19 pandemic is influencing mass behavior change for citizens to take appropriate, swift action on mitigating infection and human-to-human contact.** Government officials at all levels have advocated misinformed practices such as dining out or participating in outdoor gatherings that have contributed to amplifying the curve rather than flattening it. At time of writing, the result of poor crisis emergency risk communication has led to over 14,000 US citizens testing positive, 2-20X more are likely untested, and over 200 deaths. The need to influence appropriate behavior and mitigation actions are extreme: The US has shot up from untouched to become the 6th most infected nation. 
 
 **Project Domino accelerates research on developing capabilities for information hygiene at the mass scale necessary for the current national disaster and for future ones.** We develop and enable the use of 3 key data capabilities for modern social discourse: 
-* Identifying at-risk behavior groups and viable local behavior change influencers
 * Detecting misinformation campaigns
+* Identifying at-risk behavior groups and viable local behavior change influencers
 * Automating high-precision interventions
 
 ## The interventions
 
 We are working with ethics groups to identify safe interventions along the following lines:
 
-* **Targeting of specific underserved issues**: Primary COVID public health issues such as unsafe social behavior, unsafe medicine, unsafe science, dangerous government policy influence, and adjacent issues such as fake charities, phishing,  malware, and hate groups
+* **Targeting of specific underserved issues**: Primary COVID public health issues such as unsafe social behavior, unsafe medicine, unsafe science, dangerous government policy influence, and adjacent issues such as fake charities, phishing,  malware, and hate group propaganda
 
 * **Help top social platforms harden themselves**: Trust and safety teams at top social networks need to be able to warn users about misinformation, de-trend it, and potentially take it down before it has served its purpose. The status quo is handling incidents months after the fact. We will provide real-time alert feeds and scoring APIs to help take action during the critical minutes before misinformation gains significant reach.
 
@@ -38,9 +38,10 @@ We are working with ethics groups to identify safe interventions along the follo
 * Twitter firehose monitor
 * Data integration pipeline for sources of known scams, fraud, lies, bots, propaganda, extremism, and other misinformation sources
 * Misinformation knowledge graph connecting accounts, posts, reports, and models
-* Automated GPU / graph / machine learning pipeline
+* Automated GPU / graph / machine learning pipeline: general classification (bot, community, ...) and targeted (clinical disinformation, ...)
 * Automated alerting & reporting pipeline
 * Interactive visual analytics environment for data scientists and analysts: GPU, graph, notebooks, ML, ...
+* Intervention bots
 
 ## How to help
 
@@ -48,8 +49,8 @@ We are actively seeking several forms of support:
 
 * **Volunteers**: Most immediate priority is on data engineering and advisors on marketing/public health
   * **Data engineers: Orchestration (Airflow, Prefect.io, Nifi, ...), streaming (Kafka, ...),  graph (Neo4j, cuGraph), GPU (RAPIDS), ML (NLP libs), and databases**
-  * Analysts: OSINT, threat intel, campaign tracking, ...
-  * Data scientists: especially around graph, misinformation, neural networks, NLP, with backgrounds such as security, fraud,  misinformation, marketing
+  * **Analysts: OSINT, threat intel, campaign tracking, ...**
+  * **Data scientists: especially around graph, misinformation, neural networks, NLP, with backgrounds such as security, fraud,  misinformation, marketing**
   * Developers & designers: intelligence integrations, website for search & reports, automations, intervention bots, API
   * Marketing: Strategy & implementation
   * Public health and communications: Especially around intervention design
