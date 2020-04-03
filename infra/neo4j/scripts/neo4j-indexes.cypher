@@ -10,3 +10,7 @@ ON (n:Url) ASSERT n.full_url IS UNIQUE
 CREATE INDEX tweet_by_type
 FOR (n:Tweet)
 ON (n.tweet_type)
+
+CREATE INDEX tweet_by_hydrated
+FOR (n:Tweet)
+ON (n.hydrated)
