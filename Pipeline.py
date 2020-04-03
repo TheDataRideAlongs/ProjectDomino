@@ -149,7 +149,7 @@ def flatten_users(pdf):
 @task(log_stdout=True, skip_on_upstream_skip=True)
 def load_tweets(creds, path):
     print(path)
-    fh = FirehoseJob(creds, PARQUET_SAMPLE_RATE_TIME_S=30)
+    fh = FirehoseJob(creds, PARQUET_SAMPLE_RATE_TIME_S=30, save_to_neo=prefect.context.get('save_to_neo', False))
     cnt = 0
     data = []
     for arr in fh.process_id_file(path, job_name="500m_COVID-REHYDRATE"):
@@ -175,7 +175,8 @@ schedule = IntervalSchedule(
     interval=timedelta(hours=1),
 )
 
-with Flow("Rehydration Pipeline", schedule=schedule) as flow:
+# with Flow("Rehydration Pipeline", schedule=schedule) as flow:
+with Flow("Rehydration Pipeline") as flow:
     creds = load_creds()
     path_list = load_path()
     tweets = load_tweets(creds, path_list)
@@ -189,7 +190,7 @@ with Flow("Rehydration Pipeline", schedule=schedule) as flow:
 
     sample(tweets)
 
-LOCAL_MODE = True
+LOCAL_MODE = False
 
 if LOCAL_MODE:
     with prefect.context(

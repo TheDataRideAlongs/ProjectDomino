@@ -626,7 +626,7 @@ class FirehoseJob:
                 .get_tweet_hydrated_status_by_id(pd.DataFrame({'id': ids_to_process_batch}))
             missing_ids = hydration_statuses_df[ hydration_statuses_df['hydrated'] != 'FULL' ]['id'].tolist()
 
-            print('Skipping cached %s, fetching %s, of requested %s' % (
+            logger.debug('Skipping cached %s, fetching %s, of requested %s' % (
                 len(ids_to_process_batch) - len(missing_ids),
                 len(missing_ids),
                 len(ids_to_process_batch)))
