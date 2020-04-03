@@ -55,7 +55,8 @@ We are actively seeking several forms of support:
   * **Data scientists: especially around graph, misinformation, neural networks, NLP, with backgrounds such as security, fraud,  misinformation, marketing**
   * Developers & designers: intelligence integrations, website for search & reports, automations, intervention bots, API
   * Marketing: Strategy & implementation
-  * Public health and communications: Especially around intervention design
+  * Public health and communications: Especially around safe and effective intervention design
+  * Legal: Risk & legal analysis for various interventions
 
 * **APIs and Data**: 
   * Feeds & enriching APIs: Lists and intel on URLs, domains, keywords, emails, topics, blockchain accounts, social media accounts & content, clinical trials, esp. if tunable on topic
