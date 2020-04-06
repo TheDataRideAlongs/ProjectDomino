@@ -1,0 +1,5 @@
+{
+    "URL_USA":"https://www.clinicaltrials.gov/api/query/full_studies?expr={}&min_rnk={}&max_rnk={}&fmt=json",
+    "URL_INT":"https://www.who.int/docs/default-source/coronaviruse/covid-19-trials.xls",
+    "URL_DRUGBANK": "https://www.drugbank.ca/releases/5-1-5/downloads/all-drugbank-vocabulary"
+}
