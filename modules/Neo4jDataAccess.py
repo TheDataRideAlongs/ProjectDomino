@@ -23,9 +23,9 @@ class Neo4jDataAccess:
         self.batch_size = batch_size
         self.tweetsandaccounts = """
                   UNWIND $tweets AS t
-                      //Add the Tweet 
+                      //Add the Tweet
                     MERGE (tweet:Tweet {id:t.tweet_id})
-                        ON CREATE SET 
+                        ON CREATE SET
                             tweet.text = t.text,
                             tweet.created_at = t.tweet_created_at,
                             tweet.favorite_count = t.favorite_count,
@@ -36,7 +36,7 @@ class Neo4jDataAccess:
                             tweet.hashtags = t.hashtags,
                             tweet.hydrated = 'FULL',
                             tweet.type = t.tweet_type
-                        ON MATCH SET 
+                        ON MATCH SET
                             tweet.text = t.text,
                             tweet.favorite_count = t.favorite_count,
                             tweet.retweet_count = t.retweet_count,
@@ -46,10 +46,10 @@ class Neo4jDataAccess:
                             tweet.hashtags = t.hashtags,
                             tweet.hydrated = 'FULL',
                             tweet.type = t.tweet_type
-                    
+
                     //Add Account
-                    MERGE (user:Account {id:t.user_id})                    
-                        ON CREATE SET 
+                    MERGE (user:Account {id:t.user_id})
+                        ON CREATE SET
                             user.id = t.user_id,
                             user.name = t.name,
                             user.screen_name = t.user_screen_name,
@@ -61,7 +61,7 @@ class Neo4jDataAccess:
                             user.record_created_at = timestamp(),
                             user.job_name = t.job_name,
                             user.job_id = t.job_id
-                        ON MATCH SET 
+                        ON MATCH SET
                             user.name = t.user_name,
                             user.screen_name = t.user_screen_name,
                             user.followers_count = t.user_followers_count,
@@ -71,31 +71,31 @@ class Neo4jDataAccess:
                             user.created_at = t.user_created_at,
                             user.record_updated_at = timestamp(),
                             user.job_name = t.job_name,
-                            user.job_id = t.job_id                  
+                            user.job_id = t.job_id
 
                     //Add Reply to tweets if needed
-                    FOREACH(ignoreMe IN CASE WHEN t.tweet_type='REPLY' THEN [1] ELSE [] END | 
-                        MERGE (retweet:Tweet {id:t.reply_tweet_id})            
+                    FOREACH(ignoreMe IN CASE WHEN t.tweet_type='REPLY' THEN [1] ELSE [] END |
+                        MERGE (retweet:Tweet {id:t.reply_tweet_id})
                             ON CREATE SET retweet.id=t.reply_tweet_id,
                             retweet.record_created_at = timestamp(),
                             retweet.job_name = t.job_name,
                             retweet.job_id = t.job_id,
                             retweet.hydrated = 'PARTIAL'
                     )
-                    
+
                     //Add QUOTE_RETWEET to tweets if needed
-                    FOREACH(ignoreMe IN CASE WHEN t.tweet_type='QUOTE_RETWEET' THEN [1] ELSE [] END | 
-                        MERGE (quoteTweet:Tweet {id:t.quoted_status_id})            
+                    FOREACH(ignoreMe IN CASE WHEN t.tweet_type='QUOTE_RETWEET' THEN [1] ELSE [] END |
+                        MERGE (quoteTweet:Tweet {id:t.quoted_status_id})
                             ON CREATE SET quoteTweet.id=t.quoted_status_id,
                             quoteTweet.record_created_at = timestamp(),
                             quoteTweet.job_name = t.job_name,
                             quoteTweet.job_id = t.job_id,
                             quoteTweet.hydrated = 'PARTIAL'
                     )
-                    
+
                     //Add RETWEET to tweets if needed
-                    FOREACH(ignoreMe IN CASE WHEN t.tweet_type='RETWEET' THEN [1] ELSE [] END | 
-                        MERGE (retweet:Tweet {id:t.retweet_id})            
+                    FOREACH(ignoreMe IN CASE WHEN t.tweet_type='RETWEET' THEN [1] ELSE [] END |
+                        MERGE (retweet:Tweet {id:t.retweet_id})
                             ON CREATE SET retweet.id=t.retweet_id,
                             retweet.record_created_at = timestamp(),
                             retweet.job_name = t.job_name,
@@ -106,70 +106,70 @@ class Neo4jDataAccess:
 
         self.tweeted_rel = """UNWIND $tweets AS t
                     MATCH (user:Account {id:t.user_id})
-                    MATCH (tweet:Tweet {id:t.tweet_id})  
-                    OPTIONAL MATCH (replied:Tweet {id:t.reply_tweet_id})     
-                    OPTIONAL MATCH (quoteTweet:Tweet {id:t.quoted_status_id})    
-                    OPTIONAL MATCH (retweet:Tweet {id:t.retweet_id})   
+                    MATCH (tweet:Tweet {id:t.tweet_id})
+                    OPTIONAL MATCH (replied:Tweet {id:t.reply_tweet_id})
+                    OPTIONAL MATCH (quoteTweet:Tweet {id:t.quoted_status_id})
+                    OPTIONAL MATCH (retweet:Tweet {id:t.retweet_id})
                     WITH user, tweet, replied, quoteTweet, retweet
-                                        
+
                     MERGE (user)-[r:TWEETED]->(tweet)
-                    
-                    FOREACH(ignoreMe IN CASE WHEN tweet.type='REPLY' AND replied.id>0 THEN [1] ELSE [] END | 
+
+                    FOREACH(ignoreMe IN CASE WHEN tweet.type='REPLY' AND replied.id>0 THEN [1] ELSE [] END |
                         MERGE (tweet)-[:REPLYED]->(replied)
                     )
-                    
-                    FOREACH(ignoreMe IN CASE WHEN tweet.type='QUOTE_RETWEET' AND quoteTweet.id>0 THEN [1] ELSE [] END | 
+
+                    FOREACH(ignoreMe IN CASE WHEN tweet.type='QUOTE_RETWEET' AND quoteTweet.id>0 THEN [1] ELSE [] END |
                         MERGE (tweet)-[:QUOTED]->(quoteTweet)
                     )
-                    
-                    FOREACH(ignoreMe IN CASE WHEN tweet.type='RETWEET' AND retweet.id>0 THEN [1] ELSE [] END | 
+
+                    FOREACH(ignoreMe IN CASE WHEN tweet.type='RETWEET' AND retweet.id>0 THEN [1] ELSE [] END |
                         MERGE (tweet)-[:RETWEETED]->(retweet)
                     )
-                   
+
         """
 
-        self.mentions = """UNWIND $mentions AS t                    
+        self.mentions = """UNWIND $mentions AS t
                     MATCH (tweet:Tweet {id:t.tweet_id})
-                    MERGE (user:Account {id:t.user_id})                    
-                        ON CREATE SET 
+                    MERGE (user:Account {id:t.user_id})
+                        ON CREATE SET
                             user.id = t.user_id,
                             user.mentioned_name = t.name,
                             user.mentioned_screen_name = t.user_screen_name,
                             user.record_created_at = timestamp(),
                             user.job_name = t.job_name,
                             user.job_id = t.job_id
-                    WITH user, tweet                                        
-                    MERGE (tweet)-[:MENTIONED]->(user)                  
+                    WITH user, tweet
+                    MERGE (tweet)-[:MENTIONED]->(user)
         """
 
-        self.urls = """UNWIND $urls AS t                    
+        self.urls = """UNWIND $urls AS t
                     MATCH (tweet:Tweet {id:t.tweet_id})
-                    MERGE (url:Url {full_url:t.url})                    
-                        ON CREATE SET 
+                    MERGE (url:Url {full_url:t.url})
+                        ON CREATE SET
                             url.full_url = t.url,
                             url.job_name = t.job_name,
                             url.job_id = t.job_id,
                             url.record_created_at = timestamp(),
-                            url.schema=t.scheme,   
-                            url.netloc=t.netloc,   
-                            url.path=t.path,   
-                            url.params=t.params,   
-                            url.query=t.query,       
-                            url.fragment=t.fragment,       
-                            url.username=t.username,       
-                            url.password=t.password,       
-                            url.hostname=t.hostname,      
+                            url.schema=t.scheme,
+                            url.netloc=t.netloc,
+                            url.path=t.path,
+                            url.params=t.params,
+                            url.query=t.query,
+                            url.fragment=t.fragment,
+                            url.username=t.username,
+                            url.password=t.password,
+                            url.hostname=t.hostname,
                             url.port=t.port
-                    WITH url, tweet                                        
-                    MERGE (tweet)-[:INCLUDES]->(url)                  
+                    WITH url, tweet
+                    MERGE (tweet)-[:INCLUDES]->(url)
         """
 
-        self.fetch_tweet_status = """UNWIND $ids AS i                    
+        self.fetch_tweet_status = """UNWIND $ids AS i
                     MATCH (tweet:Tweet {id:i.id})
                     RETURN tweet.id, tweet.hydrated
         """
 
-        self.fetch_tweet = """UNWIND $ids AS i                    
+        self.fetch_tweet = """UNWIND $ids AS i
                     MATCH (tweet:Tweet {id:i.id})
                     RETURN tweet
         """

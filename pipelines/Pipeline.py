@@ -199,4 +199,3 @@ if LOCAL_MODE:
         flow.run()
 else:
     flow.register(project_name="rehydrate")
-    flow.run_agent()

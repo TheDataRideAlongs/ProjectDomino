@@ -1,22 +1,5 @@
 # Copied from https://github.com/PrefectHQ/prefect/blob/master/src/prefect/cli/docker-compose.yml
 #
-# Example command:
-#   APOLLO_HOST_PORT=4200 \
-#   GRAPHQL_HOST_PORT=4201 \
-#   HASURA_HOST_PORT=3000 \
-#   POSTGRES_HOST_PORT=5432 \
-#   UI_HOST_PORT=8080 \
-#   POSTGRES_USER=prefect \
-#   POSTGRES_PASSWORD=test-password \
-#   POSTGRES_DB=prefect_server \
-#   DB_CONNECTION_URL=postgresql://$POSTGRES_USER:$POSTGRES_PASSWORD@postgres:$POSTGRES_HOST_PORT/$POSTGRES_DB \
-#   HASURA_API_URL=http://hasura:$HASURA_HOST_PORT/v1alpha1/graphql \
-#   HASURA_WS_URL=ws://hasura:$HASURA_HOST_PORT/v1alpha1/graphql \
-#   PREFECT_API_HEALTH_URL=http://graphql:$GRAPHQL_HOST_PORT/health \
-#   PREFECT_API_URL=http://graphql:$GRAPHQL_HOST_PORT/graphql/ \
-#   PREFECT_SERVER_DB_CMD='prefect-server database upgrade -y' \
-#   docker-compose up
-#
 # Note: The server port cannot be overriden (issue: https://github.com/PrefectHQ/prefect/issues/2237);
 #   When support is added APOLLO_HOST_PORT should be set to the server port number.
 
