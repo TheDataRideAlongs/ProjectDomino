@@ -10,8 +10,12 @@ import tempfile
 import numpy as np
 from typing import Optional
 from functools import partial
+import logging
+logging.basicConfig(format='%(asctime)s - %(message)s', level=logging.INFO)
+logger = logging.getLogger('ds')
 
-class DrugSynonymIngest():
+
+class IngestDrugSynonyms():
 
     def __init__(self,configPath:Path=Path("config.json")):
         self.checkConfig(configPath)
@@ -42,7 +46,7 @@ class DrugSynonymIngest():
         from_study = 1
         temp = self.apiWrapper(query,from_study)
         nstudies = temp['FullStudiesResponse']['NStudiesFound']
-        print("> {} studies found by '{}' keyword".format(nstudies,query))
+        logger.info("> {} studies found by '{}' keyword".format(nstudies,query))
         if nstudies > 0:
             studies = temp['FullStudiesResponse']['FullStudies']
             for study_index in range(from_study+100,nstudies,100):
