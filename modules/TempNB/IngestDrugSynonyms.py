@@ -101,6 +101,7 @@ class IngestDrugSynonyms():
     
     def filterData(self):
         self.drug_vocab_reduced = self.drug_vocab_df[['Common name', 'Synonyms']]
+        self.internationalstudies_reduced = self.internationalstudies[['TrialID', 'Intervention','Study type']]
         self.drug_vocab:dict = {}
         for index, row in self.drug_vocab_reduced.iterrows():
             self.drug_vocab[row['Common name']] = row["Synonyms"].split("|") if isinstance(row["Synonyms"],str) else row["Synonyms"]
