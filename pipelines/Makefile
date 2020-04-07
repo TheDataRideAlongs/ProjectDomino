@@ -13,7 +13,7 @@ prefect-up :
 	PREFECT_API_HEALTH_URL=http://graphql:$$GRAPHQL_HOST_PORT/health \
 	PREFECT_API_URL=http://graphql:$$GRAPHQL_HOST_PORT/graphql/ \
 	PREFECT_SERVER_DB_CMD='prefect-server database upgrade -y' && \
-	docker-compose -f ../infra/prefect/docker/docker-compose.yml up
+	docker-compose -f ../infra/prefect/docker/docker-compose.yml up -d
 
 agent :
 	cd .. && \
