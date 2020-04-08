@@ -28,3 +28,4 @@ FOR (n:Tweet)
 ON (n.record_created_at)
 
 CALL db.index.fulltext.createNodeIndex("tweet_by_text_fulltext",["Tweet"],["text"]) 
+

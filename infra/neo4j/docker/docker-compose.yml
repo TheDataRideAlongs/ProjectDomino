@@ -4,11 +4,12 @@ services:
   neo4j:
     image: neo4j:4.0.2-enterprise
     container_name: neo4j-server
+    network_mode: 'bridge'
     ports:
       - '10001:7687'
       - '10002:7473'
       - '10003:7474'
-      - '2400:2400'
+      - '2004:2004'
     restart: unless-stopped
     volumes:
       - /datadrive/neo4j/plugins:/plugins
@@ -24,10 +25,10 @@ services:
       - NEO4J_apoc_export_file_enabled=true
       - NEO4J_dbms_backup_enabled=true
       - NEO4J_dbms_transaction_timeout=60s
+      - NEO4j_apoc_trigger_enabled=true
     logging:
       options:
         tag: 'ImageName:{{.ImageName}}/Name:{{.Name}}/ID:{{.ID}}/ImageFullID:{{.ImageFullID}}'
-
   prometheus:
     image: prom/prometheus
     network_mode: 'bridge'
