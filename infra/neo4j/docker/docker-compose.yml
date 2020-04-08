@@ -1,17 +1,21 @@
+version: '3.3'
+
 services:
   neo4j:
     image: neo4j:4.0.2-enterprise
-    network_mode: "bridge"
+    container_name: neo4j-server
     ports:
-      - "10001:7687"
-      - "10002:7473"
-      - "10003:7474"
+      - '10001:7687'
+      - '10002:7473'
+      - '10003:7474'
+      - '2400:2400'
     restart: unless-stopped
     volumes:
       - /datadrive/neo4j/plugins:/plugins
       - /datadrive/neo4j/data:/data
       - /datadrive/neo4j/import:/import
       - /datadrive/neo4j/logs:/logs
+      - /datadrive/neo4j/conf:/conf
     environment:
       - NEO4JLABS_PLUGINS=["apoc"]
       - NEO4J_AUTH=neo4j/neo123
@@ -22,4 +26,42 @@ services:
       - NEO4J_dbms_transaction_timeout=60s
     logging:
       options:
-        tag: "ImageName:{{.ImageName}}/Name:{{.Name}}/ID:{{.ID}}/ImageFullID:{{.ImageFullID}}"
+        tag: 'ImageName:{{.ImageName}}/Name:{{.Name}}/ID:{{.ID}}/ImageFullID:{{.ImageFullID}}'
+
+  prometheus:
+    image: prom/prometheus
+    network_mode: 'bridge'
+    ports:
+      - 10005:9090
+    volumes:
+      - /datadrive/prometheus:/etc/prometheus
+      - /datadrive/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - /datadrive/prometheus/storage:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+    restart: always
+
+  cadvisor:
+    image: google/cadvisor:latest
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:rw
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+    ports:
+      - 10006:8080
+    network_mode: 'bridge'
+    restart: always
+
+  grafana:
+    image: grafana/grafana
+    depends_on:
+      - prometheus
+    network_mode: 'bridge'
+    ports:
+      - 10007:3000
+    volumes:
+      - /datadrive/grafana/storage:/var/lib/grafana
+      - /datadrive/grafana/provisioning/:/etc/grafana/provisioning/
+    restart: always
