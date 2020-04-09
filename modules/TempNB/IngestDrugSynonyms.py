@@ -101,7 +101,14 @@ class IngestDrugSynonyms():
     
     def filterData(self):
         self.drug_vocab_reduced = self.drug_vocab_df[['Common name', 'Synonyms']]
-        self.internationalstudies_reduced = self.internationalstudies[['TrialID', 'Intervention','Study type']]
+        self.internationalstudies_reduced = self.internationalstudies[['TrialID', 'Intervention','Study type','web address','Target size', "Public title"]]
+        self.internationalstudies_reduced.columns = [col.replace(" ","_").lower() for col in self.internationalstudies_reduced.columns]
+        cols_to_replace:dict = {
+            "trialid":"trial_id",
+            "web_address":"study_url"
+            }
+        self.internationalstudies_reduced.columns = [[cols_to_replace.get(n, n) for n in self.internationalstudies_reduced.columns]]
+
         self.drug_vocab:dict = {}
         for index, row in self.drug_vocab_reduced.iterrows():
             self.drug_vocab[row['Common name']] = row["Synonyms"].split("|") if isinstance(row["Synonyms"],str) else row["Synonyms"]
@@ -110,6 +117,6 @@ class IngestDrugSynonyms():
         """Saving data option for debug purposes"""
         print("Only Use it for debug purposes")
         self.internationalstudies.to_csv("internationalstudies.csv")
-        self.drug_vocab.to_csv("drug_vocab.csv")
+        self.drug_vocab_df.to_csv("drug_vocab.csv")
         with open('all_US_studies_by_keyword.json', 'w', encoding='utf-8') as f:
             json.dump(self.all_US_studies_by_keyword, f, ensure_ascii=False, indent=4)
