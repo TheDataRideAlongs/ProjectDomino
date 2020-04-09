@@ -156,7 +156,10 @@ class IngestDrugSynonyms():
         self.US_studies_df = self._convert_US_studies(self.all_US_studies_by_keyword)
 
         self.all_studies_df = pd.concat([self.US_studies_df,self.internationalstudies_reduced])
+        print(len(self.all_studies_df))
         self.all_studies_df.drop_duplicates(subset="trial_id",inplace=True)
+        print(len(self.all_studies_df))
+        self.all_studies_df.reset_index(drop=True, inplace=True)
         self.all_studies_df.fillna("",inplace=True)
         logger.info("> {} distinct studies found".format(len(self.all_studies_df)))
 
