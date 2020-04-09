@@ -2,6 +2,7 @@ import ast
 import json
 import time
 import re
+import enum
 
 from datetime import datetime
 import pandas as pd
@@ -15,6 +16,18 @@ logger = logging.getLogger('Neo4jDataAccess')
 
 
 class Neo4jDataAccess:
+    class NodeLabel(enum.Enum):
+        Tweet = 'Tweet'
+        Url = 'Url'
+        Account = 'Account'
+
+    class RelationshipLabel(enum.Enum):
+        TWEETED = 'TWEETED'
+        MENTIONED = 'MENTIONED'
+        QUOTED = 'QUOTED'
+        REPLIED = 'REPLIED'
+        RETWEETED = 'RETWEETED'
+        INCLUDES = 'INCLUDES'
 
     def __init__(self, debug=False, neo4j_creds=None, batch_size=2000, timeout="60s"):
         self.creds = neo4j_creds
@@ -201,8 +214,7 @@ class Neo4jDataAccess:
         with graph.session() as session:
             result = session.run(cypher, timeout=self.timeout)
             df = pd.DataFrame([dict(record) for record in result])
-        rdf = df.head(limit)
-        return rdf
+        return df.head(limit)
 
     def get_tweet_by_id(self, df, cols=[]):
         if 'id' in df:
@@ -228,9 +240,31 @@ class Neo4jDataAccess:
                 pdf = pdf.append(props, ignore_index=True)
             return pdf
         else:
-            logging.debug('df columns %s', df.columns)
-            raise Exception(
+            raise TypeError(
                 'Parameter df must be a DataFrame with a column named "id" ')
+
+    def save_enrichment_df_to_graph(self, label: NodeLabel, df: pd.DataFrame, job_name: str, job_id=None):
+        if not isinstance(label, self.NodeLabel):
+            raise TypeError('The label parameter is not of type NodeType')
+
+        if not isinstance(df, pd.DataFrame):
+            raise TypeError(
+                'The df parameter is not of type Pandas.DataFrame')
+
+        idColName = 'full_url' if label == self.NodeLabel.Url else 'id'
+        statement = 'UNWIND $rows AS t'
+        statement += '   MERGE (n:' + label.value + \
+            ' {' + idColName + ':t.' + idColName + '}) ' + \
+            ' SET '
+
+        for column in df:
+            if not column == idColName:
+                statement += f' n.{column} = t.{column} '
+
+        graph = self.__get_neo4j_graph('writer')
+        with graph.session() as session:
+            result = session.run(
+                statement, rows=df.to_dict(orient='records'), timeout=self.timeout)
 
     def save_parquet_df_to_graph(self, df, job_name, job_id=None):
         pdf = DfHelper().normalize_parquet_dataframe(df)

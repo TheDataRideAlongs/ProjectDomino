@@ -39,7 +39,7 @@ class TestNeo4jDataAccess:
 
         traversal = '''UNWIND $tweets AS t
             MERGE (tweet:Tweet {id:t.tweet_id})
-                ON CREATE SET 
+                ON CREATE SET
                     tweet.text = t.text,
                     tweet.hydrated = t.hydrated
         '''
@@ -76,7 +76,7 @@ class TestNeo4jDataAccess:
 
         # Test get_tweet_by_id
     def test_get_tweet_by_id(self):
-        df = pd.DataFrame([{"id": 1}])
+        df = pd.DataFrame([{'id': 1}])
         df = Neo4jDataAccess(
             neo4j_creds=self.creds).get_tweet_by_id(df)
         assert len(df) == 1
@@ -92,6 +92,12 @@ class TestNeo4jDataAccess:
         assert len(df.columns) == 2
         assert df.at[0, 'id'] == 1
         assert df.at[0, 'text'] == 'Tweet 1'
+
+    def test_get_tweet_by_id_wrong_parameter(self):
+        with pytest.raises(TypeError) as excinfo:
+            df = Neo4jDataAccess(
+                neo4j_creds=self.creds).get_tweet_by_id('test')
+        assert "df" in str(excinfo.value)
 
     def test_get_from_neo(self):
         df = Neo4jDataAccess(neo4j_creds=self.creds).get_from_neo(
@@ -110,6 +116,43 @@ class TestNeo4jDataAccess:
             'MATCH (n:Tweet) WHERE n.hydrated=\'FULL\' RETURN n.id, n.text', limit=1)
         assert len(df) == 1
         assert len(df.columns) == 2
+
+    def test_save_enrichment_df_to_graph_wrong_parameter_types(self):
+        with pytest.raises(TypeError) as excinfo:
+            res = Neo4jDataAccess(neo4j_creds=self.creds).save_enrichment_df_to_graph(
+                'test', pd.DataFrame(), 'test')
+        assert "label parameter" in str(excinfo.value)
+        with pytest.raises(TypeError) as excinfo:
+            res = Neo4jDataAccess(neo4j_creds=self.creds).save_enrichment_df_to_graph(
+                Neo4jDataAccess.NodeLabel.Tweet, [], 'test')
+        assert "Pandas.DataFrame" in str(excinfo.value)
+
+    def test_save_enrichment_df_to_graph(self):
+        df = pd.DataFrame([{'id': 111, 'text': 'Tweet 123'},
+                           {'id': 222, 'text': 'Tweet 234'}
+                           ])
+
+        res = Neo4jDataAccess(neo4j_creds=self.creds).save_enrichment_df_to_graph(
+            Neo4jDataAccess.NodeLabel.Tweet, df, 'test')
+
+        df = Neo4jDataAccess(neo4j_creds=self.creds).get_tweet_by_id(
+            df['id'].to_frame())
+        assert len(df) == 2
+        assert df.at[0, 'text'] == 'Tweet 123'
+        assert df.at[1, 'text'] == 'Tweet 234'
+
+    def test_save_enrichment_df_to_graph_new_nodes(self):
+        df = pd.DataFrame([{'id': 555, 'text': 'Tweet 123'},
+                           {'id': 666, 'text': 'Tweet 234'}
+                           ])
+        Neo4jDataAccess(neo4j_creds=self.creds).save_enrichment_df_to_graph(
+            Neo4jDataAccess.NodeLabel.Tweet, df, 'test')
+
+        df = Neo4jDataAccess(neo4j_creds=self.creds).get_tweet_by_id(
+            df['id'].to_frame())
+        assert len(df) == 2
+        assert df.at[0, 'text'] == 'Tweet 123'
+        assert df.at[1, 'text'] == 'Tweet 234'
 
 
 def setup_cleanup(self):
