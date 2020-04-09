@@ -18,19 +18,26 @@ logger = logging.getLogger('ds')
 class IngestDrugSynonyms():
 
     def __init__(self,configPath:Path=Path("config.json")):
-        self.checkConfig(configPath)
+        self.check_config(configPath)
         self.url_international:str = os.environ["URL_INT"] if isinstance(os.environ["URL_INT"],str) else None
         self.url_USA:str = os.environ["URL_USA"] if isinstance(os.environ["URL_USA"],str) else None
         self.url_drugbank:str = os.environ["URL_DRUGBANK"] if isinstance(os.environ["URL_DRUGBANK"],str) else None
         self.query_keywords:[] = os.environ["QUERY_KEYWORDS"].split(",") if isinstance(os.environ["QUERY_KEYWORDS"],str) else None
 
     @staticmethod
-    def checkConfig(configPath:Path=Path("config.json")):
-        if configPath.exists:
+    def check_config(configPath:Path=Path("config.json")):
+        def load_config(configPath:Path):
             with open(configPath) as f:
                 config = json.load(f)
                 for key in config:
                     os.environ[key] = config[key]
+        rel_path:Path = Path(os.path.realpath(__file__)).parents[0] / configPath
+        if rel_path.exists:
+            load_config(rel_path)
+        elif configPath.exists:
+            load_config(configPath)
+        else:
+            logger.warning("Could not load config file from: {}".format(configPath))
 
     @staticmethod
     def api(query,from_study,to_study,url):
