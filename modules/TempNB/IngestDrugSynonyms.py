@@ -38,25 +38,25 @@ class IngestDrugSynonyms():
         response = requests.request("GET", url)
         return response.json()
 
-    def apiWrapper(self,query,from_study):
+    def api_wrapper(self,query,from_study):
         return self.api(query,from_study,from_study+99,self.url_USA)
     
     def getAllStudiesByQuery(self,query:str) -> list:
         studies:list = []
         from_study = 1
-        temp = self.apiWrapper(query,from_study)
+        temp = self.api_wrapper(query,from_study)
         nstudies = temp['FullStudiesResponse']['NStudiesFound']
         logger.info("> {} studies found by '{}' keyword".format(nstudies,query))
         if nstudies > 0:
             studies = temp['FullStudiesResponse']['FullStudies']
             for study_index in range(from_study+100,nstudies,100):
-                temp = self.apiWrapper(query,study_index)
+                temp = self.api_wrapper(query,study_index)
                 studies.extend(temp['FullStudiesResponse']['FullStudies'])
         
         return studies
     
     @staticmethod
-    def xlsHandler(r):
+    def xls_handler(r):
         df = pd.DataFrame()
         with tempfile.NamedTemporaryFile("wb") as xls_file:
             xls_file.write(r.content)
@@ -79,7 +79,7 @@ class IngestDrugSynonyms():
         return df
 
     @staticmethod
-    def csvZipHandler(r):
+    def csvzip_handler(r):
         df = pd.DataFrame()
         with tempfile.NamedTemporaryFile("wb",suffix='.csv.zip') as file:
             file.write(r.content)
@@ -92,14 +92,47 @@ class IngestDrugSynonyms():
         r = requests.get(url, allow_redirects=True)
         return respHandler(r)
 
-    def scrapeData(self):
-        self.internationalstudies = self.urlToDF(self.url_international,self.xlsHandler)
-        self.drug_vocab_df = self.urlToDF(self.url_drugbank,self.csvZipHandler)
+    @staticmethod
+    def _convert_US_studies(US_studies:dict) -> pd.DataFrame:
+        list_of_US_studies:list = []
+        for key in US_studies.keys():
+            for study in US_studies[key]:
+                temp_dict:dict = {}
+                
+                temp_dict["trial_id"] = study["Study"]["ProtocolSection"]["IdentificationModule"]["NCTId"]
+                temp_dict["study_url"] = "https://clinicaltrials.gov/show/" + temp_dict["trial_id"]
+
+                try:
+                    temp_dict["intervention"] = study["Study"]["ProtocolSection"]["ArmsInterventionsModule"]["ArmGroupList"]["ArmGroup"][0]["ArmGroupInterventionList"]["ArmGroupInterventionName"][0]
+                except:
+                    temp_dict["intervention"] = ""
+                try:
+                    temp_dict["study_type"] = study["Study"]["ProtocolSection"]["DesignModule"]["StudyType"]
+                except:
+                    temp_dict["study_type"] = ""
+                try:
+                    temp_dict["target_size"] = study["Study"]["ProtocolSection"]["DesignModule"]["EnrollmentInfo"]["EnrollmentCount"]
+                except:
+                    temp_dict["target_size"] = ""
+                try:
+                    if "OfficialTitle" in study["Study"]["ProtocolSection"]["IdentificationModule"].keys():
+                        temp_dict["public_title"] = study["Study"]["ProtocolSection"]["IdentificationModule"]["OfficialTitle"]
+                    else:
+                        temp_dict["public_title"] = study["Study"]["ProtocolSection"]["IdentificationModule"]["BriefTitle"]
+                except:
+                    temp_dict["public_title"] = ""
+                list_of_US_studies.append(temp_dict)
+        US_studies_df:pd.DataFrame = pd.DataFrame(list_of_US_studies)
+        return US_studies_df
+
+    def _scrapeData(self):
+        self.internationalstudies = self.urlToDF(self.url_international,self.xls_handler)
+        self.drug_vocab_df = self.urlToDF(self.url_drugbank,self.csvzip_handler)
         self.all_US_studies_by_keyword:dict = {}
         for key in self.query_keywords:
             self.all_US_studies_by_keyword[key] = self.getAllStudiesByQuery(key)
     
-    def filterData(self):
+    def _filterData(self):
         self.drug_vocab_reduced = self.drug_vocab_df[['Common name', 'Synonyms']]
         self.internationalstudies_reduced = self.internationalstudies[['TrialID', 'Intervention','Study type','web address','Target size', "Public title"]]
         self.internationalstudies_reduced.columns = [col.replace(" ","_").lower() for col in self.internationalstudies_reduced.columns]
@@ -113,10 +146,24 @@ class IngestDrugSynonyms():
         for index, row in self.drug_vocab_reduced.iterrows():
             self.drug_vocab[row['Common name']] = row["Synonyms"].split("|") if isinstance(row["Synonyms"],str) else row["Synonyms"]
 
-    def saveDataToFile(self):
+        self.US_studies_df = self._convert_US_studies(self.all_US_studies_by_keyword)
+
+        self.all_studies_df = pd.concat([self.US_studies_df,self.internationalstudies_reduced])
+        self.all_studies_df.drop_duplicates(subset="trial_id",inplace=True)
+        self.all_studies_df.fillna("",inplace=True)
+        logger.info("> {} distinct studies found".format(len(self.all_studies_df)))
+
+    def save_data_to_fiile(self):
         """Saving data option for debug purposes"""
-        print("Only Use it for debug purposes")
+        logger.warning("Only Use it for debug purposes!!!")
         self.internationalstudies.to_csv("internationalstudies.csv")
         self.drug_vocab_df.to_csv("drug_vocab.csv")
         with open('all_US_studies_by_keyword.json', 'w', encoding='utf-8') as f:
             json.dump(self.all_US_studies_by_keyword, f, ensure_ascii=False, indent=4)
+
+    def auto_get_and_clean_data(self):
+        self._scrapeData()
+        self._filterData()
+
+    def create_drug_study_link(self):
+        pass

@@ -1,5 +1,7 @@
 from neo4j import GraphDatabase
 from typing import Optional
+from pandas import DataFrame
+from numpy import isnan
 import logging
 logging.basicConfig(format='%(asctime)s - %(message)s', level=logging.INFO)
 logger = logging.getLogger('ds-neo4j')
@@ -10,7 +12,9 @@ def dict_to_property_str(properties:Optional[dict] = None) -> str:
         if isinstance(property_value,int) or isinstance(property_value,float):
             pass
         elif isinstance(property_value,str):
-            property_value = '''"''' + property_value + '''"'''
+            property_value = '''"''' + property_value.replace('"',r"\"") + '''"'''
+        elif not property_value:
+            property_value = ""
         return property_value
 
     resp:str = ""
@@ -31,7 +35,26 @@ class DrugSynonymDataToNeo4j(object):
 
     def close(self):
         self._driver.close()
+
+    def upload_studies(self,studies:DataFrame):
+        node_merging_func = self._merge_node
+        with self._driver.session() as session:
+            logger.info("> Importing Studies Job is Started")
+            count_node = 0
+            prev_count_node = 0
+            
+            for study in studies.T.to_dict().values():
+                node_type = "Study"
+                properties:dict = study
+                session.write_transaction(node_merging_func, node_type, properties)
+                count_node += 1
+                if count_node > prev_count_node + 100:
+                    prev_count_node = count_node
+                    logger.info("> {} nodes already imported".format(count_node)) 
+
+        logger.info("> Importing Studies Job is >> Done << with {} nodes imported".format(count_node)) 
     
+
     def upload_drugs_and_synonyms(self,drug_vocab):
         node_merging_func = self._merge_node
         edge_merging_func = self._merge_edge
