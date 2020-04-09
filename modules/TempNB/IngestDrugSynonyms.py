@@ -107,7 +107,7 @@ class IngestDrugSynonyms():
             "trialid":"trial_id",
             "web_address":"study_url"
             }
-        self.internationalstudies_reduced.columns = [[cols_to_replace.get(n, n) for n in self.internationalstudies_reduced.columns]]
+        self.internationalstudies_reduced.columns = [cols_to_replace.get(n, n) for n in self.internationalstudies_reduced.columns]
 
         self.drug_vocab:dict = {}
         for index, row in self.drug_vocab_reduced.iterrows():
