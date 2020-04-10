@@ -49,6 +49,7 @@ class IngestDrugSynonyms():
         return self.api(query,from_study,from_study+99,self.url_USA)
     
     def getAllStudiesByQuery(self,query:str) -> list:
+        logger.info("> STARTING scraping with '{}' keyword".format(query))
         studies:list = []
         from_study = 1
         temp = self.api_wrapper(query,from_study)
@@ -155,7 +156,7 @@ class IngestDrugSynonyms():
 
         self.US_studies_df = self._convert_US_studies(self.all_US_studies_by_keyword)
 
-        self.all_studies_df = pd.concat([self.US_studies_df,self.internationalstudies_reduced])
+        self.all_studies_df = pd.concat([self.US_studies_df,self.internationalstudies_reduced],sort=False)
         self.all_studies_df.drop_duplicates(subset="trial_id",inplace=True)
         self.all_studies_df.reset_index(drop=True, inplace=True)
         self.all_studies_df.fillna("",inplace=True)

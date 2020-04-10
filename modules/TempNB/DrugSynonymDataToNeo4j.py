@@ -43,7 +43,7 @@ class DrugSynonymDataToNeo4j(object):
             count_node = 0
             prev_count_node = 0
             
-            for study in studies.T.to_dict().values():
+            for study in studies.to_dict('records'):
                 node_type = "Study"
                 properties:dict = study
                 session.write_transaction(node_merging_func, node_type, properties)
