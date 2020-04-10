@@ -1,5 +1,6 @@
 import requests
 import pandas as pd
+import re
 import json
 import sys
 from pathlib import Path
@@ -151,10 +152,10 @@ class IngestDrugSynonyms():
         self.internationalstudies_reduced.columns = [cols_to_replace.get(n, n) for n in self.internationalstudies_reduced.columns]
 
         self.drug_vocab:dict = {}
-        for index, row in self.drug_vocab_reduced.iterrows():
+        for row in self.drug_vocab_reduced.to_dict('records'):
             self.drug_vocab[row['Common name'].lower().strip()] = list(
                                                                         filter(
-                                                                            lambda x: x is not None,
+                                                                            lambda x: x is not None and len(x) >= 3,
                                                                             list(map(lambda x: x.lower().strip() if x.lower().strip() != row['Common name'].lower().strip() else None,
                                                                             row["Synonyms"].split("|"))))) if isinstance(row["Synonyms"],str) else row["Synonyms"]
 
@@ -167,7 +168,7 @@ class IngestDrugSynonyms():
         self.urls:list = list(self.all_studies_df["study_url"])
         logger.info("> {} distinct studies found".format(len(self.all_studies_df)))
 
-    def save_data_to_fiile(self):
+    def save_data_to_file(self):
         """Saving data option for debug purposes"""
         logger.warning("Only Use it for debug purposes!!!")
         self.internationalstudies.to_csv("internationalstudies.csv")
@@ -181,13 +182,13 @@ class IngestDrugSynonyms():
 
     def create_drug_study_links(self):
         drug_vocab = self.drug_vocab
-        
+
+
         drugs_and_syms:list = list(drug_vocab.keys())
         drugs_and_syms.extend( item.lower() for key in drug_vocab.keys() if isinstance(drug_vocab[key],list) for item in drug_vocab[key] )
         ids_and_interventions:list = [(row["trial_id"],row["intervention"].lower()) for row in self.all_studies_df.to_dict('records')]
 
-        self.appeared_in_edges:list = [(drug,trial_id) for drug in drugs_and_syms for trial_id,intervention in ids_and_interventions if drug in intervention]
-        logger.info("> {} drug & synonym to study connections found".format(len(self.appeared_in_edges)))
-
+        self.appeared_in_edges:list = [(drug,trial_id) for drug in drugs_and_syms for trial_id,intervention in ids_and_interventions if bool(re.compile(r"\b%s\b" % re.escape(drug)).search(intervention))]
+    
     def create_url_study_links(self):
         self.url_points_at_study_edges:list = [(row["study_url"],row["trial_id"]) for row in self.all_studies_df.to_dict('records')]

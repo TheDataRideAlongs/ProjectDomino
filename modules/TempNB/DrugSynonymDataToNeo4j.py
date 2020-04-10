@@ -139,7 +139,7 @@ class DrugSynonymDataToNeo4j(object):
                 if count_node > prev_count_node + 1000 or  count_edge > prev_count_edge + 1000:
                     prev_count_node = count_node
                     prev_count_edge = count_edge
-                    logger.info("> {} nodes and {} edges already merged".format(count_node,count_edge)) 
+                    logger.debug("> {} nodes and {} edges already merged".format(count_node,count_edge)) 
                     
             logger.info("> Merging Drugs and Synonyms Job is >> Done << with {} nodes and {} edges merged".format(count_node,count_edge))
 
@@ -173,14 +173,14 @@ class DrugSynonymDataToNeo4j(object):
 
                 if count_node > prev_count_node + 1000:
                     prev_count_node = count_node
-                    logger.info("> {} nodes already merged".format(count_node)) 
+                    logger.debug("> {} nodes already merged".format(count_node)) 
 
         logger.info("> Merging Url Job is >> Done << with {} nodes merged".format(count_node))
 
     def merge_url_to_study_rels(self,edges:list):
         edge_merging_func = self._merge_edge
 
-        if self.study_triald_and_neo4j_id_pairs != {} and self.drug_or_synonym_name_and_neo4j_id_pairs != {}:
+        if self.study_triald_and_neo4j_id_pairs != {} and self.url_and_neo4j_id_pairs != {}:
             study_id_lookup:dict = self.study_triald_and_neo4j_id_pairs
             url_id_lookup:dict = self.url_and_neo4j_id_pairs
             with self._driver.session() as session:
