@@ -16,7 +16,7 @@ class TestNeo4jDataAccess:
                 "creds": {
                     "host": "localhost",
                     "port": "7687",
-                    "user": "neo4j",
+                    "user": "writer",
                     "password": "neo4j123"
                 }
             },
@@ -25,7 +25,7 @@ class TestNeo4jDataAccess:
                 "creds": {
                     "host": "localhost",
                     "port": "7687",
-                    "user": "neo4j",
+                    "user": "reader",
                     "password": "neo4j123"
                 }
             }
@@ -117,6 +117,14 @@ class TestNeo4jDataAccess:
         assert len(df) == 1
         assert len(df.columns) == 2
 
+    def test_get_from_neo_with_unlimited(self):
+        df = Neo4jDataAccess(neo4j_creds=self.creds).get_from_neo(
+            'MATCH (n:Tweet) WHERE n.hydrated=\'FULL\' RETURN n.id LIMIT 5', unlimited=True)
+        assert len(df) == 5
+        df = Neo4jDataAccess(neo4j_creds=self.creds).get_from_neo(
+            'MATCH (n:Tweet) WHERE n.hydrated=\'FULL\' RETURN n.id LIMIT 5', limit=1, unlimited=True)
+        assert len(df) == 5
+
     def test_save_enrichment_df_to_graph_wrong_parameter_types(self):
         with pytest.raises(TypeError) as excinfo:
             res = Neo4jDataAccess(neo4j_creds=self.creds).save_enrichment_df_to_graph(
@@ -153,6 +161,29 @@ class TestNeo4jDataAccess:
         assert len(df) == 2
         assert df.at[0, 'text'] == 'Tweet 123'
         assert df.at[1, 'text'] == 'Tweet 234'
+
+    def test_save_enrichment_df_to_graph_multiple_properties(self):
+        df = pd.DataFrame([{'id': 777, 'text': 'Tweet 123', 'favorite_count': 2},
+                           {'id': 888, 'text': 'Tweet 234', 'favorite_count': 3}
+                           ])
+        Neo4jDataAccess(neo4j_creds=self.creds).save_enrichment_df_to_graph(
+            Neo4jDataAccess.NodeLabel.Tweet, df, 'test')
+
+        df = Neo4jDataAccess(neo4j_creds=self.creds).get_tweet_by_id(
+            df['id'].to_frame())
+        assert len(df) == 2
+        assert df.at[0, 'text'] == 'Tweet 123'
+        assert df.at[0, 'favorite_count'] == 2
+        assert df.at[1, 'text'] == 'Tweet 234'
+        assert df.at[1, 'favorite_count'] == 3
+
+    def test_save_enrichment_df_to_graph_property_does_not_exist(self):
+        df = pd.DataFrame([{'id': 777, 'text': 'Tweet 123', 'new_prop': 2}])
+        with pytest.raises(Exception) as excinfo:
+            Neo4jDataAccess(neo4j_creds=self.creds).save_enrichment_df_to_graph(
+                Neo4jDataAccess.NodeLabel.Tweet, df, 'test')
+
+        assert "create_propertykey" in str(excinfo.value)
 
 
 def setup_cleanup(self):

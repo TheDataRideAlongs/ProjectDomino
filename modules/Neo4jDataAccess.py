@@ -206,7 +206,7 @@ class Neo4jDataAccess:
             self.graph = None
         return self.graph
 
-    def get_from_neo(self, cypher, limit=1000):
+    def get_from_neo(self, cypher: str, limit=1000, unlimited=False):
         graph = self.__get_neo4j_graph('reader')
         # If the limit isn't set in the traversal then add it
         if not re.search('LIMIT', cypher, re.IGNORECASE):
@@ -214,9 +214,12 @@ class Neo4jDataAccess:
         with graph.session() as session:
             result = session.run(cypher, timeout=self.timeout)
             df = pd.DataFrame([dict(record) for record in result])
-        return df.head(limit)
+        if unlimited:
+            return df
+        else:
+            return df.head(limit)
 
-    def get_tweet_by_id(self, df, cols=[]):
+    def get_tweet_by_id(self, df: pd.DataFrame, cols=[]):
         if 'id' in df:
             graph = self.__get_neo4j_graph('reader')
             ids = []
@@ -257,22 +260,24 @@ class Neo4jDataAccess:
             ' {' + idColName + ':t.' + idColName + '}) ' + \
             ' SET '
 
+        props = []
         for column in df:
             if not column == idColName:
-                statement += f' n.{column} = t.{column} '
+                props.append(f' n.{column} = t.{column} ')
 
+        statement += ','.join(props)
         graph = self.__get_neo4j_graph('writer')
         with graph.session() as session:
             result = session.run(
                 statement, rows=df.to_dict(orient='records'), timeout=self.timeout)
 
-    def save_parquet_df_to_graph(self, df, job_name, job_id=None):
+    def save_parquet_df_to_graph(self, df: pd.DataFrame, job_name: str, job_id=None):
         pdf = DfHelper().normalize_parquet_dataframe(df)
         logging.info('Saving to Neo4j')
         self.__save_df_to_graph(pdf, job_name)
 
     # Get the status of a DataFrame of Tweets by id.  Returns a dataframe with the hydrated status
-    def get_tweet_hydrated_status_by_id(self, df):
+    def get_tweet_hydrated_status_by_id(self, df: pd.DataFrame):
         if 'id' in df:
             graph = self.__get_neo4j_graph('reader')
             ids = []
