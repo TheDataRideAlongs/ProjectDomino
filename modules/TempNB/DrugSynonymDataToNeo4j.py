@@ -32,66 +32,15 @@ class DrugSynonymDataToNeo4j(object):
 
     def __init__(self, uri="bolt://localhost:7687", user="neo4j", password="letmein", encrypted=False):
         self._driver = GraphDatabase.driver(uri, auth=(user, password), encrypted=encrypted)
+        self.study_triald_id_and_neo4j_id_pairs:dict = {}
+        self.drug_or_synonym_name_and_neo4j_id_pairs:dict = {}
 
+    def reset_id_store(self):
+        self.study_triald_id_and_neo4j_id_pairs = {}
+        self.drug_or_synonym_name_and_neo4j_id_pairs = {}
+    
     def close(self):
         self._driver.close()
-
-    def upload_studies(self,studies:DataFrame):
-        node_merging_func = self._merge_node
-        with self._driver.session() as session:
-            logger.info("> Importing Studies Job is Started")
-            count_node = 0
-            prev_count_node = 0
-            
-            for study in studies.to_dict('records'):
-                node_type = "Study"
-                properties:dict = study
-                session.write_transaction(node_merging_func, node_type, properties)
-                count_node += 1
-                if count_node > prev_count_node + 100:
-                    prev_count_node = count_node
-                    logger.info("> {} nodes already imported".format(count_node)) 
-
-        logger.info("> Importing Studies Job is >> Done << with {} nodes imported".format(count_node)) 
-    
-
-    def upload_drugs_and_synonyms(self,drug_vocab):
-        node_merging_func = self._merge_node
-        edge_merging_func = self._merge_edge
-        with self._driver.session() as session:
-            logger.info("> Importing Drugs and Synonyms Job is Started")
-            count_node = 0
-            count_edge = 0
-            prev_count_node = 0
-            prev_count_edge = 0
-
-            for key in drug_vocab.keys():
-                node_type = "Drug"
-                properties:dict = {
-                    "name":key
-                }
-                
-                drug_id = session.write_transaction(node_merging_func, node_type, properties)
-                count_node += 1
-                if isinstance(drug_vocab[key],list):
-                    for synonym in drug_vocab[key]:
-                        node_type = "Synonym"
-                        properties:dict = {
-                            "name":synonym
-                        }
-                        synonym_id = session.write_transaction(node_merging_func, node_type, properties)
-                        count_node += 1
-
-                        edge_type = "KNOWN_AS"
-                        session.write_transaction(edge_merging_func, drug_id, synonym_id, edge_type)
-                        count_edge += 1
-                
-                if count_node > prev_count_node + 1000 or  count_edge > prev_count_edge + 1000:
-                    prev_count_node = count_node
-                    prev_count_edge = count_edge
-                    logger.info("> {} nodes and {} edges already imported".format(count_node,count_edge)) 
-                    
-            logger.info("> Importing Drugs and Synonyms Job is >> Done << with {} nodes and {} edges imported".format(count_node,count_edge)) 
     
     @staticmethod
     def _merge_node(tx, node_type, properties:Optional[dict] = None):
@@ -133,3 +82,77 @@ class DrugSynonymDataToNeo4j(object):
         result = tx.run(cypher_template_filler(base_cypher,data))
         return result.single()[0]
 
+    def merge_studies(self,studies:DataFrame):
+        node_merging_func = self._merge_node
+        with self._driver.session() as session:
+            logger.info("> Importing Studies Job is Started")
+            count_node = 0
+            prev_count_node = 0
+            
+            for study in studies.to_dict('records'):
+                node_type = "Study"
+                properties:dict = study
+                study_id = session.write_transaction(node_merging_func, node_type, properties)
+                self.study_triald_id_and_neo4j_id_pairs[study["trial_id"]] = study_id
+                count_node += 1
+                if count_node > prev_count_node + 100:
+                    prev_count_node = count_node
+                    logger.info("> {} nodes already imported".format(count_node)) 
+
+        logger.info("> Importing Studies Job is >> Done << with {} nodes imported".format(count_node)) 
+
+
+    def merge_drugs_synonyms_and_link_between(self,drug_vocab):
+        node_merging_func = self._merge_node
+        edge_merging_func = self._merge_edge
+        with self._driver.session() as session:
+            logger.info("> Importing Drugs and Synonyms Job is Started")
+            count_node = 0
+            count_edge = 0
+            prev_count_node = 0
+            prev_count_edge = 0
+
+            for drug in drug_vocab.keys():
+                node_type = "Drug"
+                properties:dict = {
+                    "name":drug
+                }
+                
+                drug_id = session.write_transaction(node_merging_func, node_type, properties)
+                self.drug_or_synonym_name_and_neo4j_id_pairs[drug] = drug_id
+                count_node += 1
+                if isinstance(drug_vocab[drug],list):
+                    for synonym in drug_vocab[drug]:
+                        node_type = "Synonym"
+                        properties:dict = {
+                            "name":synonym
+                        }
+                        synonym_id = session.write_transaction(node_merging_func, node_type, properties)
+                        self.drug_or_synonym_name_and_neo4j_id_pairs[synonym] = synonym_id
+                        count_node += 1
+
+                        edge_type = "KNOWN_AS"
+                        session.write_transaction(edge_merging_func, drug_id, synonym_id, edge_type)
+                        count_edge += 1
+                
+                if count_node > prev_count_node + 10000 or  count_edge > prev_count_edge + 10000:
+                    prev_count_node = count_node
+                    prev_count_edge = count_edge
+                    logger.info("> {} nodes and {} edges already imported".format(count_node,count_edge)) 
+                    
+            logger.info("> Importing Drugs and Synonyms Job is >> Done << with {} nodes and {} edges imported".format(count_node,count_edge))
+
+    def merge_drug_to_study_rels(edges:list):
+        if self.study_triald_id_and_neo4j_id_pairs != {} and self.drug_or_synonym_name_and_neo4j_id_pairs != {}:
+            with self._driver.session() as session:
+                logger.info("> Importing connections of Drugs&Synonyms to Studies Job is Started with {} nodes to merge".format(len(edges)))
+                [for ]
+                logger.info("> Importing connections of Drugs&Synonyms to Studies Job is Finished with {} nodes to merged".format(len(edges)))
+        else:
+            logger.warning("No Neo4j ID information is available for importing connections of Drugs&Synonyms to Studies")
+
+    def merge_url():
+        pass
+
+    def merge_url_to_study_rels()
+        pass

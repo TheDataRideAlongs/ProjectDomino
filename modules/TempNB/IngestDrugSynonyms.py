@@ -174,5 +174,12 @@ class IngestDrugSynonyms():
         self._scrapeData()
         self._filterData()
 
-    def create_drug_study_link(self):
-        pass
+    def create_drug_study_links(self):
+        drug_vocab = self.drug_vocab
+        
+        drugs_and_syms:list = list(drug_vocab.keys())
+        drugs_and_syms.extend( item.lower() for key in drug_vocab.keys() if isinstance(drug_vocab[key],list) for item in drug_vocab[key] )
+        ids_and_interventions:list = [(row["trial_id"],row["intervention"].lower()) for row in drugSynonym.all_studies_df.to_dict('records')]
+
+        self.appeared_in_edges:list = [(drug,trial_id) for drug in drugs_and_syms for trial_id,intervention in ids_and_interventions if drug in intervention]
+        logger.info("{} drug & synonym to study connections found".format(len(self.appeared_in_edges)))
