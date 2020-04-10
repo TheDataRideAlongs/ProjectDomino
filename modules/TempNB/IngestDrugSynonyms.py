@@ -152,14 +152,19 @@ class IngestDrugSynonyms():
 
         self.drug_vocab:dict = {}
         for index, row in self.drug_vocab_reduced.iterrows():
-            self.drug_vocab[row['Common name']] = row["Synonyms"].split("|") if isinstance(row["Synonyms"],str) else row["Synonyms"]
+            self.drug_vocab[row['Common name'].lower().strip()] = list(
+                                                                        filter(
+                                                                            lambda x: x is not None,
+                                                                            list(map(lambda x: x.lower().strip() if x.lower().strip() != row['Common name'].lower().strip() else None,
+                                                                            row["Synonyms"].split("|"))))) if isinstance(row["Synonyms"],str) else row["Synonyms"]
 
         self.US_studies_df = self._convert_US_studies(self.all_US_studies_by_keyword)
 
-        self.all_studies_df = pd.concat([self.US_studies_df,self.internationalstudies_reduced],sort=False)
+        self.all_studies_df = pd.concat([self.US_studies_df,self.internationalstudies_reduced],sort=False,ignore_index=True)
         self.all_studies_df.drop_duplicates(subset="trial_id",inplace=True)
         self.all_studies_df.reset_index(drop=True, inplace=True)
         self.all_studies_df.fillna("",inplace=True)
+        self.urls:list = list(self.all_studies_df["study_url"])
         logger.info("> {} distinct studies found".format(len(self.all_studies_df)))
 
     def save_data_to_fiile(self):
@@ -179,7 +184,10 @@ class IngestDrugSynonyms():
         
         drugs_and_syms:list = list(drug_vocab.keys())
         drugs_and_syms.extend( item.lower() for key in drug_vocab.keys() if isinstance(drug_vocab[key],list) for item in drug_vocab[key] )
-        ids_and_interventions:list = [(row["trial_id"],row["intervention"].lower()) for row in drugSynonym.all_studies_df.to_dict('records')]
+        ids_and_interventions:list = [(row["trial_id"],row["intervention"].lower()) for row in self.all_studies_df.to_dict('records')]
 
         self.appeared_in_edges:list = [(drug,trial_id) for drug in drugs_and_syms for trial_id,intervention in ids_and_interventions if drug in intervention]
-        logger.info("{} drug & synonym to study connections found".format(len(self.appeared_in_edges)))
+        logger.info("> {} drug & synonym to study connections found".format(len(self.appeared_in_edges)))
+
+    def create_url_study_links(self):
+        self.url_points_at_study_edges:list = [(row["study_url"],row["trial_id"]) for row in self.all_studies_df.to_dict('records')]
