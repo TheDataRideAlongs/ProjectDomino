@@ -119,10 +119,11 @@ class TestNeo4jDataAccess:
 
     def test_get_from_neo_with_unlimited(self):
         df = Neo4jDataAccess(neo4j_creds=self.creds).get_from_neo(
-            'MATCH (n:Tweet) WHERE n.hydrated=\'FULL\' RETURN n.id LIMIT 5', unlimited=True)
-        assert len(df) == 5
+            'MATCH (n:Tweet) WHERE n.id>1000 RETURN n.id', limit=None)
+        assert len(df) > 1000
+
         df = Neo4jDataAccess(neo4j_creds=self.creds).get_from_neo(
-            'MATCH (n:Tweet) WHERE n.hydrated=\'FULL\' RETURN n.id LIMIT 5', limit=1, unlimited=True)
+            'MATCH (n:Tweet) WHERE n.hydrated=\'FULL\' RETURN n.id LIMIT 5', limit=None)
         assert len(df) == 5
 
     def test_save_enrichment_df_to_graph_wrong_parameter_types(self):

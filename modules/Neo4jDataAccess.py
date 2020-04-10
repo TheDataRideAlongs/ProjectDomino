@@ -206,15 +206,15 @@ class Neo4jDataAccess:
             self.graph = None
         return self.graph
 
-    def get_from_neo(self, cypher: str, limit=1000, unlimited=False):
+    def get_from_neo(self, cypher: str, limit=1000):
         graph = self.__get_neo4j_graph('reader')
-        # If the limit isn't set in the traversal then add it
-        if not re.search('LIMIT', cypher, re.IGNORECASE):
+        # If the limit isn't set in the traversal, and it isn't None, then add it
+        if limit and not re.search('LIMIT', cypher, re.IGNORECASE):
             cypher = cypher + " LIMIT " + str(limit)
         with graph.session() as session:
             result = session.run(cypher, timeout=self.timeout)
             df = pd.DataFrame([dict(record) for record in result])
-        if unlimited:
+        if not limit:
             return df
         else:
             return df.head(limit)
