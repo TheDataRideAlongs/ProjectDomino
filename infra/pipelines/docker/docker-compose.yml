@@ -1,0 +1,26 @@
+########
+#
+# Run from git root's parent: with .env in local folder and ProjectDomino/ inside
+#
+# $ touch .env
+# $ sudo docker-compose -f ./ProjectDomino/infra/pipelines/docker/docker-compose.yml up -d prefect-agent
+#
+########
+
+version: '3.4'
+
+services:
+  prefect-agent:
+    image: neo4j:4.0.2-enterprise
+    build:
+      context: ../../../
+      dockerfile: ./infra/pipelines/docker/Dockerfile
+    container_name: prefect-agent
+    network_mode: 'bridge'
+    restart: unless-stopped
+    environment:
+      PREFECT__SERVER__HOST: ${PREFECT__SERVER__HOST:-http://host.docker.internal}
+      PREFECT__SERVER__PORT: ${PREFECT__SERVER__PORT:-4200}
+    logging:
+      options:
+        tag: 'ImageName:{{.ImageName}}/Name:{{.Name}}/ID:{{.ID}}/ImageFullID:{{.ImageFullID}}'
