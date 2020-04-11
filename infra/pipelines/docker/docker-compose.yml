@@ -21,6 +21,8 @@ services:
     environment:
       PREFECT__SERVER__HOST: ${PREFECT__SERVER__HOST:-http://host.docker.internal}
       PREFECT__SERVER__PORT: ${PREFECT__SERVER__PORT:-4200}
+      PREFECT__SERVER__UI__HOST: ${PREFECT__SERVER__UI__HOST:-http://host.docker.internal}
+      PREFECT__SERVER__UI__PORT: ${PREFECT__SERVER__UI__PORT:-8080}
     logging:
       options:
         tag: 'ImageName:{{.ImageName}}/Name:{{.Name}}/ID:{{.ID}}/ImageFullID:{{.ImageFullID}}'
