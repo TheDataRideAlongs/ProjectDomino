@@ -11,7 +11,7 @@ version: '3.4'
 
 services:
   prefect-agent:
-    image: neo4j:4.0.2-enterprise
+    image:  prefect-agent:0.0.3
     build:
       context: ../../../
       dockerfile: ./infra/pipelines/docker/Dockerfile
