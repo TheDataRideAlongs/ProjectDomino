@@ -11,7 +11,7 @@ version: '3.4'
 
 services:
   prefect-agent:
-    image:  prefect-agent:0.0.3
+    image:  prefect-agent:0.0.5
     build:
       context: ../../../
       dockerfile: ./infra/pipelines/docker/Dockerfile
@@ -23,6 +23,8 @@ services:
       PREFECT__SERVER__PORT: ${PREFECT__SERVER__PORT:-4200}
       PREFECT__SERVER__UI__HOST: ${PREFECT__SERVER__UI__HOST:-http://host.docker.internal}
       PREFECT__SERVER__UI__PORT: ${PREFECT__SERVER__UI__PORT:-8080}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
     logging:
       options:
         tag: 'ImageName:{{.ImageName}}/Name:{{.Name}}/ID:{{.ID}}/ImageFullID:{{.ImageFullID}}'

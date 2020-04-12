@@ -6,7 +6,7 @@ RUN export DEBIAN_FRONTEND=noninteractive \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-RUN pip install prefect==0.10.1 simplejson twarc neo4j
+RUN pip install prefect==0.10.1 simplejson twarc neo4j boto3==1.12.39
 RUN prefect agent install local > supervisord.conf
 
 COPY . .
