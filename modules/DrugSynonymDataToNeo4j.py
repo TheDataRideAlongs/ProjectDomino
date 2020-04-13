@@ -3,6 +3,7 @@ from typing import Optional
 from pandas import DataFrame
 from numpy import isnan
 import logging
+from urllib.parse import urlparse
 
 logger = logging.getLogger('ds-neo4j')
 

@@ -2,6 +2,9 @@
 from modules.IngestDrugSynonyms import IngestDrugSynonyms
 from modules.DrugSynonymDataToNeo4j import DrugSynonymDataToNeo4j
 
+import logging	import logging
+logging.basicConfig(format='%(asctime)s - %(message)s', level=logging.INFO)
+
 drugSynonym = IngestDrugSynonyms()
 drugSynonym.auto_get_and_clean_data()
 drugSynonym.create_drug_study_links()
