@@ -2,7 +2,8 @@
 from modules.IngestDrugSynonyms import IngestDrugSynonyms
 from modules.DrugSynonymDataToNeo4j import DrugSynonymDataToNeo4j
 
-import logging	import logging
+import logging
+
 logging.basicConfig(format='%(asctime)s - %(message)s', level=logging.INFO)
 
 drugSynonym = IngestDrugSynonyms()

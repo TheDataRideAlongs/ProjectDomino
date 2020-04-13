@@ -15,7 +15,7 @@ def dict_to_property_str(properties:Optional[dict] = None) -> str:
         elif isinstance(property_value,str):
             property_value = '''"''' + property_value.replace('"',r"\"") + '''"'''
         elif not property_value:
-            property_value = ""
+            property_value = "''"
         return property_value
 
     resp:str = ""
@@ -140,7 +140,7 @@ class DrugSynonymDataToNeo4j(object):
                 if count_node > prev_count_node + 1000 or  count_edge > prev_count_edge + 1000:
                     prev_count_node = count_node
                     prev_count_edge = count_edge
-                    logger.debug("> {} nodes and {} edges already merged".format(count_node,count_edge)) 
+                    logger.info("> {} nodes and {} edges already merged".format(count_node,count_edge)) 
                     
             logger.info("> Merging Drugs and Synonyms Job is >> Done << with {} nodes and {} edges merged".format(count_node,count_edge))
 
@@ -174,7 +174,7 @@ class DrugSynonymDataToNeo4j(object):
 
                 if count_node > prev_count_node + 1000:
                     prev_count_node = count_node
-                    logger.debug("> {} nodes already merged".format(count_node)) 
+                    logger.info("> {} nodes already merged".format(count_node))
 
         logger.info("> Merging Url Job is >> Done << with {} nodes merged".format(count_node))
 
