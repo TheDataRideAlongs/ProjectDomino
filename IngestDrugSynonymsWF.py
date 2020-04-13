@@ -1,6 +1,6 @@
 
-from .IngestDrugSynonyms import IngestDrugSynonyms
-from .DrugSynonymDataToNeo4j import DrugSynonymDataToNeo4j
+from modules.IngestDrugSynonyms import IngestDrugSynonyms
+from modules.DrugSynonymDataToNeo4j import DrugSynonymDataToNeo4j
 
 drugSynonym = IngestDrugSynonyms()
 drugSynonym.auto_get_and_clean_data()

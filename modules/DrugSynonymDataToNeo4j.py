@@ -3,7 +3,6 @@ from typing import Optional
 from pandas import DataFrame
 from numpy import isnan
 import logging
-from .Neo4jDataAccess import Neo4jDataAccess
 
 logger = logging.getLogger('ds-neo4j')
 
@@ -29,11 +28,10 @@ def dict_to_property_str(properties:Optional[dict] = None) -> str:
 def cypher_template_filler(cypher_template:str,data:dict) -> str:
     return cypher_template.format(**data).replace("\n","")
 
-class DrugSynonymDataToNeo4j(Neo4jDataAccess):
+class DrugSynonymDataToNeo4j(object):
 
-    def __init__(self, debug=False, neo4j_creds=None, batch_size=2000, timeout="60s"):
-        super().__init__(debug=False, neo4j_creds=None, batch_size=2000, timeout="60s")
-        self._driver = self.__get_neo4j_graph('writer')
+    def __init__(self, uri="bolt://localhost:7687", user="neo4j", password="letmein", encrypted=False):
+        self._driver = GraphDatabase.driver(uri, auth=(user, password), encrypted=encrypted)	        
         self.study_triald_and_neo4j_id_pairs:dict = {}
         self.drug_or_synonym_name_and_neo4j_id_pairs:dict = {}
         self.url_and_neo4j_id_pairs:dict = {}
