@@ -2,13 +2,19 @@
 
 ## Scaling COVID public behavior change and anti-misinformation
 
-* [Private repository](https://github.com/graphistry/ProjectDomino-internal)
-
 * [Community Slack channel: #COVID](https://thedataridealongs.slack.com/) via an [open invite link](https://join.slack.com/t/thedataridealongs/shared_invite/zt-d06nq64h-P1_3sENXG4Gg0MjWh1jPEw)
 
 * [Meetings: Google calendar](https://calendar.google.com/calendar?cid=Z3JhcGhpc3RyeS5jb21fdTQ3bmQ3YTdiZzB0aTJtaW9kYTJybGx2cTBAZ3JvdXAuY2FsZW5kYXIuZ29vZ2xlLmNvbQ)
 
 * Project Tackers: [Core](https://github.com/TheDataRideAlongs/ProjectDomino/projects/1), [Interventions](https://github.com/TheDataRideAlongs/ProjectDomino/projects/2), and [Issues](https://github.com/TheDataRideAlongs/ProjectDomino/issues)
+
+* Infra - ask for account access in Slack
+  * [Private repository](https://github.com/graphistry/ProjectDomino-internal)
+  * Observability - [Grafana](http://13.68.225.97:10007/d/n__-I5jZk/neo4j-4-dashboard?orgId=1)
+  * DB - Neo4j
+  * Orchestration - Prefect
+  * Key sharing - Keybase team
+  * CI - Github Actions
 
 * **Graph4good contributors:** We're excited to work with you! Check out the subprojects below we are actively seeking help on, look at some of the Github Issues, and ping on Slack for which you're curious about tackling and others not here. We can then share our current thoughts and tips for getting started. Most will be useful as pure Python [Google Collab notebook](https://colab.research.google.com) proveouts and local Neo4j Docker + Python proveouts: You can move quickly, and we can more easily integrate into our automation pipelines.
 

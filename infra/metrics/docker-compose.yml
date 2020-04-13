@@ -1,0 +1,44 @@
+version: '3.3'
+
+networks:
+  lan:
+    external:
+      name: i-already-created-this
+
+services:
+  prometheus:
+    image: prom/prometheus
+    network_mode: 'bridge'
+    ports:
+      - 10005:9090
+    volumes:
+      - /datadrive/prometheus:/etc/prometheus
+      - /datadrive/prometheus/storage:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+    restart: always
+
+  cadvisor:
+    image: google/cadvisor:latest
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:rw
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+    ports:
+      - 10006:8080
+    network_mode: 'bridge'
+    restart: always
+
+  grafana:
+    image: grafana/grafana
+    depends_on:
+      - prometheus
+    network_mode: 'bridge'
+    ports:
+      - 10007:3000
+    volumes:
+      - /datadrive/grafana/storage:/var/lib/grafana
+      - /datadrive/grafana/provisioning/:/etc/grafana/provisioning/
+    restart: always
