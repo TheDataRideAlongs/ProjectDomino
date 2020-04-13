@@ -25,6 +25,16 @@
 * Identifying at-risk behavior groups and viable local behavior change influencers
 * Automating high-precision interventions
 
+## Data
+
+We are collecting, analyzing, and sharing data around:
+
+* COVID Twitter: Who is saying what and when, including around URLs
+* Feeds: Correlations against labeled data such as bots, fact checks, and indicators of digital crime  
+* Scores: Bots, misinformation, crime, likely location, and more
+
+While we cannot publish the raw data due due to compliance restrictions from our data porviders, we are happy to support individual projects, such as for analyzing and predicting real-world compliance of health policies, and identifying bad actors. Please jump into the Slack or contact a project leader on LinkedIn and we'll get you going.
+
 ## The interventions
 
 We are working with ethics groups to identify safe interventions along the following lines:
