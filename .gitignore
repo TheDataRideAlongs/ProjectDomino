@@ -151,3 +151,4 @@ data/
 modules/TempNB/all_US_studies_by_keyword.json
 modules/TempNB/drug_vocab.csv.zip
 modules/TempNB/vocab.csv
+localKeys/
