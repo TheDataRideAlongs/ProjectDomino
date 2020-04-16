@@ -211,3 +211,19 @@ class DrugSynonymDataToNeo4j(object):
                     'hostname': parsed.hostname,
                     'port': parsed.port,
                 }
+    def _batch_merge_nodes():
+        pass
+    
+    def _batch_merge_edges()
+        pass
+
+    def merge_drugs():
+        pass
+
+    def merge_synonyms():
+        pass
+
+    def generate_unwind_property_cypher():
+        pass
+
+
