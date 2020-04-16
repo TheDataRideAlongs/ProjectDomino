@@ -3,7 +3,7 @@ from typing import Optional
 from pandas import DataFrame
 from numpy import isnan
 import logging
-logging.basicConfig(format='%(asctime)s - %(message)s', level=logging.INFO)
+
 logger = logging.getLogger('ds-neo4j')
 
 def dict_to_property_str(properties:Optional[dict] = None) -> str:
@@ -132,4 +132,20 @@ class DrugSynonymDataToNeo4j(object):
         """
         result = tx.run(cypher_template_filler(base_cypher,data))
         return result.single()[0]
+
+    def _batch_merge_nodes():
+        pass
+    
+    def _batch_merge_edges()
+        pass
+
+    def merge_drugs():
+        pass
+
+    def merge_synonyms():
+        pass
+
+    def generate_unwind_property_cypher():
+        pass
+
 
