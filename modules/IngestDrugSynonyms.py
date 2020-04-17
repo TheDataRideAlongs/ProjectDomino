@@ -217,8 +217,7 @@ class IngestDrugSynonyms():
         ids_and_interventions:list = [(row["trial_id"],row["intervention"].lower()) for row in self.all_studies_df.to_dict('records')]
 
         logger.info("Creating links between {} studies and {} drugs and synonyms".format(len(ids_and_interventions),len(drugs_and_syms)))
-        #self.appeared_in_edges:list = [(drug,trial_id) for drug in drugs_and_syms for trial_id,intervention in ids_and_interventions if bool(re.compile(r"\b%s\b" % re.escape(drug)).search(intervention))]
-        print("Not")
+        self.appeared_in_edges:list = [(drug,trial_id,{}) for drug in drugs_and_syms for trial_id,intervention in ids_and_interventions if bool(re.compile(r"\b%s\b" % re.escape(drug)).search(intervention))]
         
     def create_url_study_links(self):
-        self.url_points_at_study_edges:list = [(row["study_url"],row["trial_id"]) for row in self.all_studies_df.to_dict('records')]
+        self.url_points_at_study_edges:list = [(row["study_url"],row["trial_id"],{}) for row in self.all_studies_df.to_dict('records')]
