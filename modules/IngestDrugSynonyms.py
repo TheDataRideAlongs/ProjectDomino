@@ -12,8 +12,23 @@ import numpy as np
 from typing import Optional
 from functools import partial
 import logging
+import aiohttp
+import asyncio
+from aiohttp import ClientSession
+
 logger = logging.getLogger('ds')
 
+async def fetch_url_resp(url,resp_format:str="byte"):
+    async with ClientSession() as session:
+        async with session.get(url, allow_redirects=True, headers={'User-Agent': 'python-requests/2.20.0'}) as resp:
+            if resp_format == "byte":
+                return await resp.read()
+            elif resp_format == "json":
+                return await resp.json()
+            elif resp_format == "text":
+                return await resp.text()
+            else:
+                return await resp.read()        
 
 class IngestDrugSynonyms():
 
@@ -40,34 +55,27 @@ class IngestDrugSynonyms():
             logger.warning("Could not load config file from: {}".format(configPath))
 
     @staticmethod
-    def api(query,from_study,to_study,url):
+    async def api(query,from_study,to_study,url):
         url = url.format(query,from_study,to_study)
-        response = requests.request("GET", url)
-        return response.json()
+        return await fetch_url_resp(url,resp_format="text")
 
-    def api_wrapper(self,query,from_study):
-        return self.api(query,from_study,from_study+99,self.url_USA)
-    
+    async def api_wrapper(self,query,from_study):
+        return await self.api(query,from_study,from_study+99,self.url_USA)
+
     def getAllStudiesByQuery(self,query:str) -> list:
-        logger.info("> STARTING scraping with '{}' keyword".format(query))
-        studies:list = []
+        logger.info("STARTING scraping with '{}' keyword".format(query))
         from_study = 1
-        temp = self.api_wrapper(query,from_study)
+        temp = json.loads(self.loop.run_until_complete(asyncio.ensure_future(self.api_wrapper(query,from_study))))
         nstudies = temp['FullStudiesResponse']['NStudiesFound']
-        logger.info("> {} studies found by '{}' keyword".format(nstudies,query))
+        logger.info("{} studies found by '{}' keyword".format(nstudies,query))
         if nstudies > 0:
-            studies = temp['FullStudiesResponse']['FullStudies']
-            for study_index in range(from_study+100,nstudies,100):
-                temp = self.api_wrapper(query,study_index)
-                studies.extend(temp['FullStudiesResponse']['FullStudies'])
-        
-        return studies
+            self.tasks.extend([asyncio.ensure_future(self.api_wrapper(query,study_index)) for study_index in range(from_study,nstudies,100)]  ) 
     
     @staticmethod
-    def xls_handler(r):
+    def xls_handler(r) -> pd.DataFrame:
         df = pd.DataFrame()
         with tempfile.NamedTemporaryFile("wb") as xls_file:
-            xls_file.write(r.content)
+            xls_file.write(r)
         
             try:
                 book = xlrd.open_workbook(xls_file.name,encoding_override="utf-8")  
@@ -87,46 +95,48 @@ class IngestDrugSynonyms():
         return df
 
     @staticmethod
-    def csvzip_handler(r):
+    def csvzip_handler(r)-> pd.DataFrame:
         df = pd.DataFrame()
         with tempfile.NamedTemporaryFile("wb",suffix='.csv.zip') as file:
-            file.write(r.content)
+            file.write(r)
             df = pd.read_csv(file.name)
             file.close()
         return df
 
     @staticmethod
-    def urlToDF(url:str,respHandler) -> pd.DataFrame:
-        r = requests.get(url, allow_redirects=True)
-        return respHandler(r)
+    async def urlToDF(url:str):
+        return await fetch_url_resp(url)
 
     @staticmethod
     def _convert_US_studies(US_studies:dict) -> pd.DataFrame:
         list_of_US_studies:list = []
-        for key in US_studies.keys():
-            for study in US_studies[key]:
+
+        for study_list_text in US_studies:
+            studies = json.loads(study_list_text)['FullStudiesResponse']['FullStudies']
+            for temp_full_study in studies:
+                temp_study = temp_full_study["Study"]["ProtocolSection"]
                 temp_dict:dict = {}
                 
-                temp_dict["trial_id"] = study["Study"]["ProtocolSection"]["IdentificationModule"]["NCTId"]
+                temp_dict["trial_id"] = temp_study["IdentificationModule"]["NCTId"]
                 temp_dict["study_url"] = "https://clinicaltrials.gov/show/" + temp_dict["trial_id"]
 
                 try:
-                    temp_dict["intervention"] = study["Study"]["ProtocolSection"]["ArmsInterventionsModule"]["ArmGroupList"]["ArmGroup"][0]["ArmGroupInterventionList"]["ArmGroupInterventionName"][0]
+                    temp_dict["intervention"] = temp_study["ArmsInterventionsModule"]["ArmGroupList"]["ArmGroup"][0]["ArmGroupInterventionList"]["ArmGroupInterventionName"][0]
                 except:
                     temp_dict["intervention"] = ""
                 try:
-                    temp_dict["study_type"] = study["Study"]["ProtocolSection"]["DesignModule"]["StudyType"]
+                    temp_dict["study_type"] = temp_study["DesignModule"]["StudyType"]
                 except:
                     temp_dict["study_type"] = ""
                 try:
-                    temp_dict["target_size"] = study["Study"]["ProtocolSection"]["DesignModule"]["EnrollmentInfo"]["EnrollmentCount"]
+                    temp_dict["target_size"] = temp_study["DesignModule"]["EnrollmentInfo"]["EnrollmentCount"]
                 except:
                     temp_dict["target_size"] = ""
                 try:
-                    if "OfficialTitle" in study["Study"]["ProtocolSection"]["IdentificationModule"].keys():
-                        temp_dict["public_title"] = study["Study"]["ProtocolSection"]["IdentificationModule"]["OfficialTitle"]
+                    if "OfficialTitle" in temp_study["IdentificationModule"].keys():
+                        temp_dict["public_title"] = temp_study["IdentificationModule"]["OfficialTitle"]
                     else:
-                        temp_dict["public_title"] = study["Study"]["ProtocolSection"]["IdentificationModule"]["BriefTitle"]
+                        temp_dict["public_title"] = temp_study["IdentificationModule"]["BriefTitle"]
                 except:
                     temp_dict["public_title"] = ""
                 list_of_US_studies.append(temp_dict)
@@ -134,11 +144,25 @@ class IngestDrugSynonyms():
         return US_studies_df
 
     def _scrapeData(self):
-        self.internationalstudies = self.urlToDF(self.url_international,self.xls_handler)
-        self.drug_vocab_df = self.urlToDF(self.url_drugbank,self.csvzip_handler)
-        self.all_US_studies_by_keyword:dict = {}
+        logger.info("Scraping Started")
+        self.loop = asyncio.get_event_loop()
+        self.tasks:list = []
+
+        self.tasks.append(asyncio.ensure_future(self.urlToDF(self.url_international)))
+        self.tasks.append(asyncio.ensure_future(self.urlToDF(self.url_drugbank)))    
+
         for key in self.query_keywords:
-            self.all_US_studies_by_keyword[key] = self.getAllStudiesByQuery(key)
+            self.getAllStudiesByQuery(key)
+
+        responses:list = self.loop.run_until_complete(asyncio.gather(*self.tasks))
+
+        self.internationalstudies:pd.DataFrame = self.xls_handler(responses[0])
+        self.drug_vocab_df:pd.DataFrame = self.csvzip_handler(responses[1])
+
+        self.US_studies:list = responses[2:]
+
+
+        self.loop.close()
     
     def _filterData(self):
         self.drug_vocab_reduced = self.drug_vocab_df[['Common name', 'Synonyms']]
@@ -158,14 +182,14 @@ class IngestDrugSynonyms():
                                                                             list(map(lambda x: x.lower().strip() if x.lower().strip() != row['Common name'].lower().strip() else None,
                                                                             row["Synonyms"].split("|"))))) if isinstance(row["Synonyms"],str) else row["Synonyms"]
 
-        self.US_studies_df = self._convert_US_studies(self.all_US_studies_by_keyword)
+        self.US_studies_df:pd.DataFrame = self._convert_US_studies(self.US_studies)
 
         self.all_studies_df = pd.concat([self.US_studies_df,self.internationalstudies_reduced],sort=False,ignore_index=True)
         self.all_studies_df.drop_duplicates(subset="trial_id",inplace=True)
         self.all_studies_df.reset_index(drop=True, inplace=True)
         self.all_studies_df.fillna("",inplace=True)
         self.urls:list = list(self.all_studies_df["study_url"])
-        logger.info("> {} distinct studies found".format(len(self.all_studies_df)))
+        logger.info("{} distinct studies found".format(len(self.all_studies_df)))
 
     def save_data_to_file(self):
         """Saving data option for debug purposes"""
@@ -180,14 +204,20 @@ class IngestDrugSynonyms():
         self._filterData()
 
     def create_drug_study_links(self):
+
         drug_vocab = self.drug_vocab
 
+        self.drugs = list(drug_vocab.keys())
+        drugs_and_syms:list = [item.lower() for item in self.drugs]
+        self.synonyms:list = [item for key in drug_vocab.keys() if isinstance(drug_vocab[key],list) for item in drug_vocab[key]]
 
-        drugs_and_syms:list = list(drug_vocab.keys())
-        drugs_and_syms.extend( item.lower() for key in drug_vocab.keys() if isinstance(drug_vocab[key],list) for item in drug_vocab[key] )
+        self.drug_synonym_rels = [(key,item,{}) for key in drug_vocab.keys() if isinstance(drug_vocab[key],list) for item in drug_vocab[key]]
+
+        drugs_and_syms.extend(item.lower() for item in self.synonyms)
         ids_and_interventions:list = [(row["trial_id"],row["intervention"].lower()) for row in self.all_studies_df.to_dict('records')]
 
-        self.appeared_in_edges:list = [(drug,trial_id) for drug in drugs_and_syms for trial_id,intervention in ids_and_interventions if bool(re.compile(r"\b%s\b" % re.escape(drug)).search(intervention))]
-    
+        logger.info("Creating links between {} studies and {} drugs and synonyms".format(len(ids_and_interventions),len(drugs_and_syms)))
+        self.appeared_in_edges:list = [(drug,trial_id,{}) for drug in drugs_and_syms for trial_id,intervention in ids_and_interventions if bool(re.compile(r"\b%s\b" % re.escape(drug)).search(intervention))]
+        
     def create_url_study_links(self):
-        self.url_points_at_study_edges:list = [(row["study_url"],row["trial_id"]) for row in self.all_studies_df.to_dict('records')]
+        self.url_points_at_study_edges:list = [(row["study_url"],row["trial_id"],{}) for row in self.all_studies_df.to_dict('records')]
