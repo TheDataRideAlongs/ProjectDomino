@@ -186,6 +186,17 @@ class TestNeo4jDataAccess:
 
         assert "create_propertykey" in str(excinfo.value)
 
+    def test_get_neo4j_graph(self):
+        res = Neo4jDataAccess(
+            neo4j_creds=self.creds).get_neo4j_graph(Neo4jDataAccess.RoleType.READER)
+        assert res is not None
+
+    def test_get_neo4j_graph_wrong_parameter(self):
+        with pytest.raises(TypeError) as excinfo:
+            res = Neo4jDataAccess(
+                neo4j_creds=self.creds).get_neo4j_graph('test')
+        assert "role_type parameter" in str(excinfo.value)
+
 
 def setup_cleanup(self):
     print("I want to perfrom some cleanup action!")
