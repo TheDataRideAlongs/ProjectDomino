@@ -56,7 +56,7 @@ class DrugSynonymDataToNeo4j(object):
         self._driver.close()
    
     def batch_node_merge_handler(self,raw_data,generate_nodes_list,generate_node_data, node_type:str, chunk_size = 1000):
-        logger.info("Merging '{}'s Job is Started to merge {} nodes".format(node_type,len(raw_data)))
+        logger.info("Merging '{}'-s Job is Started to merge {} nodes".format(node_type,len(raw_data)))
         node_merging_func = self._batch_merge_nodes
         
         node_ids:list = []
@@ -77,7 +77,7 @@ class DrugSynonymDataToNeo4j(object):
         
         self.drug_or_synonym_name_and_neo4j_id_pairs.update({key:value for key,value in zip(nodes_list,node_ids)})
         
-        logger.info("Merging '{}'s Job is >> Done << to merge {} nodes".format(node_type,len(node_ids)))
+        logger.info("Merging '{}'-s Job is >> Done << to merge {} nodes".format(node_type,len(node_ids)))
     
     @staticmethod
     def generate_drug_and_synonym_edge_props(raw_data:list) -> list:
@@ -88,7 +88,7 @@ class DrugSynonymDataToNeo4j(object):
         return [{"from_id":fro,"to_id":to}.update(prop) for fro,to,prop in raw_data]
 
     def batch_edge_merge_handler(self, raw_data, generate_edge_data, generate_edge_props, edge_type:str, chunk_size = 1000):
-        logger.info("Merging '{}'s Job is Started to merge {} edges".format(edge_type,len(raw_data)))
+        logger.info("Merging '{}'-s Job is Started to merge {} edges".format(edge_type,len(raw_data)))
         edge_merging_func = self._batch_merge_edges
         
         edges_data = generate_edge_data(raw_data)
@@ -103,7 +103,7 @@ class DrugSynonymDataToNeo4j(object):
                     session.write_transaction(edge_merging_func, edge_type, edges_data_slice, properties)
                     bar.next(chunk_size)
         
-        logger.info("Merging '{}'s Job is >> Done << to merge {} edges".format(edge_type,len(edges_data)))
+        logger.info("Merging '{}'-s Job is >> Done << to merge {} edges".format(edge_type,len(edges_data)))
     
     def merge_drug_to_synonym_rels(self,drug_synonym_rels):
         self.batch_edge_merge_handler(drug_synonym_rels,self.generate_drug_and_synonym_edge_list_data,self.generate_drug_and_synonym_edge_props,edge_type="KNOWN_AS")
