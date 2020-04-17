@@ -207,13 +207,18 @@ class IngestDrugSynonyms():
 
         drug_vocab = self.drug_vocab
 
+        self.drugs = list(drug_vocab.keys())
+        drugs_and_syms:list = [item.lower() for item in self.drugs]
+        self.synonyms:list = [item for key in drug_vocab.keys() if isinstance(drug_vocab[key],list) for item in drug_vocab[key]]
 
-        drugs_and_syms:list = list(drug_vocab.keys())
-        drugs_and_syms.extend( item.lower() for key in drug_vocab.keys() if isinstance(drug_vocab[key],list) for item in drug_vocab[key] )
+        self.drug_synonym_rels = [(key,item,{}) for key in drug_vocab.keys() if isinstance(drug_vocab[key],list) for item in drug_vocab[key]]
+
+        drugs_and_syms.extend(item.lower() for item in self.synonyms)
         ids_and_interventions:list = [(row["trial_id"],row["intervention"].lower()) for row in self.all_studies_df.to_dict('records')]
 
         logger.info("Creating links between {} studies and {} drugs and synonyms".format(len(ids_and_interventions),len(drugs_and_syms)))
-        self.appeared_in_edges:list = [(drug,trial_id) for drug in drugs_and_syms for trial_id,intervention in ids_and_interventions if bool(re.compile(r"\b%s\b" % re.escape(drug)).search(intervention))]
-    
+        #self.appeared_in_edges:list = [(drug,trial_id) for drug in drugs_and_syms for trial_id,intervention in ids_and_interventions if bool(re.compile(r"\b%s\b" % re.escape(drug)).search(intervention))]
+        print("Not")
+        
     def create_url_study_links(self):
         self.url_points_at_study_edges:list = [(row["study_url"],row["trial_id"]) for row in self.all_studies_df.to_dict('records')]

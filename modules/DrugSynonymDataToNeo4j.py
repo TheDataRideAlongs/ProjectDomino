@@ -30,9 +30,9 @@ def dict_to_property_str(properties:Optional[dict] = None) -> str:
 def cypher_template_filler(cypher_template:str,data:dict) -> str:
     return cypher_template.format(**data).replace("\n","")
 
-def generate_unwind_property_cypher(properties:list,unwind_iterator_item_name = "node"):
+def generate_unwind_property_cypher(properties:list,unwind_iterator_item_name:str) -> str:
     resp:str = ""
-    if properties:
+    if properties != [] and properties[0] != {}:
         resp = "{"
         for key in properties[0].keys():
             resp += """{key}:{unwind_iterator_item_name}.{key},""".format(key=key,unwind_iterator_item_name=unwind_iterator_item_name)
@@ -56,19 +56,19 @@ class DrugSynonymDataToNeo4j(object):
         self._driver.close()
    
     def batch_node_merge_handler(self,raw_data,generate_nodes_list,generate_node_data, node_type:str, chunk_size = 1000):
-        logger.info("Merging {}s Job is Started to merge {} drugs".format(node_type,len(raw_data)))
+        logger.info("Merging '{}'s Job is Started to merge {} nodes".format(node_type,len(raw_data)))
         node_merging_func = self._batch_merge_nodes
         
         node_ids:list = []
 
         nodes_list:list = generate_nodes_list(raw_data)
 
-        nodes_data = generate_node_data(nodes_list)
-        properties = generate_unwind_property_cypher(nodes_data)
+        nodes_data = generate_node_data(raw_data)
+        properties = generate_unwind_property_cypher(nodes_data,unwind_iterator_item_name = "node")
 
         with self._driver.session() as session:
         
-            with Bar('Loading', fill='@', suffix='%(percent)d%%',max=len(nodes_list)) as bar:
+            with Bar("Loading '{}' nodes".format(node_type), fill='@', suffix='%(percent)d%%',max=len(nodes_list)) as bar:
                 for i in range(0, len(nodes_data), chunk_size):
                     nodes_data_slice = nodes_data[i:i + chunk_size]
 
@@ -77,11 +77,40 @@ class DrugSynonymDataToNeo4j(object):
         
         self.drug_or_synonym_name_and_neo4j_id_pairs.update({key:value for key,value in zip(nodes_list,node_ids)})
         
-        logger.info("Merging {}s Job is >> Done << to merge {} nodes".format(node_type,len(node_ids)))
+        logger.info("Merging '{}'s Job is >> Done << to merge {} nodes".format(node_type,len(node_ids)))
     
     @staticmethod
-    def generate_drug_nodes_list(drub_vocab:dict) -> list:
-        return drub_vocab.keys()
+    def generate_drug_and_synonym_edge_props(raw_data:list) -> list:
+        return [prop for fro,to,prop in raw_data]
+
+    @staticmethod
+    def generate_drug_and_synonym_edge_list_data(raw_data:list) -> list:
+        return [{"from_id":fro,"to_id":to}.update(prop) for fro,to,prop in raw_data]
+
+    def batch_edge_merge_handler(self, raw_data, generate_edge_data, generate_edge_props, edge_type:str, chunk_size = 1000):
+        logger.info("Merging '{}'s Job is Started to merge {} edges".format(edge_type,len(raw_data)))
+        edge_merging_func = self._batch_merge_edges
+        
+        edges_data = generate_edge_data(raw_data)
+        properties = generate_unwind_property_cypher(generate_edge_props(raw_data),unwind_iterator_item_name = "edge")
+
+        with self._driver.session() as session:
+        
+            with Bar("Loading '{}' edges".format(edge_type), fill='@', suffix='%(percent)d%%',max=len(edges_data)) as bar:
+                for i in range(0, len(edges_data), chunk_size):
+                    edges_data_slice = edges_data[i:i + chunk_size]
+
+                    session.write_transaction(edge_merging_func, edge_type, edges_data_slice, properties)
+                    bar.next(chunk_size)
+        
+        logger.info("Merging '{}'s Job is >> Done << to merge {} edges".format(edge_type,len(edges_data)))
+    
+    def merge_drug_to_synonym_rels(self,drug_synonym_rels):
+        self.batch_edge_merge_handler(drug_synonym_rels,self.generate_drug_and_synonym_edge_list_data,self.generate_drug_and_synonym_edge_props,edge_type="KNOWN_AS")
+
+    @staticmethod
+    def generate_drug_nodes_list(drugs:list) -> list:
+        return drugs
 
     @staticmethod
     def generate_drug_node_data(drugs:list) -> list:
@@ -91,8 +120,8 @@ class DrugSynonymDataToNeo4j(object):
         self.batch_node_merge_handler(drug_vocab,self.generate_drug_nodes_list,self.generate_drug_node_data,node_type="Drug")
 
     @staticmethod
-    def generate_synonym_nodes_list(drub_vocab:dict) -> list:
-        return [synonym for key in drub_vocab.keys() for synonym in drub_vocab[key]]
+    def generate_synonym_nodes_list(synonyms:list) -> list:
+        return synonyms
 
     @staticmethod
     def generate_synonym_node_data(synonyms:list) -> list:
@@ -100,9 +129,9 @@ class DrugSynonymDataToNeo4j(object):
 
     def merge_synonyms(self,drug_vocab):
         self.batch_node_merge_handler(drug_vocab,self.generate_synonym_nodes_list,self.generate_synonym_node_data,node_type="Synonym")
-
+        
     @staticmethod
-    def _batch_merge_nodes(tx, node_type, nodes_data_slice, properties:dict):
+    def _batch_merge_nodes(tx, node_type, nodes_data_slice:dict, properties:str):
         data:dict = {
             "node_type":node_type,
             "properties":properties
@@ -110,15 +139,32 @@ class DrugSynonymDataToNeo4j(object):
         base_cypher = """
             UNWIND $nodes as node
             MERGE (n:{node_type} {properties})
-            RETURN id(n)
+            RETURN id(n) as id
         """
 
         result = tx.run(cypher_template_filler(base_cypher,data),nodes=nodes_data_slice)
-        return result
+        return [item["id"] for item in result]
     
     @staticmethod
-    def _batch_merge_edges():
-        pass
+    def _batch_merge_edges(tx, edge_type, edges_data_slice:dict, properties:str, direction = ">"):
+        print(properties)
+        data:dict = {
+            "edge_type":edge_type,
+            "properties":properties,
+            "direction":direction
+        }
+        base_cypher = """
+            UNWIND $edges as edge
+            MATCH (from)
+            WHERE ID(from) = edge.from_id
+            MATCH (to)
+            WHERE ID(to) = edge.to_id
+            MERGE (from)-[r:{edge_type} {properties}]-{direction}(to)
+            RETURN id(r) as id
+        """
+
+        result = tx.run(cypher_template_filler(base_cypher,data),edges=edges_data_slice)
+        return [item["id"] for item in result]
 
     @staticmethod
     def _merge_node(tx, node_type, properties:Optional[dict] = None):
@@ -176,33 +222,6 @@ class DrugSynonymDataToNeo4j(object):
                     logger.info("{} nodes merged".format(count_node)) 
 
         logger.info("Merging Studies Job is >> Done << with {} nodes merged".format(count_node)) 
-
-
-    
-
-    def merge_drug_to_synonym_rels(self,drug_vocab):
-        edge_merging_func = self._merge_edge
-        with self._driver.session() as session:
-            logger.info("Merging Drugs and Synonyms Edges sJob is Started to merge {} drugs with synonyms".format(len(drug_vocab)))
-            count_edge = 0
-            prev_count_edge = 0
-
-            for drug in drug_vocab.keys():
-
-                if isinstance(drug_vocab[drug],list):
-                    for synonym in drug_vocab[drug]:
-
-                        edge_type = "KNOWN_AS"
-                        session.write_transaction(edge_merging_func, self.drug_or_synonym_name_and_neo4j_id_pairs[drug], self.drug_or_synonym_name_and_neo4j_id_pairs[synonym], edge_type)
-                        count_edge += 1
-                
-                if count_edge > prev_count_edge + 1000:
-                    prev_count_edge = count_edge
-                    logger.info("{} edges merged".format(count_edge)) 
-                    
-            logger.info("Merging Drugs and Synonyms Edges Job is >> Done << with {} edges merged".format(count_edge))
-
-
 
     def merge_drugs_synonyms_and_link_between(self,drug_vocab):
         node_merging_func = self._merge_node
@@ -291,7 +310,7 @@ class DrugSynonymDataToNeo4j(object):
                 logger.info("Merging connections of Urls to Studies Job is Finished with {} edges merged".format(len(edge_ids)))
         else:
             logger.warning("No Neo4j ID information is available for Merging connections of Drugs&Synonyms to Studies")
-    
+
     @staticmethod
     def _parse_url(url:str):
         parsed = urlparse(url)
