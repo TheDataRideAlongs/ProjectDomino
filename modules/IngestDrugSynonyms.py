@@ -212,8 +212,7 @@ class IngestDrugSynonyms():
         drugs_and_syms.extend( item.lower() for key in drug_vocab.keys() if isinstance(drug_vocab[key],list) for item in drug_vocab[key] )
         ids_and_interventions:list = [(row["trial_id"],row["intervention"].lower()) for row in self.all_studies_df.to_dict('records')]
 
-        logger.info("creating links between {} studies and {} drugs and synonyms".format(len(ids_and_interventions),len(drugs_and_syms)))
-
+        logger.info("Creating links between {} studies and {} drugs and synonyms".format(len(ids_and_interventions),len(drugs_and_syms)))
         self.appeared_in_edges:list = [(drug,trial_id) for drug in drugs_and_syms for trial_id,intervention in ids_and_interventions if bool(re.compile(r"\b%s\b" % re.escape(drug)).search(intervention))]
     
     def create_url_study_links(self):
