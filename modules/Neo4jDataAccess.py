@@ -2,6 +2,7 @@ import ast
 import json
 import time
 import re
+
 import enum
 
 from datetime import datetime
@@ -9,11 +10,9 @@ import pandas as pd
 from neo4j import GraphDatabase, basic_auth
 from urllib.parse import urlparse
 import logging
-
 from .DfHelper import DfHelper
 
 logger = logging.getLogger('Neo4jDataAccess')
-
 
 class Neo4jDataAccess:
     class NodeLabel(enum.Enum):
