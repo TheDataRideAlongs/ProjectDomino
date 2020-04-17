@@ -214,7 +214,7 @@ class DrugSynonymDataToNeo4j(object):
     def _batch_merge_nodes():
         pass
     
-    def _batch_merge_edges()
+    def _batch_merge_edges():
         pass
 
     def merge_drugs():
@@ -226,20 +226,5 @@ class DrugSynonymDataToNeo4j(object):
     def generate_unwind_property_cypher():
         pass
 
-
-    def _batch_merge_nodes():
-        pass
-    
-    def _batch_merge_edges()
-        pass
-
-    def merge_drugs():
-        pass
-
-    def merge_synonyms():
-        pass
-
-    def generate_unwind_property_cypher():
-        pass
 
 
