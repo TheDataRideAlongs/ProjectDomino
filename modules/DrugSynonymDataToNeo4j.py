@@ -54,15 +54,7 @@ class DrugSynonymDataToNeo4j(object):
     
     def close(self):
         self._driver.close()
-
-    @staticmethod
-    def generate_drug_nodes_list(raw_data:dict) -> list:
-        return raw_data.keys()
-
-    @staticmethod
-    def generate_drug_node_data(drugs:list) -> list:
-        return [{"name":drug} for drug in drugs]
-    
+   
     def batch_node_merge_handler(self,raw_data,generate_nodes_list,generate_node_data, node_type:str, chunk_size = 1000):
         logger.info("Merging {}s Job is Started to merge {} drugs".format(node_type,len(raw_data)))
         node_merging_func = self._batch_merge_nodes
@@ -87,8 +79,27 @@ class DrugSynonymDataToNeo4j(object):
         
         logger.info("Merging {}s Job is >> Done << to merge {} nodes".format(node_type,len(node_ids)))
     
+    @staticmethod
+    def generate_drug_nodes_list(drub_vocab:dict) -> list:
+        return drub_vocab.keys()
+
+    @staticmethod
+    def generate_drug_node_data(drugs:list) -> list:
+        return [{"name":drug} for drug in drugs]
+
     def merge_drugs(self,drug_vocab):
         self.batch_node_merge_handler(drug_vocab,self.generate_drug_nodes_list,self.generate_drug_node_data,node_type="Drug")
+
+    @staticmethod
+    def generate_synonym_nodes_list(drub_vocab:dict) -> list:
+        return [synonym for key in drub_vocab.keys() for synonym in drub_vocab[key]]
+
+    @staticmethod
+    def generate_synonym_node_data(synonyms:list) -> list:
+        return [{"name":synonym} for synonym in synonyms]
+
+    def merge_synonyms(self,drug_vocab):
+        self.batch_node_merge_handler(drug_vocab,self.generate_synonym_nodes_list,self.generate_synonym_node_data,node_type="Synonym")
 
     @staticmethod
     def _batch_merge_nodes(tx, node_type, nodes_data_slice, properties:dict):
@@ -167,30 +178,7 @@ class DrugSynonymDataToNeo4j(object):
         logger.info("Merging Studies Job is >> Done << with {} nodes merged".format(count_node)) 
 
 
-    def merge_synonyms(self,drug_vocab):
-        node_merging_func = self._merge_node
-        with self._driver.session() as session:
-            logger.info("Merging Synonyms Job is Started to merge {} drug's synonyms".format(len(drug_vocab)))
-            count_node = 0
-            prev_count_node = 0
-
-            for drug in drug_vocab.keys():
- 
-                if isinstance(drug_vocab[drug],list):
-                    for synonym in drug_vocab[drug]:
-                        node_type = "Synonym"
-                        properties:dict = {
-                            "name":synonym
-                        }
-                        synonym_id = session.write_transaction(node_merging_func, node_type, properties)
-                        self.drug_or_synonym_name_and_neo4j_id_pairs[synonym] = synonym_id
-                        count_node += 1
-                
-                if count_node > prev_count_node + 1000:
-                    prev_count_node = count_node
-                    logger.info("{} nodes merged".format(count_node)) 
-                    
-            logger.info("Merging Synonyms Job is >> Done << with {} nodes merged".format(count_node))
+    
 
     def merge_drug_to_synonym_rels(self,drug_vocab):
         edge_merging_func = self._merge_edge
