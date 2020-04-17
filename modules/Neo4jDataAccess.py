@@ -29,6 +29,10 @@ class Neo4jDataAccess:
         RETWEETED = 'RETWEETED'
         INCLUDES = 'INCLUDES'
 
+    class RoleType(enum.Enum):
+        READER = 'reader'
+        WRITER = 'writer'
+
     def __init__(self, debug=False, neo4j_creds=None, batch_size=2000, timeout="60s"):
         self.creds = neo4j_creds
         self.debug = debug
@@ -245,6 +249,11 @@ class Neo4jDataAccess:
         else:
             raise TypeError(
                 'Parameter df must be a DataFrame with a column named "id" ')
+
+    def get_neo4j_graph(self, role_type: RoleType):
+        if not isinstance(role_type, self.RoleType):
+            raise TypeError('The role_type parameter is not of type RoleType')
+        return self.__get_neo4j_graph(role_type.value)
 
     def save_enrichment_df_to_graph(self, label: NodeLabel, df: pd.DataFrame, job_name: str, job_id=None):
         if not isinstance(label, self.NodeLabel):
