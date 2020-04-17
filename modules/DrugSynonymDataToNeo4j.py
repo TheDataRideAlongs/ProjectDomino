@@ -4,6 +4,7 @@ from pandas import DataFrame
 from numpy import isnan
 import logging
 from urllib.parse import urlparse
+from progress.bar import Bar
 
 logger = logging.getLogger('ds-neo4j')
 
@@ -74,15 +75,17 @@ class DrugSynonymDataToNeo4j(object):
         properties = generate_unwind_property_cypher(nodes_data)
 
         with self._driver.session() as session:
-            
-            for i in range(0, len(nodes_data), chunk_size):
-                nodes_data_slice = nodes_data[i:i + chunk_size]
+        
+            with Bar('Loading', fill='@', suffix='%(percent)d%%',max=len(nodes_list)) as bar:
+                for i in range(0, len(nodes_data), chunk_size):
+                    nodes_data_slice = nodes_data[i:i + chunk_size]
 
-                node_ids.extend(session.write_transaction(node_merging_func, node_type, nodes_data_slice, properties))
+                    node_ids.extend(session.write_transaction(node_merging_func, node_type, nodes_data_slice, properties))
+                    bar.next(chunk_size)
         
         self.drug_or_synonym_name_and_neo4j_id_pairs.update({key:value for key,value in zip(nodes_list,node_ids)})
         
-        logger.info("Merging {}s Job is >> Done << to merge {} drugs".format(node_type,len(node_ids)))
+        logger.info("Merging {}s Job is >> Done << to merge {} nodes".format(node_type,len(node_ids)))
     
     def merge_drugs(self,drug_vocab):
         self.batch_node_merge_handler(drug_vocab,self.generate_drug_nodes_list,self.generate_drug_node_data,node_type="Drug")
@@ -108,8 +111,6 @@ class DrugSynonymDataToNeo4j(object):
 
     @staticmethod
     def _merge_node(tx, node_type, properties:Optional[dict] = None):
-
-
 
         data:dict = {
             "node_type":node_type,
