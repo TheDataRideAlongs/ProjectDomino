@@ -14,6 +14,7 @@ from .DfHelper import DfHelper
 
 logger = logging.getLogger('Neo4jDataAccess')
 
+
 class Neo4jDataAccess:
     class NodeLabel(enum.Enum):
         Tweet = 'Tweet'
@@ -27,6 +28,10 @@ class Neo4jDataAccess:
         REPLIED = 'REPLIED'
         RETWEETED = 'RETWEETED'
         INCLUDES = 'INCLUDES'
+
+    class RoleType(enum.Enum):
+        READER = 'reader'
+        WRITER = 'writer'
 
     def __init__(self, debug=False, neo4j_creds=None, batch_size=2000, timeout="60s"):
         self.creds = neo4j_creds
@@ -204,6 +209,11 @@ class Neo4jDataAccess:
         else:
             self.graph = None
         return self.graph
+
+    def get_neo4j_graph(self, role_type: RoleType):
+        if not isinstance(role_type, self.RoleType):
+            raise TypeError('The role_type parameter is not of type RoleType')
+        return self.__get_neo4j_graph(role_type.value)
 
     def get_from_neo(self, cypher: str, limit=1000):
         graph = self.__get_neo4j_graph('reader')

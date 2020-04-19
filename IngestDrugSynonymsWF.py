@@ -1,6 +1,7 @@
 
 from modules.IngestDrugSynonyms import IngestDrugSynonyms
 from modules.DrugSynonymDataToNeo4j import DrugSynonymDataToNeo4j
+from modules.Neo4jDataAccess import Neo4jDataAccess
 
 import logging
 
@@ -11,7 +12,8 @@ drugSynonym.auto_get_and_clean_data()
 drugSynonym.create_drug_study_links()
 drugSynonym.create_url_study_links()
 
-neo4jBridge = DrugSynonymDataToNeo4j()
+neo4jBridge = DrugSynonymDataToNeo4j(
+    graph=Neo4jDataAccess().get_neo4j_graph(Neo4jDataAccess.RoleType.WRITER))
 
 neo4jBridge.merge_drugs(drugSynonym.drugs)
 neo4jBridge.merge_synonyms(drugSynonym.synonyms)
@@ -23,4 +25,3 @@ neo4jBridge.merge_drug_to_study_rels(drugSynonym.appeared_in_edges)
 
 neo4jBridge.merge_url(drugSynonym.urls)
 neo4jBridge.merge_url_to_study_rels(drugSynonym.url_points_at_study_edges)
-
