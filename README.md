@@ -10,11 +10,12 @@
 
 * Infra - ask for account access in Slack
   * [Private repository](https://github.com/graphistry/ProjectDomino-internal)
-  * Observability - [Grafana](http://13.68.225.97:10007/d/n__-I5jZk/neo4j-4-dashboard?orgId=1)
+  * Observability - [Grafana/prometheus](http://13.68.225.97:10007/d/n__-I5jZk/neo4j-4-dashboard?orgId=1) and Jupyter notebooks
   * DB - Neo4j
   * Orchestration - Prefect
   * Key sharing - Keybase team
   * CI - Github Actions
+  * [Labeling funnel & feeds](https://docs.google.com/spreadsheets/d/1FqLYCJqPcxkVYKOn4uQzl0A_7MV4zkYOF94BAITvta0), [proposed extended schema](https://docs.google.com/spreadsheets/d/1VM8JfV23wsLGJ3fl3mGW3Wi3n9Z9-D1NWUfBc4s0M54), and [current knowledge graph schema](https://www.lucidchart.com/documents/edit/674bc883-d01a-449a-8666-5cfc841c54bb/0_0?shared=true)
 
 * **Graph4good contributors:** We're excited to work with you! Check out the subprojects below we are actively seeking help on, look at some of the Github Issues, and ping on Slack for which you're curious about tackling and others not here. We can then share our current thoughts and tips for getting started. Most will be useful as pure Python [Google Collab notebook](https://colab.research.google.com) proveouts and local Neo4j Docker + Python proveouts: You can move quickly, and we can more easily integrate into our automation pipelines.
 
