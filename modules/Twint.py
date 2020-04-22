@@ -101,7 +101,7 @@ class TwintPool:
         neo4j_df["user_friends_count"] = None
         neo4j_df["user_created_at"] = None
         neo4j_df["user_profile_image_url"] = None
-        neo4j_df["reply_tweet_id"] = None
+        neo4j_df["in_reply_to_status_id"] = None
         neo4j_df["user_mentions"] = []  # Todo
         # neo4j_df['retweet_id'] is suspiciously empty (always)
 
