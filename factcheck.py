@@ -28,12 +28,20 @@ async def fetch(url):
         except Exception as ex:
             return ""
 
-async def get_words_from_url(url):
+async def fact_checker(search_query):
+    page_number = 1
+    size= 10000
+    lingo='en'
+    search_query= urlencode(search_query)
+    data = await fetch("https://factchecktools.googleapis.com/v1alpha1/claims:search?languageCode={}&pageSize={}&pageToken={}&query={}&key={}".format(lingo,size,page_number,search_query,key))
+    return json.loads(data)
+
+# speed up: https://stackoverflow.com/questions/21159103/what-kind-of-problems-if-any-would-there-be-combining-asyncio-with-multiproces
+def get_words_from_resp(resp):
     title_pattern = re.compile(r'(?:\<title.*?\>)(.*?)(?:\<\/title\>)', re.IGNORECASE) 
 
     whitespace_pattern = re.compile(r'([\W_]+)')
     response_titles:list = []
-    resp = await fetch(url)
     if isinstance(resp,str) and ('title' in resp or "TITLE" in resp):
         title_text_search_result = title_pattern.search(resp)
         if title_text_search_result:
@@ -44,13 +52,6 @@ async def get_words_from_url(url):
 def urlencode(search_query):
         return urllib.parse.quote(str(search_query).encode("utf-8"))
 
-async def fact_checker(search_query):
-        page_number = 1
-        size= 10000
-        lingo='en'
-        search_query= urlencode(search_query)
-        data = await fetch("https://factchecktools.googleapis.com/v1alpha1/claims:search?languageCode={}&pageSize={}&pageToken={}&query={}&key={}".format(lingo,size,page_number,search_query,key))
-        return json.loads(data)
 
 
 
@@ -88,14 +89,16 @@ if __name__ == "__main__":
     urls = top_urls_df["full_url"][:1000]
 
     loop = asyncio.get_event_loop()
-    tasks = asyncio.gather(*[asyncio.ensure_future(get_words_from_url(url)) for url in urls])
-    list_of_list_of_keywords:list = loop.run_until_complete(tasks)
+    tasks = asyncio.gather(*[asyncio.ensure_future(fetch(url)) for url in urls])
+    list_of_resp:list = loop.run_until_complete(tasks)
+    list_of_list_of_keywords:list = [get_words_from_resp(resp) for resp in list_of_resp]
 
+    # from nltk english corpus embedded for speed
     stopwords = ['ourselves', 'hers', 'between', 'yourself', 'but', 'again', 'there', 'about', 'once', 'during', 'out', 'very', 'having', 'with', 'they', 'own', 'an', 'be', 'some', 'for', 'do', 'its', 'yours', 'such', 'into', 'of', 'most', 'itself', 'other', 'off', 'is', 's', 'am', 'or', 'who', 'as', 'from', 'him', 'each', 'the', 'themselves', 'until', 'below', 'are', 'we', 'these', 'your', 'his', 'through', 'don', 'nor', 'me', 'were', 'her', 'more', 'himself', 'this', 'down', 'should', 'our', 'their', 'while', 'above', 'both', 'up', 'to', 'ours', 'had', 'she', 'all', 'no', 'when', 'at', 'any', 'before', 'them', 'same', 'and', 'been', 'have', 'in', 'will', 'on', 'does', 'yourselves', 'then', 'that', 'because', 'what', 'over', 'why', 'so', 'can', 'did', 'not', 'now', 'under', 'he', 'you', 'herself', 'has', 'just', 'where', 'too', 'only', 'myself', 'which', 'those', 'i', 'after', 'few', 'whom', 't', 'being', 'if', 'theirs', 'my', 'against', 'a', 'by', 'doing', 'it', 'how', 'further', 'was', 'here', 'than']
 
     response_keywords = [keyword for list_of_keywords in list_of_list_of_keywords for keyword in list_of_keywords if keyword not in stopwords and keyword != '' and not keyword.isnumeric()]
 
-    # from nltk english corpus embedded for speed
+
 
     counted_words = Counter(response_keywords)
 
@@ -112,7 +115,7 @@ if __name__ == "__main__":
     queries = asyncio.gather(*[asyncio.ensure_future(fact_checker(keyword[0])) for keyword in red_counted_words.items()])
     query_responses:list = loop.run_until_complete(queries)
 
-    print(len(query_responses))
+    print(len(query_responses[0]))
 
     loop.close()
 
