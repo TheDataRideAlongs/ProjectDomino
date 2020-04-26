@@ -353,6 +353,7 @@ class Neo4jDataAccess:
                                'quoted_status_id': row['quoted_status_id'],
                                'retweet_id': row['retweet_id'] if 'retweet_id' in row else None,
                                'geo': row['geo'] if 'geo' in row else None,
+                               'ingest_method': row['ingest_method']
                                })
             except Exception as e:
                 logging.error('params.append exn', e)

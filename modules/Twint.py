@@ -108,5 +108,9 @@ class TwintPool:
         neo4j_df["quoted_status_id"] = df.apply(row_to_quoted_status_id, axis=1)
         neo4j_df["urls"] = df.apply(row_tweet_to_urls, axis=1)
 
+        neo4j_df["ingest_method"] = 'twint'
+
+        return neo4j_df
+
     def to_arrow(self, tweets_df):
         pass
