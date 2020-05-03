@@ -86,7 +86,7 @@ if __name__ == "__main__":
 
     tasks = []
 
-    urls = top_urls_df["full_url"][:10]
+    urls = top_urls_df["full_url"][:100]
 
     loop = asyncio.get_event_loop()
     tasks = asyncio.gather(*[asyncio.ensure_future(fetch(url)) for url in urls])
@@ -119,7 +119,8 @@ if __name__ == "__main__":
     flatten_claims:list = []
 
     for claim_list in query_responses:
-        flatten_claims.extend(claim_list["claims"])
+        if "claims" in claim_list.keys():
+            flatten_claims.extend(claim_list["claims"])
 
     def print_text(claim_list:list)-> [str]:
         print([claim["text"] for claim in claim_list])
