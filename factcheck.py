@@ -86,7 +86,7 @@ if __name__ == "__main__":
 
     tasks = []
 
-    urls = top_urls_df["full_url"][:1000]
+    urls = top_urls_df["full_url"][:10]
 
     loop = asyncio.get_event_loop()
     tasks = asyncio.gather(*[asyncio.ensure_future(fetch(url)) for url in urls])
@@ -106,16 +106,35 @@ if __name__ == "__main__":
 
     threshold:int = int(counted_words[maxcount_key]*0.05)
 
-    print(threshold)
+    #print(threshold)
 
     red_counted_words = dict(filter(lambda elem: elem[1] > max(threshold,1), counted_words.items()))
 
-    print(len(red_counted_words))
+    #print(len(red_counted_words))
 
     queries = asyncio.gather(*[asyncio.ensure_future(fact_checker(keyword[0])) for keyword in red_counted_words.items()])
     query_responses:list = loop.run_until_complete(queries)
 
-    print(len(query_responses[0]))
+
+    flatten_claims:list = []
+
+    for claim_list in query_responses:
+        flatten_claims.extend(claim_list["claims"])
+
+    def print_text(claim_list:list)-> [str]:
+        print([claim["text"] for claim in claim_list])
+
+    print(len(flatten_claims))
+    print(flatten_claims[0])
+
+    unique_claims = list({v['text']:v for v in flatten_claims}.values())
+
+    print(len(unique_claims))
+
+    print(unique_claims[0])
+
+    # TODO insert URLS
+    # TODO insert claims
 
     loop.close()
 
