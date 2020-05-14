@@ -8,6 +8,8 @@
 
 * Project Tackers: [Core](https://github.com/TheDataRideAlongs/ProjectDomino/projects/1), [Interventions](https://github.com/TheDataRideAlongs/ProjectDomino/projects/2), and [Issues](https://github.com/TheDataRideAlongs/ProjectDomino/issues)
 
+* Tutorials: [available Jupyter-based notebook analyses](tutorials.md)
+
 * Infra - ask for account access in Slack
   * [Private repository](https://github.com/graphistry/ProjectDomino-internal)
   * Observability - [Grafana/prometheus](http://13.68.225.97:10007/d/n__-I5jZk/neo4j-4-dashboard?orgId=1) and Jupyter notebooks
