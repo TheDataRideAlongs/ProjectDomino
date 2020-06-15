@@ -48,11 +48,12 @@ class TwintPool:
         for df, t0, t1 in self.twint_loop(Since, Until, stride_sec, self.config.Limit):
             yield (df, t0, t1)
 
+    
     def _get_timeline(self, username="lmeyerov"):
         self.config.Username = username
         self.config.Retweets = True
-        # self.config.Search = term
-        twint.run.Profile(self.config)
+        #self.config.Search = term
+        twint.run.Search(self.config)
         tweets_df = twint.storage.panda.Tweets_df
         return tweets_df
 
