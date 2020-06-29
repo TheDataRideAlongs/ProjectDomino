@@ -322,7 +322,9 @@ class Neo4jDataAccess:
         for index, row in df.iterrows():
             # determine the type of tweet
             tweet_type = 'TWEET'
-            if row["in_reply_to_status_id"] is not None and row["in_reply_to_status_id"] > 0:
+            if row['tweet_type_twint']:
+                tweet_type = row['tweet_type_twint']
+            elif row["in_reply_to_status_id"] is not None and row["in_reply_to_status_id"] > 0:
                 tweet_type = "REPLY"
             elif "quoted_status_id" in row and row["quoted_status_id"] is not None and row["quoted_status_id"] > 0:
                 tweet_type = "QUOTE_RETWEET"
@@ -347,8 +349,11 @@ class Neo4jDataAccess:
                                'user_created_at': pd.Timestamp(row['user_created_at'], unit='s').to_pydatetime(),
                                'user_profile_image_url': row['user_profile_image_url'],
                                'reply_tweet_id': row['in_reply_to_status_id'],
+                               'conversation_id': row['conversation_id'] if 'conversation_id' in row else None,
                                'quoted_status_id': row['quoted_status_id'],
                                'retweet_id': row['retweet_id'] if 'retweet_id' in row else None,
+                               'geo': row['geo'] if 'geo' in row else None,
+                               'ingest_method': row['ingest_method']
                                })
             except Exception as e:
                 logging.error('params.append exn', e)
