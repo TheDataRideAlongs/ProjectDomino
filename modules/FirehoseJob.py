@@ -1,8 +1,5 @@
 ###
 
-
-
-
 from collections import deque, defaultdict
 import datetime, gc, os, string, sys, time, uuid
 import numpy as np
@@ -16,7 +13,7 @@ from .Timer import Timer
 from .TwarcPool import TwarcPool
 from .Neo4jDataAccess import Neo4jDataAccess
 from .StatusArrow import KNOWN_FIELDS
-from .Twint import TwintPool
+from .TwintPool import TwintPool
 
 import logging
 logger = logging.getLogger('fh')
@@ -725,4 +722,5 @@ class FirehoseJob:
             else:
                 yield df2
         logger.debug('done')
+            
             
