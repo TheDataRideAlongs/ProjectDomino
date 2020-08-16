@@ -71,7 +71,7 @@ class TwintPool:
     def _get_user_info(self, username):
         self.config.Username = username
         self.config.Limit = 1
-        twint.run.Lookup(self.config)
+        twint.run.Search(self.config)
         return twint.storage.panda.User_df
     
     
