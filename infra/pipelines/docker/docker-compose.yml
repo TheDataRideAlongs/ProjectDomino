@@ -10,11 +10,20 @@
 version: '3.4'
 
 services:
+##############################################################################
+  tor:
+    build: ./tor
+    networks:
+      - inbound
+    restart: always
+    ports:
+      - 127.0.0.1:9050:9050
+##############################################################################
   prefect-agent:
     image:  prefect-agent:0.0.5
     build:
       context: ../../../
-      dockerfile: ./infra/pipelines/docker/Dockerfile
+      dockerfile: ./infra/pipelines/docker/nonrapids-Dockerfile
     container_name: prefect-agent
     network_mode: 'bridge'
     restart: unless-stopped
