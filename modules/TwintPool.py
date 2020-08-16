@@ -17,6 +17,10 @@ class TwintPool:
         self.config.Hide_output = True
         self.config.Verified = True
         self.config.Username = None
+        self.config.Proxy_host = "tor"
+        self.self.config.Proxy_port = "9050"
+        self.config.Proxy_type = "socks5"
+
 
 
     def twint_loop(self, since, until, stride_sec=600, limit=None):
