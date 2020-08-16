@@ -7,6 +7,5 @@ RUN apt-get update \
 
 RUN pip install prefect==0.10.1 simplejson twarc neo4j boto3==1.12.39 \
 && ( prefect agent install local > supervisord.conf )
-WORKDIR /app
 RUN prefect backend server
 CMD ["./infra/pipelines/docker/entrypoint.sh"]
