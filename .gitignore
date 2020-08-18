@@ -164,4 +164,6 @@ lib
 lib64
 __pycache__
 
+.idea
+
 neo4jcreds.json
