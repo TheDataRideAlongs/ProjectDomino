@@ -55,9 +55,40 @@ class TestNeo4jDataAccess:
         except Exception as err:
             print(err)
 
+        # Now add some account data
+        user_data = [{'account_id': 1, 'hydrated': 'FULL'},
+                     {'account_id': 2, 'hydrated': 'FULL'},
+                     {'account_id': 3},
+                     {'account_id': 4, 'hydrated': 'PARTIAL'},
+                     {'account_id': 5, 'hydrated': 'PARTIAL'},
+                     ]
+
+        traversal = '''UNWIND $users AS u
+            MERGE (account:Account {id:u.account_id})
+                ON CREATE SET
+                    account.hydrated = u.hydrated
+        '''
+        try:
+            with graph.session() as session:
+                session.run(traversal, users=user_data)
+            cls.ids = pd.DataFrame({'id': [1, 2, 3, 4, 5]})
+        except Exception as err:
+            print(err)
+
     def test_get_tweet_hydrated_status_by_id(self):
         df = Neo4jDataAccess(
             neo4j_creds=self.creds).get_tweet_hydrated_status_by_id(self.ids)
+
+        assert len(df) == 5
+        assert df[df['id'] == 1]['hydrated'][0] == 'FULL'
+        assert df[df['id'] == 2]['hydrated'][1] == 'FULL'
+        assert df[df['id'] == 3]['hydrated'][2] == None
+        assert df[df['id'] == 4]['hydrated'][3] == 'PARTIAL'
+        assert df[df['id'] == 5]['hydrated'][4] == 'PARTIAL'
+
+    def test_get_account_hydrated_status_by_id(self):
+        df = Neo4jDataAccess(
+            neo4j_creds=self.creds).get_account_hydrated_status_by_id(self.ids)
 
         assert len(df) == 5
         assert df[df['id'] == 1]['hydrated'][0] == 'FULL'

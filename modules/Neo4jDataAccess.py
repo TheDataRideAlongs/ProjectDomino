@@ -77,6 +77,7 @@ class Neo4jDataAccess:
                             user.created_at = t.user_created_at,
                             user.record_created_at = timestamp(),
                             user.job_name = t.job_name,
+                            user.hydrated = 'FULL',
                             user.job_id = t.job_id
                         ON MATCH SET
                             user.name = t.user_name,
@@ -88,6 +89,7 @@ class Neo4jDataAccess:
                             user.created_at = t.user_created_at,
                             user.record_updated_at = timestamp(),
                             user.job_name = t.job_name,
+                            user.hydrated = 'FULL',
                             user.job_id = t.job_id
 
                     //Add Reply to tweets if needed
@@ -154,6 +156,7 @@ class Neo4jDataAccess:
                             user.mentioned_screen_name = t.user_screen_name,
                             user.record_created_at = timestamp(),
                             user.job_name = t.job_name,
+                            user.hydrated = 'PARTIAL',
                             user.job_id = t.job_id
                     WITH user, tweet
                     MERGE (tweet)-[:MENTIONED]->(user)
@@ -189,6 +192,11 @@ class Neo4jDataAccess:
         self.fetch_tweet = """UNWIND $ids AS i
                     MATCH (tweet:Tweet {id:i.id})
                     RETURN tweet
+        """
+
+        self.fetch_account_status = """UNWIND $ids AS i
+                    MATCH (user:Account {id:i.id})
+                    RETURN user.id, user.hydrated
         """
 
     def __get_neo4j_graph(self, role_type):
@@ -302,6 +310,33 @@ class Neo4jDataAccess:
             else:
                 res = res.rename(
                     columns={'tweet.id': 'id', 'tweet.hydrated': 'hydrated'})
+                # ensures hydrated=None if Neo4j does not answer for id
+                res = df[['id']].merge(res, how='left', on='id')
+                return res
+        else:
+            logging.debug('df columns %s', df.columns)
+            raise Exception(
+                'Parameter df must be a DataFrame with a column named "id" ')
+
+     # Get the status of a DataFrame of Tweets by id.  Returns a dataframe with the hydrated status
+
+    # Get the status of a DataFrame of Account by id.  Returns a dataframe with the hydrated status
+    def get_account_hydrated_status_by_id(self, df: pd.DataFrame):
+        if 'id' in df:
+            graph = self.__get_neo4j_graph('reader')
+            ids = []
+            for index, row in df.iterrows():
+                ids.append({'id': int(row['id'])})
+            with graph.session() as session:
+                result = session.run(self.fetch_account_status, ids=ids)
+                res = pd.DataFrame([dict(record) for record in result])
+            logging.debug('Response info: %s rows, %s columns: %s' %
+                          (len(res), len(res.columns), res.columns))
+            if len(res) == 0:
+                return df[['id']].assign(hydrated=None)
+            else:
+                res = res.rename(
+                    columns={'user.id': 'id', 'user.hydrated': 'hydrated'})
                 # ensures hydrated=None if Neo4j does not answer for id
                 res = df[['id']].merge(res, how='left', on='id')
                 return res

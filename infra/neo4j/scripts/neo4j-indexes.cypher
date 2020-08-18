@@ -15,6 +15,10 @@ CREATE INDEX tweet_by_hydrated
 FOR (n:Tweet)
 ON (n.hydrated)
 
+CREATE INDEX account_by_hydrated
+FOR (n:Account)
+ON (n.hydrated)
+
 CREATE INDEX tweet_by_text
 FOR (n:Tweet)
 ON (n.text)
@@ -26,6 +30,8 @@ ON (n.created_at)
 CREATE INDEX tweet_by_record_created_at
 FOR (n:Tweet)
 ON (n.record_created_at)
+
+CALL db.index.fulltext.createNodeIndex("tweet_by_hashtags_fulltext",["Tweet"],["hashtags"])
 
 CALL db.index.fulltext.createNodeIndex("tweet_by_text_fulltext",["Tweet"],["text"]) 
 
