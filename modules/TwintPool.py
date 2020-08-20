@@ -13,14 +13,13 @@ class TwintPool:
         self.config = twint.Config()
         self.config.Limit = 100
         self.config.Pandas = True
-        self.config.User_full = True
         self.config.Hide_output = True
-        self.config.Verified = True
+        self.config.Verified = None
         self.config.Username = None
+        #self.config.User_full = True
         self.config.Proxy_host = "tor"
         self.self.config.Proxy_port = "9050"
         self.config.Proxy_type = "socks5"
-
 
 
     def twint_loop(self, since, until, stride_sec=600, limit=None):
@@ -60,13 +59,15 @@ class TwintPool:
             yield (df, t0, t1)
     
     def _get_timeline(self, username="lmeyerov"):
-        self.config.Username = username
         self.config.Retweets = True
-        #self.config.Search = term
+        self.config.Search = "from:"+username
         twint.run.Search(self.config)
         tweets_df = twint.storage.panda.Tweets_df
         return tweets_df
         
+
+
+    
     
     def _get_user_info(self, username):
         self.config.Username = username
@@ -100,11 +101,11 @@ class TwintPool:
             else:
                 raise('wat')
         
-        def row_to_quoted_status_id(row):
-            if row['quote_url'] and len(row['quote_url']) > 0:
-                return row['quote_url'].split('/')[-1]
-            else:
-                return None
+        #def row_to_quoted_status_id(row):
+            #if row['quote_url'] and len(row['quote_url']) > 0:
+                #return row['quote_url'].split('/')[-1]
+            #else:
+                #return None
             
         def row_tweet_to_urls(row):
             extractor = URLExtract()
@@ -124,8 +125,8 @@ class TwintPool:
         
         neo4j_df['created_at'] = (neo4j_df['created_at'] / 1000).apply(lambda n: datetime.fromtimestamp(n))
         
-        neo4j_df['quoted_status_id'] = df.apply(row_to_quoted_status_id, axis=1)
-        neo4j_df['is_quote_status'] = neo4j_df['quoted_status_id'] != None
+        #neo4j_df['quoted_status_id'] = df.apply(row_to_quoted_status_id, axis=1)
+        #neo4j_df['is_quote_status'] = neo4j_df['quoted_status_id'] != None
         neo4j_df['in_reply_to_status_id'] = False
         neo4j_df['urls'] = df.apply(row_tweet_to_urls, axis=1)
         
