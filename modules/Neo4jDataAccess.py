@@ -588,7 +588,7 @@ class Neo4jDataAccess:
                                 }]))
 #tester
         tweets_df = pd.concat([df for df in dflst])
-        res = self.save_enrichment_df_to_graph(Neo4jDataAccess.NodeLabel.Tweet, tweets_df, 'test')
+        res = self.save_enrichment_df_to_graph(Neo4jDataAccess.NodeLabel.Tweet, tweets_df, job_name,job_id)
         return res
     
     
