@@ -579,17 +579,27 @@ class Neo4jDataAccess:
                                  'created_at':row["tweet_created_at"],
                                  'favorite_count':row["favorite_count"],
                                  'retweet_count':row["retweet_count"],
+                                 'job_name':job_name,
                                  'hashtags':row["hashtags"],
                                  'type': row["tweet_type"],
                                  'conversation_id':row["conversation_id"],
-                                 'job_name':job_name,
-                                 'job_id':job_id,
                                  'hydrated': 'FULL'
                                 }]))
-#tester
+
         tweets_df = pd.concat([df for df in dflst])
-        res = self.save_enrichment_df_to_graph(Neo4jDataAccess.NodeLabel.Tweet, tweets_df, job_name,job_id)
-        return res
+        counter = 0
+        for df in dflst:
+            tweet_id = {"id":tweets_df["id"][counter]}
+            dff=pd.io.json.json_normalize(tweet_id)
+            dft = Neo4jDataAccess(neo4j_creds=neo4j_creds).get_tweet_hydrated_status_by_id(dff)
+                if dft["hydrated"].item()=="FULL":
+                    logger.debug('tweet already hydrated: %s',tweet_id)
+                    
+                else:
+                    logger.debug('hydrating and saving tweet: %s',tweet_id)
+                    self.save_enrichment_df_to_graph(Neo4jDataAccess.NodeLabel.Tweet, df, job_name,job_id)
+                    
+                counter = counter + 1
     
     
     def save_enrichment_df_to_graph(self, label: NodeLabel, df: pd.DataFrame, job_name: str, job_id=None):
