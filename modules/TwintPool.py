@@ -1,5 +1,5 @@
 import pyarrow as pa
-import ProjectDomino.modules.twint.twint as twint
+import twint
 from urlextract import URLExtract
 from datetime import datetime, timedelta
 
