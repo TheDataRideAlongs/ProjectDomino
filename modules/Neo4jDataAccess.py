@@ -437,9 +437,7 @@ class Neo4jDataAccess:
                                'retweet_id': row['retweet_id'] if 'retweet_id' in row else None,
                                'geo': row['geo'] if 'geo' in row else None, 
                                })
-                #params=pd.DataFrame(params)
-                #url_params = self.__parse_urls(row, url_params, job_name, job_id) if 'urls' in row else None  
-                #mention_params = self.__parse_mentions_twint(df, mention_params, job_name, job_id) if 'user_mentions' in row else None 
+ 
                              
             except Exception as e:
                 logger.error('params.append exn', e)
@@ -447,13 +445,13 @@ class Neo4jDataAccess:
                 raise e
 
             params_df = pd.io.json.json_normalize(params)
-        #return df
+
     
         
             if index % self.batch_size == 0 and index > 0:
                 #self.__write_to_neo(params, url_params, mention_params)
-                self.__write_twint_enriched_tweetdf_to_neo(Neo4jDataAccess.NodeLabel.Tweet, params_df, 'test')
-                #self.__write_twint_enriched_tweetdf_to_neo(Neo4jDataAccess.NodeLabel.Url, url_params, 'test')
+                self.__write_twint_enriched_tweetdf_to_neo(params_df)
+                #self.__write_twint_enriched_tweetdf_to_neo(url_params)
                 toc = time.perf_counter()
                 logging.info(
                     f'Neo4j Periodic Save Complete in  {toc - tic:0.4f} seconds')
@@ -463,8 +461,8 @@ class Neo4jDataAccess:
                 tic = time.perf_counter()
 
         #self.__write_to_neo(params, url_params, mention_params)
-        self.__write_twint_enriched_tweetdf_to_neo(Neo4jDataAccess.NodeLabel.Tweet, params_df, 'test')
-        #self.__write_twint_enriched_tweetdf_to_neo(Neo4jDataAccess.NodeLabel.Url, url_params, 'test')
+        self.__write_twint_enriched_tweetdf_to_neo(params_df)
+        #self.__write_twint_enriched_tweetdf_to_neo( url_params)
         toc = time.perf_counter()
         logging.info(
             f"Neo4j Import Complete in  {toc - global_tic:0.4f} seconds")
@@ -572,7 +570,7 @@ class Neo4jDataAccess:
         return url_params
     
     
-    def __write_twint_enriched_tweetdf_to_neo(self,df):
+    def __write_twint_enriched_tweetdf_to_neo(self,df, job_name: str, job_id=None):
         dflst = []
         for index, row in df.iterrows():
 
@@ -581,10 +579,11 @@ class Neo4jDataAccess:
                                  'created_at':row["tweet_created_at"],
                                  'favorite_count':row["favorite_count"],
                                  'retweet_count':row["retweet_count"],
-                                 'job_name':row["job_name"],
                                  'hashtags':row["hashtags"],
                                  'type': row["tweet_type"],
                                  'conversation_id':row["conversation_id"],
+                                 'job_name':job_name,
+                                 'job_id':job_id,
                                  'hydrated': 'FULL'
                                 }]))
 #tester
