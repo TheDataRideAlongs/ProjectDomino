@@ -492,8 +492,9 @@ class Neo4jDataAccess:
         try:
             for index, row in df.iterrows():
                 if row["urls"]:
-                    urls=[url for url in row["urls"]]
-                    parsed = urlparse(urls[counter])
+                    for url in row["urls"]:
+                        parsed = urlparse(url)
+            
             
                     url_params_lst.append(pd.DataFrame([{
                                                     'id': row["status_id"],
