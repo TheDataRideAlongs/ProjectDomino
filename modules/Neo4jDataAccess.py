@@ -488,7 +488,6 @@ class Neo4jDataAccess:
             return None
 
     def __parse_urls_twint(self, df, job_name, job_id=None):
-        counter = 0
         url_params_lst = []
         try:
             for index, row in df.iterrows():
@@ -516,7 +515,6 @@ class Neo4jDataAccess:
         except:
             raise
         url_df = pd.concat([df for df in url_params_lst],axis=0,ignore_index=True, sort=False)
-        counter += 1
         return url_df
                 
     def __parse_mentions_twint(self, df, mention_params, job_name, job_id=None):
