@@ -442,7 +442,7 @@ class Neo4jDataAccess:
 
             params_df = pd.io.json.json_normalize(params)
             url_df = self.__parse_urls_twint( df, job_name, job_id=None)
-            mention_df = self.__parse_mentions_twint( df, mention_params, job_name, job_id=None)
+            mention_df = self.__parse_mentions_twint( df, job_name, job_id=None)
         #return df
     
         
@@ -517,7 +517,7 @@ class Neo4jDataAccess:
         url_df = pd.concat([df for df in url_params_lst],axis=0,ignore_index=True, sort=False)
         return url_df
                 
-    def __parse_mentions_twint(self, df, mention_params, job_name, job_id=None):
+    def __parse_mentions_twint(self, df, job_name, job_id=None):
         mention_lst = []
 
         for index, row in df.iterrows():
