@@ -520,7 +520,6 @@ class Neo4jDataAccess:
         return url_df
                 
     def __parse_mentions_twint(self, df, mention_params, job_name, job_id=None):
-        counter = 0
         mention_lst = []
 
         for index, row in df.iterrows():
@@ -529,12 +528,12 @@ class Neo4jDataAccess:
                     mention_lst.append(pd.DataFrame([{
                                 'id': row['status_id'],                        
                                 'user_screen_name': m,
-                                #'job_id': job_id,
-                                #'job_name': job_name,                        
+                                'job_id': job_id,
+                                'job_name': job_name,                        
                                  }]))
 
         mention_df = pd.concat([df for df in mention_lst],axis=0,ignore_index=True, sort=False)
-        counter = counter + 1
+
         return mention_df
         
                
