@@ -384,10 +384,11 @@ class Neo4jDataAccess:
             # __str__ allows args to be printed directly,
             logger.error(inst)
             raise inst
+
+            
+            
             
     def save_twintdf_to_neo(self, df, job_name, job_id=None):
-        
-        
         df=TwintPool().twint_df_to_neo4j_df(df)
         df.drop(df.columns[df.columns.str.contains('unnamed',case = False)],axis = 1, inplace = True)
         #df=df.stack().droplevel(level=0)
@@ -410,10 +411,6 @@ class Neo4jDataAccess:
             elif "retweet_id" in row and row["retweet_id"] is not None and row["retweet_id"] > 0:
                 tweet_type = "RETWEET"
             try:
-
-                  
-                
-                
                 params.append({'id': int(row['status_id']),
                                'text': row['full_text'],
                                'tweet_created_at': str(pd.to_datetime(row['created_at'])),
@@ -437,7 +434,6 @@ class Neo4jDataAccess:
                                'retweet_id': row['retweet_id'] if 'retweet_id' in row else None,
                                'geo': row['geo'] if 'geo' in row else None, 
                                })
- 
                              
             except Exception as e:
                 logger.error('params.append exn', e)
@@ -445,27 +441,41 @@ class Neo4jDataAccess:
                 raise e
 
             params_df = pd.io.json.json_normalize(params)
-
+            url_df = self.__parse_urls_twint( df, job_name, job_id=None)
+            mention_df = self.__parse_mentions_twint( df, mention_params, job_name, job_id=None)
+        #return df
     
         
             if index % self.batch_size == 0 and index > 0:
-                #self.__write_to_neo(params, url_params, mention_params)
-                self.__write_twint_enriched_tweetdf_to_neo(params_df)
-                #self.__write_twint_enriched_tweetdf_to_neo(url_params)
-                toc = time.perf_counter()
-                logging.info(
-                    f'Neo4j Periodic Save Complete in  {toc - tic:0.4f} seconds')
-                params = []
-                mention_params = []
-                url_params = []
-                tic = time.perf_counter()
-
-        #self.__write_to_neo(params, url_params, mention_params)
-        self.__write_twint_enriched_tweetdf_to_neo(params_df)
-        #self.__write_twint_enriched_tweetdf_to_neo( url_params)
-        toc = time.perf_counter()
-        logging.info(
-            f"Neo4j Import Complete in  {toc - global_tic:0.4f} seconds")
+                dft = Neo4jDataAccess(neo4j_creds=neo4j_creds).get_tweet_hydrated_status_by_id(params_df)
+                if dft["hydrated"].item()=="FULL":
+                    logger.debug('tweet already hydrated: %s',tweet_id)
+                    
+                else:
+                    logger.debug('hydrating and saving tweet: %s',tweet_id)
+                    self.__write_twint_enriched_tweetdf_to_neo(params_df)
+                    self.save_enrichment_df_to_graph(Neo4jDataAccess.NodeLabel.Url, url_df, 'test')
+                    self.save_enrichment_df_to_graph(Neo4jDataAccess.NodeLabel.Account, mention_df, 'test')
+                    toc = time.perf_counter()
+                    logging.info(
+                        f'Neo4j Periodic Save Complete in  {toc - tic:0.4f} seconds')
+                    params = []
+                    mention_params = []
+                    url_params = []
+                    tic = time.perf_counter()
+        dft = Neo4jDataAccess(neo4j_creds=neo4j_creds).get_tweet_hydrated_status_by_id(dff)
+        if dft["hydrated"].item()=="FULL":
+            logger.debug('tweet already hydrated: %s',tweet_id)
+                    
+        else:
+            logger.debug('hydrating and saving tweet: %s',tweet_id)
+            self.__write_twint_enriched_tweetdf_to_neo(params_df)
+            self.save_enrichment_df_to_graph(Neo4jDataAccess.NodeLabel.Url, url_df, 'test')
+            self.save_enrichment_df_to_graph(Neo4jDataAccess.NodeLabel.Account, mention_df, 'test')
+            toc = time.perf_counter()
+            logging.info(
+                    f"Neo4j Import Complete in  {toc - global_tic:0.4f} seconds")
+            
 
 
     def __normalize_hashtags(self, value):
