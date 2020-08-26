@@ -476,70 +476,57 @@ class Neo4jDataAccess:
             return ','.join(hashtags)
         else:
             return None
-        
 
-    def __parse_urls_twint(self, df, url_params, job_name, job_id=None):
-        urls = [x for x in df['urls'].tolist()]
-        #statuses =[x for x in df['status_id'].tolist()]
-        #status=[status for status in statuses]
-        for index , row in df.iterrows():
-            if ('tweet_type_twint' in df.index) and df['tweet_type_twint']:
-                #for u in row["urls"]:
-                #u = [x for x in df['urls'].tolist()]
-                for u in urls:
-                    try:
-                        parsed = urlparse(str(u))
-                        url_params.append({
-                            'tweet_id': row['status_id'],
-                            'url': u,
-                            'job_id': job_id,
-                            'job_name': job_name,
-                            'schema': parsed.scheme,
-                            'netloc': parsed.netloc,
-                            'path': parsed.path,
-                            'params': parsed.params,
-                            'query': parsed.query,
-                            'fragment': parsed.fragment,
-                            'username': parsed.username,
-                            'password': parsed.password,
-                            'hostname': parsed.hostname,
-                            'port': parsed.port,
-                        })
-                        return url_params    
-                    except Exception as inst:
-                        logger.error(type(inst))    # the exception instance
-                        logger.error(inst.args)     # arguments stored in .args
-                # __str__ allows args to be printed directly,
-                        logger.error(inst)
+    def __parse_urls_twint(self, df, job_name, job_id=None):
+        counter = 0
+        url_params_lst = []
+        try:
+            for index, row in df.iterrows():
+                if row["urls"]:
+                    urls=[url for url in row["urls"]]
+                    parsed = urlparse(urls[counter])
+            
+                    url_params_lst.append(pd.DataFrame([{
+                                                    'id': row["status_id"],
+                                                    'url': parsed,
+                                                    'job_id': job_id,
+                                                    'job_name': job_name,
+                                                    'schema': parsed.scheme,
+                                                    'netloc': parsed.netloc,
+                                                    'path': parsed.path,
+                                                    'params': parsed.params,
+                                                    'query': parsed.query,
+                                                    'fragment': parsed.fragment,
+                                                    'username': parsed.username,
+                                                    'password': parsed.password,
+                                                    'hostname': parsed.hostname,
+                                                    'port': parsed.port}]))
+
+
+        except:
+            raise
+        url_df = pd.concat([df for df in url_params_lst],axis=0,ignore_index=True, sort=False)
+        counter += 1
+        return url_df
                 
     def __parse_mentions_twint(self, df, mention_params, job_name, job_id=None):
+        counter = 0
+        mention_lst = []
+
         for index, row in df.iterrows():
-            mentions = [x for x in df['user_mentions'].tolist()]
-        #statuses =[x for x in df['status_id'].tolist()]
-        #status=[status for status in statuses]
-            if ('tweet_type_twint' in df.index) and df['tweet_type_twint']:
-                        for m in mentions:
-                            mention_params.append({
+            mentions = [x for x in row['user_mentions']]
+            for m in mentions:
+                    mention_lst.append(pd.DataFrame([{
                                 'id': row['status_id'],                        
                                 'user_screen_name': m,
-                                'job_id': job_id,
-                                'job_name': job_name,                        
-                                 })
-                        return mention_params
-        else:
-                    if row['user_mentions']:
-                        for m in mentions:
-                            mention_params.append({
-                                'id': row['status_id'],
-                                'user_id': m['id'],
-                                'user_name': m['name'],
-                                'user_screen_name': m['screen_name'],
-                                'job_id': job_id,
-                                'job_name': job_name,
-                            })
-                        return mention_params
-                    else:
-                        return None
+                                #'job_id': job_id,
+                                #'job_name': job_name,                        
+                                 }]))
+
+        mention_df = pd.concat([df for df in mention_lst],axis=0,ignore_index=True, sort=False)
+        counter = counter + 1
+        return mention_df
+        
                
         
     def __parse_urls(self, row, url_params, job_name, job_id=None):
