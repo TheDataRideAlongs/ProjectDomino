@@ -527,25 +527,24 @@ class Neo4jDataAccess:
         counter += 1
         return url_df
 
-    def __parse_mentions_twint(self, df, job_name, job_id):
+    def __parse_mentions_twint(self, df, job_name, job_id=None):
+
         mention_lst = []
 
         for index, row in df.iterrows():
-            if df['user_mentions'].any():
-                mentions = [x for x in row['user_mentions']]
-                for m in mentions:
+            mentions = [x for x in row['user_mentions']]
+            for m in mentions:
                     mention_lst.append(pd.DataFrame([{
-                        'id': row['status_id'] if 'status_id' in row else None,
-                        'user_screen_name_mentioned': m if m  in row else None,
-                        'job_id': job_id,
-                        'job_name': job_name,
-                    }]))
-            else:
-                return None
+                                'id': row['status_id'],
+                                'user_screen_name': m,
+                                'job_id': job_id,
+                                'job_name': job_name,
+                                 }]))
 
-        mention_df = pd.concat([df for df in mention_lst], axis=0, ignore_index=True, sort=False)
-
+        mention_df = pd.concat([df for df in mention_lst],axis=0,ignore_index=True, sort=False)
         return mention_df
+
+
     def __parse_urls(self, row, url_params, job_name, job_id=None):
         for u in row['urls']:
             try:
