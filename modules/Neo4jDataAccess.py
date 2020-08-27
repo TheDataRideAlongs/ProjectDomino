@@ -437,9 +437,6 @@ class Neo4jDataAccess:
                                'retweet_id': row['retweet_id'] if 'retweet_id' in row else None,
                                'geo': row['geo'] if 'geo' in row else None,
                                })
-                # params=pd.DataFrame(params)
-                # url_params = self.__parse_urls(row, url_params, job_name, job_id) if 'urls' in row else None
-                # mention_params = self.__parse_mentions_twint(df, mention_params, job_name, job_id) if 'user_mentions' in row else None
 
             except Exception as e:
                 logger.error('params.append exn', e)
