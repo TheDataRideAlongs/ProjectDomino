@@ -410,7 +410,7 @@ class Neo4jDataAccess:
                 tweet_type = "RETWEET"
             try:
 
-                params.append({'id': int(row['status_id']),
+                params.append(pd.DataFrame([{'id': int(row['status_id']),
                                'text': row['full_text'],
                                'tweet_created_at': str(pd.to_datetime(row['created_at'])),
                                'favorite_count': row['favorite_count'],
@@ -436,17 +436,17 @@ class Neo4jDataAccess:
                                'quoted_status_id': row['quoted_status_id'] if 'quoted_status_id' in row else None,
                                'retweet_id': row['retweet_id'] if 'retweet_id' in row else None,
                                'geo': row['geo'] if 'geo' in row else None,
-                               })
+                               }]))
 
             except Exception as e:
                 logger.error('params.append exn', e)
                 logger.error('row', row)
                 raise e
 
-        params_df = pd.io.json.json_normalize(params)
+        params_df = pd.concat([df for df in params], axis=0, ignore_index=True, sort=False)
         url_df = self.__parse_urls_twint(df, job_name, job_id)
         mention_df = self.__parse_mentions_twint(df, job_name, job_id)
-        combdfs = pd.concat([params_df, url_df, mention_df], axis=0, ignore_index=True, sort=False)
+        combdfs = pd.concat([params_df, url_df, mention_df], axis=1, join='outer', ignore_index=False, sort=False)
         return combdfs
         '''#params_df = pd.concat([df for df in params], axis=0, ignore_index=True, sort=False)
             #url_df = self.__parse_urls_twint(df, job_name, job_id)
