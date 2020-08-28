@@ -618,7 +618,7 @@ class Neo4jDataAccess:
                                             raise inst
                             elif key =='urls':
                                         try:
-                                            self.save_enrichment_df_to_graph(Neo4jDataAccess.NodeLabel.Url, url_params,job_name, job_id)
+                                            self.save_enrichment_df_to_graph(Neo4jDataAccess.NodeLabel.Url, url_params , job_name, job_id)
                                         except Exception as inst:
                                             logging.error('Neo4j Transaction error')
                                             logging.error(type(inst))    # the exception instance
