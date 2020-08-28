@@ -530,7 +530,7 @@ class Neo4jDataAccess:
                 logger.error('row', row)
                 raise e
 
-        params_df = pd.concat([df for df in params], axis=0, ignore_index=True, sort=False)
+        params_df= pd.concat(params, ignore_index=True, sort=False)
         url_df = self.__parse_urls_twint(df, job_name, job_id)
         mention_df = self.__parse_mentions_twint(df, job_name, job_id)
 
@@ -574,7 +574,7 @@ class Neo4jDataAccess:
             logging.error('params.append exn', e)
             logging.error('row', row)
             raise e
-        url_df = pd.concat([df for df in url_params_lst], axis=0, ignore_index=True, sort=False)
+        url_df=pd.concat(url_params_lst, ignore_index=True, sort=False)
         counter += 1
         return url_df
 
@@ -592,7 +592,7 @@ class Neo4jDataAccess:
                                 'job_name': job_name,
                                  }]))
 
-        mention_df = pd.concat([df for df in mention_lst],axis=0,ignore_index=True, sort=False)
+        mention_df=pd.concat(mention_lst, ignore_index=True, sort=False)
         return mention_df
 
 
