@@ -602,7 +602,6 @@ class Neo4jDataAccess:
         for key in list(res.keys()):
             df = res[key]
             for index, row in df.iterrows():
-                rows = [row for row in df]
                 if index % self.batch_size == 0 and index > 0:
                         dft = Neo4jDataAccess(neo4j_creds=neo4j_creds).get_tweet_hydrated_status_by_id(row['id'])
                         if dft["hydrated"].item() == "FULL":
@@ -621,6 +620,7 @@ class Neo4jDataAccess:
                             mention_params = []
                             url_params = []
                             tic = time.perf_counter()
+                rows = [row for row in df]
                 for row in rows:
                     dft = Neo4jDataAccess(neo4j_creds=neo4j_creds).get_tweet_hydrated_status_by_id(row["id"])
                     if dft["hydrated"].item() == "FULL":
