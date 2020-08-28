@@ -573,8 +573,9 @@ class Neo4jDataAccess:
                 logging.error(inst)
         return url_params
 
-    def __write_twint_enriched_tweetdf_to_neo(self, df, job_name, job_id=None):
+    def __write_twint_enriched_tweetdf_to_neo(self, res):
         dflst = []
+        df = pd.io.json.json_normalize(res["params"])
         for index, row in df.iterrows():
             rows = [row for row in df]
             if index % self.batch_size == 0 and index > 0:
