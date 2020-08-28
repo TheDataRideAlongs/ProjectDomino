@@ -639,8 +639,8 @@ class Neo4jDataAccess:
                             toc = time.perf_counter()
                             logging.info(
                                 f'Neo4j Periodic Save Complete in  {toc - tic:0.4f} seconds')
-                            params_df = []
-                            mention_df = []
+                            params = []
+                            mentions_params = []
                             url_params = []
                             tic = time.perf_counter()
                         except Exception as inst:
