@@ -596,9 +596,7 @@ class Neo4jDataAccess:
         return mention_df
 
 
-
-    def __write_twint_enriched_tweetdf_to_neo(self, res, job_name, job_id=None):
-        dflst = []
+    def __write_twint_enriched_tweetdf_to_neo(self, res, job_name, job_id):
         for key in list(res.keys()):
             df = res[key]
             for index, row in df.iterrows():
@@ -609,34 +607,41 @@ class Neo4jDataAccess:
 
                         else:
                             logger.debug('hydrating and saving tweet: %s', row['id'])
-                    # self.__write_twint_enriched_tweetdf_to_neo(params_df)
-                            # self.save_enrichment_df_to_graph(Neo4jDataAccess.NodeLabel.Tweet, row, job_name,job_id)
-                            # self.save_enrichment_df_to_graph(Neo4jDataAccess.NodeLabel.Url, row, 'test')
-                            # self.save_enrichment_df_to_graph(Neo4jDataAccess.NodeLabel.Account, row, 'test')
+                            if key =='mentions':
+                                        try:
+                                            with self.graph.session() as session:
+                                                session.run(self.mentions, mentions=row,timeout=self.timeout)
+                                        except Exception as inst:
+                                            logging.error('Neo4j Transaction error')
+                                            logging.error(type(inst))    # the exception instance
+                                            logging.error(inst.args)     # arguments stored in .args
+                                            # __str__ allows args to be printed directly,
+                                            logging.error(inst)
+                                            raise inst
+                            elif key =='urls':
+                                        try:
+                                            self.save_enrichment_df_to_graph(Neo4jDataAccess.NodeLabel.Url, row,job_name, job_id)
+                                        except Exception as inst:
+                                            logging.error('Neo4j Transaction error')
+                                            logging.error(type(inst))    # the exception instance
+                                            logging.error(inst.args)     # arguments stored in .args
+                                            # __str__ allows args to be printed directly,
+                                            logging.error(inst)
+                                            raise inst
+                            elif key =='params':
+                                        try:
+                                            self.save_enrichment_df_to_graph(Neo4jDataAccess.NodeLabel.Tweet,row,job_name,job_id)
+                                        except Exception as inst:
+                                            logging.error('Neo4j Transaction error')
+                                            logging.error(type(inst))    # the exception instance
+                                            logging.error(inst.args)     # arguments stored in .args
+                                            # __str__ allows args to be printed directly,
+                                            logging.error(inst)
+                                            raise inst
                             toc = time.perf_counter()
                             logging.info(
                                 f'Neo4j Periodic Save Complete in  {toc - tic:0.4f} seconds')
-                            params = []
-                            mention_params = []
+                            params_df = []
+                            mention_ = []
                             url_params = []
                             tic = time.perf_counter()
-                rows = [row for row in df]
-                for row in rows:
-                    dft = Neo4jDataAccess(neo4j_creds=neo4j_creds).get_tweet_hydrated_status_by_id(row["id"])
-                    if dft["hydrated"].item() == "FULL":
-                        logger.debug('tweet already hydrated: %s', row["id"])
-
-                    else:
-                        logger.debug('hydrating and saving tweet: %s', row["id"])
-                # self.__write_twint_enriched_tweetdf_to_neo(params_df)###
-                        # self.save_enrichment_df_to_graph(Neo4jDataAccess.NodeLabel.Tweet, row, job_name, job_id)
-                        # self.save_enrichment_df_to_graph(Neo4jDataAccess.NodeLabel.Url, row, job_name, job_id)
-                        # self.save_enrichment_df_to_graph(Neo4jDataAccess.NodeLabel.Account, row, job_name, job_id)
-                # self.save_enrichment_df_to_graph(Neo4jDataAccess.RelationshipLabel.Mentioned, row, job_name, job_id)
-                        toc = time.perf_counter()
-                        logging.info(
-                            f"Neo4j Import Complete in  {toc - global_tic:0.4f} seconds")
-
-
-
-
