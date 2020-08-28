@@ -470,10 +470,7 @@ class Neo4jDataAccess:
                 logging.error(inst)
         return url_params
 
-
-
     def save_twintdf_to_neo(self, df, job_name, job_id=None):
-
         df = TwintPool().twint_df_to_neo4j_df(df)
         df.drop(df.columns[df.columns.str.contains('unnamed', case=False)], axis=1, inplace=True)
         # df=df.stack().droplevel(level=0)
@@ -496,7 +493,6 @@ class Neo4jDataAccess:
             elif "retweet_id" in row and row["retweet_id"] is not None and row["retweet_id"] > 0:
                 tweet_type = "RETWEET"
             try:
-
                 params.append(pd.DataFrame([{'id': int(row['status_id']),
                                'text': row['full_text'],
                                'tweet_created_at': str(pd.to_datetime(row['created_at'])),
@@ -529,13 +525,11 @@ class Neo4jDataAccess:
                 logger.error('params.append exn', e)
                 logger.error('row', row)
                 raise e
-
         params_df= pd.concat(params, ignore_index=True, sort=False)
         url_df = self.__parse_urls_twint(df, job_name, job_id)
         mention_df = self.__parse_mentions_twint(df, job_name, job_id)
-
         res = {"mentions":mention_df,"urls":url_df,"params":params_df}
-        return res
+        self.__write_twint_enriched_tweetdf_to_neo(res, job_name, job_id)
 
     def __normalize_hashtags(self, value):
         if value:
@@ -554,7 +548,6 @@ class Neo4jDataAccess:
                 if row["urls"]:
                     urls = [url for url in row["urls"]]
                     parsed = urlparse(urls[counter])
-
                     url_params_lst.append(pd.DataFrame([{
                         'id': int(row["status_id"]),
                         'url': urls[counter],
@@ -579,9 +572,7 @@ class Neo4jDataAccess:
         return url_df
 
     def __parse_mentions_twint(self, df, job_name, job_id=None):
-
         mention_lst = []
-
         for index, row in df.iterrows():
             mentions = [x for x in row['user_mentions']]
             for m in mentions:
