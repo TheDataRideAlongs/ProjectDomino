@@ -74,9 +74,24 @@ class TwintPool:
         self.config.Limit = 1
         twint.run.Lookup(self.config)
         return twint.storage.panda.User_df
+
+    def __check_hydrate(self,df):
+        needs_hydrate = []
+        checked_df = []
+        dft = Neo4jDataAccess(neo4j_creds=neo4j_creds).get_tweet_hydrated_status_by_id(df)
+        for index, row in dft.iterrows():
+            if row["hydrated"] == "FULL":
+                pass
+            else:
+                needs_hydrate.append(row['id'])
+        for index, row in df.iterrows():
+            if row["id"] in needs_hydrate:
+                checked_df = pd.DataFrame(checked_df.append(row))
+        return checked_df
     
     
     def twint_df_to_neo4j_df(self, df):
+        df=self.__check_hydrate(df)
         neo4j_df = df.rename(columns={
             'id': 'status_id',
             'tweet': 'full_text',
