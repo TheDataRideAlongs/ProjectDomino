@@ -446,8 +446,9 @@ class Neo4jDataAccess:
         params_df = pd.concat([df for df in params], axis=0, ignore_index=True, sort=False)
         url_df = self.__parse_urls_twint(df, job_name, job_id)
         mention_df = self.__parse_mentions_twint(df, job_name, job_id)
-        combdfs = pd.concat([params_df, url_df, mention_df], axis=1, join='outer', ignore_index=False, sort=False)
-        return combdfs
+
+        res = {"params": params_df, "urls": url_df, "mentions": mention_df}
+        return res
         '''#params_df = pd.concat([df for df in params], axis=0, ignore_index=True, sort=False)
             #url_df = self.__parse_urls_twint(df, job_name, job_id)
             #mention_df = self.__parse_mentions_twint(df, job_name, job_id)
