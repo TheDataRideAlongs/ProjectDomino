@@ -577,9 +577,9 @@ class Neo4jDataAccess:
         dflst = []
         for key in list(res.keys()):
             df = res[key]
-                for index, row in df.iterrows():
-                    rows = [row for row in df]
-                    if index % self.batch_size == 0 and index > 0:
+            for index, row in df.iterrows():
+                rows = [row for row in df]
+                if index % self.batch_size == 0 and index > 0:
                         dft = Neo4jDataAccess(neo4j_creds=neo4j_creds).get_tweet_hydrated_status_by_id(row['id'])
                         if dft["hydrated"].item() == "FULL":
                             logger.debug('tweet already hydrated: %s', row['id'])
@@ -604,11 +604,11 @@ class Neo4jDataAccess:
 
                     else:
                         logger.debug('hydrating and saving tweet: %s', row["id"])
-                        # self.__write_twint_enriched_tweetdf_to_neo(params_df)###
+                # self.__write_twint_enriched_tweetdf_to_neo(params_df)###
                         # self.save_enrichment_df_to_graph(Neo4jDataAccess.NodeLabel.Tweet, row, job_name, job_id)
                         # self.save_enrichment_df_to_graph(Neo4jDataAccess.NodeLabel.Url, row, job_name, job_id)
                         # self.save_enrichment_df_to_graph(Neo4jDataAccess.NodeLabel.Account, row, job_name, job_id)
-                        # self.save_enrichment_df_to_graph(Neo4jDataAccess.RelationshipLabel.Mentioned, row, job_name, job_id)
+                # self.save_enrichment_df_to_graph(Neo4jDataAccess.RelationshipLabel.Mentioned, row, job_name, job_id)
                         toc = time.perf_counter()
                         logging.info(
                             f"Neo4j Import Complete in  {toc - global_tic:0.4f} seconds")
