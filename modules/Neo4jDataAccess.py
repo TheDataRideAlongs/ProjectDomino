@@ -447,7 +447,7 @@ class Neo4jDataAccess:
         url_df = self.__parse_urls_twint(df, job_name, job_id)
         mention_df = self.__parse_mentions_twint(df, job_name, job_id)
 
-        res = {"params": params_df, "urls": url_df, "mentions": mention_df}
+        res = {"mentions":mention_df,"urls":url_df,"params":params_df}
         return res
         '''#params_df = pd.concat([df for df in params], axis=0, ignore_index=True, sort=False)
             #url_df = self.__parse_urls_twint(df, job_name, job_id)
@@ -573,44 +573,49 @@ class Neo4jDataAccess:
                 logging.error(inst)
         return url_params
 
-    def __write_twint_enriched_tweetdf_to_neo(self, res):
+    def __write_twint_enriched_tweetdf_to_neo(self, res, job_name, job_id=None):
         dflst = []
-        df = pd.io.json.json_normalize(res["params"])
-        for index, row in df.iterrows():
-            rows = [row for row in df]
-            if index % self.batch_size == 0 and index > 0:
-                dft = Neo4jDataAccess(neo4j_creds=neo4j_creds).get_tweet_hydrated_status_by_id(row['id'])
-                if dft["hydrated"].item() == "FULL":
-                    logger.debug('tweet already hydrated: %s', row['id'])
+        for key in list(res.keys()):
+            df = res[key]
+                for index, row in df.iterrows():
+                    rows = [row for row in df]
+                    if index % self.batch_size == 0 and index > 0:
+                        dft = Neo4jDataAccess(neo4j_creds=neo4j_creds).get_tweet_hydrated_status_by_id(row['id'])
+                        if dft["hydrated"].item() == "FULL":
+                            logger.debug('tweet already hydrated: %s', row['id'])
 
-                else:
-                    logger.debug('hydrating and saving tweet: %s', row['id'])
+                        else:
+                            logger.debug('hydrating and saving tweet: %s', row['id'])
                     # self.__write_twint_enriched_tweetdf_to_neo(params_df)
-                    # self.save_enrichment_df_to_graph(Neo4jDataAccess.NodeLabel.Tweet, row, job_name,job_id)
-                    # self.save_enrichment_df_to_graph(Neo4jDataAccess.NodeLabel.Url, row, 'test')
-                    # self.save_enrichment_df_to_graph(Neo4jDataAccess.NodeLabel.Account, row, 'test')
-                    toc = time.perf_counter()
-                    logging.info(
-                        f'Neo4j Periodic Save Complete in  {toc - tic:0.4f} seconds')
-                    params = []
-                    mention_params = []
-                    url_params = []
-                    tic = time.perf_counter()
-        for row in rows:
-            dft = Neo4jDataAccess(neo4j_creds=neo4j_creds).get_tweet_hydrated_status_by_id(row["id"])
-            if dft["hydrated"].item() == "FULL":
-                logger.debug('tweet already hydrated: %s', row["id"])
+                            # self.save_enrichment_df_to_graph(Neo4jDataAccess.NodeLabel.Tweet, row, job_name,job_id)
+                            # self.save_enrichment_df_to_graph(Neo4jDataAccess.NodeLabel.Url, row, 'test')
+                            # self.save_enrichment_df_to_graph(Neo4jDataAccess.NodeLabel.Account, row, 'test')
+                            toc = time.perf_counter()
+                            logging.info(
+                                f'Neo4j Periodic Save Complete in  {toc - tic:0.4f} seconds')
+                            params = []
+                            mention_params = []
+                            url_params = []
+                            tic = time.perf_counter()
+                for row in rows:
+                    dft = Neo4jDataAccess(neo4j_creds=neo4j_creds).get_tweet_hydrated_status_by_id(row["id"])
+                    if dft["hydrated"].item() == "FULL":
+                        logger.debug('tweet already hydrated: %s', row["id"])
 
-            else:
-                logger.debug('hydrating and saving tweet: %s', row["id"])
-                # self.__write_twint_enriched_tweetdf_to_neo(params_df)###
-                # self.save_enrichment_df_to_graph(Neo4jDataAccess.NodeLabel.Tweet, row, job_name, job_id)
-                # self.save_enrichment_df_to_graph(Neo4jDataAccess.NodeLabel.Url, row, job_name, job_id)
-                # self.save_enrichment_df_to_graph(Neo4jDataAccess.NodeLabel.Account, row, job_name, job_id)
-                # self.save_enrichment_df_to_graph(Neo4jDataAccess.RelationshipLabel.Mentioned, row, job_name, job_id)
-                toc = time.perf_counter()
-                logging.info(
-                    f"Neo4j Import Complete in  {toc - global_tic:0.4f} seconds")
+                    else:
+                        logger.debug('hydrating and saving tweet: %s', row["id"])
+                        # self.__write_twint_enriched_tweetdf_to_neo(params_df)###
+                        # self.save_enrichment_df_to_graph(Neo4jDataAccess.NodeLabel.Tweet, row, job_name, job_id)
+                        # self.save_enrichment_df_to_graph(Neo4jDataAccess.NodeLabel.Url, row, job_name, job_id)
+                        # self.save_enrichment_df_to_graph(Neo4jDataAccess.NodeLabel.Account, row, job_name, job_id)
+                        # self.save_enrichment_df_to_graph(Neo4jDataAccess.RelationshipLabel.Mentioned, row, job_name, job_id)
+                        toc = time.perf_counter()
+                        logging.info(
+                            f"Neo4j Import Complete in  {toc - global_tic:0.4f} seconds")
+
+
+
+
 
     def save_enrichment_df_to_graph(self, label: NodeLabel, df: pd.DataFrame, job_name: str, job_id=None):
         if not isinstance(label, self.NodeLabel):
