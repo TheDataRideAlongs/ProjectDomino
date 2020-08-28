@@ -536,43 +536,6 @@ class Neo4jDataAccess:
 
         res = {"mentions":mention_df,"urls":url_df,"params":params_df}
         return res
-        '''#params_df = pd.concat([df for df in params], axis=0, ignore_index=True, sort=False)
-            #url_df = self.__parse_urls_twint(df, job_name, job_id)
-            #mention_df = self.__parse_mentions_twint(df, job_name, job_id)
-            #combdfs = pd.concat([params_df, url_df, mention_df], axis=0, join='outer', ignore_index=False, sort=False)
-
-            #return combdfs
-
-            if index % self.batch_size == 0 and index > 0:
-                dft = Neo4jDataAccess(neo4j_creds=neo4j_creds).get_tweet_hydrated_status_by_id(params_df)
-                if dft["hydrated"].item()=="FULL":
-                    logger.debug('tweet already hydrated: %s',tweet_id)
-
-                else:
-                    logger.debug('hydrating and saving tweet: %s',tweet_id)
-                    #self.__write_twint_enriched_tweetdf_to_neo(params_df)
-                    #self.save_enrichment_df_to_graph(Neo4jDataAccess.NodeLabel.Url, url_df, 'test')
-                    #self.save_enrichment_df_to_graph(Neo4jDataAccess.NodeLabel.Account, mention_df, 'test')
-                    toc = time.perf_counter()
-                    logging.info(
-                        f'Neo4j Periodic Save Complete in  {toc - tic:0.4f} seconds')
-                    params = []
-                    url_params_lst = []
-                    mention_lst = []
-                    tic = time.perf_counter()
-        dft = Neo4jDataAccess(neo4j_creds=neo4j_creds).get_tweet_hydrated_status_by_id(params_df["id"])
-        if dft["hydrated"].item()=="FULL":
-            logger.debug('tweet already hydrated: %s',tweet_id)
-
-        else:
-            logger.debug('hydrating and saving tweet: %s',tweet_id)
-            #self.__write_twint_enriched_tweetdf_to_neo(params_df)
-            #self.save_enrichment_df_to_graph(Neo4jDataAccess.NodeLabel.Url, url_df, 'test')
-            #self.save_enrichment_df_to_graph(Neo4jDataAccess.NodeLabel.Account, mention_df, 'test')
-            #self.save_enrichment_df_to_graph(Neo4jDataAccess.RelationshipLabel.Mentioned, mention_df, ‘test’)
-            toc = time.perf_counter()
-            logging.info(
-                    f"Neo4j Import Complete in  {toc - global_tic:0.4f} seconds")'''
 
     def __normalize_hashtags(self, value):
         if value:
@@ -607,10 +570,10 @@ class Neo4jDataAccess:
                         'password': parsed.password,
                         'hostname': parsed.hostname,
                         'port': parsed.port}]))
-
-
-        except:
-            raise
+        except Exception as e:
+            logging.error('params.append exn', e)
+            logging.error('row', row)
+            raise e
         url_df = pd.concat([df for df in url_params_lst], axis=0, ignore_index=True, sort=False)
         counter += 1
         return url_df
