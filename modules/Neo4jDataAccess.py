@@ -597,12 +597,11 @@ class Neo4jDataAccess:
 
 
     def __write_twint_enriched_tweetdf_to_neo(self, res, job_name, job_id):
+        mentions_params = res['mentions']
+        url_params = res["url"]
+        params = res["params"]
         for key in list(res.keys()):
             df = res[key]
-            mentions_params = res['mentions']
-            url_params = res["url"]
-            params=res["params"]
-
             for index, row in df.iterrows():
                 if index % self.batch_size == 0 and index > 0:
                         try:
