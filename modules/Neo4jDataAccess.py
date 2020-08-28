@@ -10,9 +10,7 @@ import pandas as pd
 from neo4j import GraphDatabase, basic_auth
 from urllib.parse import urlparse
 import logging
-
 from .DfHelper import DfHelper
-from .TwintPool import TwintPool
 
 logger = logging.getLogger('Neo4jDataAccess')
 
@@ -42,9 +40,9 @@ class Neo4jDataAccess:
         self.batch_size = batch_size
         self.tweetsandaccounts = """
                   UNWIND $tweets AS t
-                      //Add the Tweet 
+                      //Add the Tweet
                     MERGE (tweet:Tweet {id:t.tweet_id})
-                        ON CREATE SET 
+                        ON CREATE SET
                             tweet.text = t.text,
                             tweet.created_at = t.tweet_created_at,
                             tweet.favorite_count = t.favorite_count,
@@ -55,7 +53,7 @@ class Neo4jDataAccess:
                             tweet.hashtags = t.hashtags,
                             tweet.hydrated = 'FULL',
                             tweet.type = t.tweet_type
-                        ON MATCH SET 
+                        ON MATCH SET
                             tweet.text = t.text,
                             tweet.favorite_count = t.favorite_count,
                             tweet.retweet_count = t.retweet_count,
@@ -65,10 +63,9 @@ class Neo4jDataAccess:
                             tweet.hashtags = t.hashtags,
                             tweet.hydrated = 'FULL',
                             tweet.type = t.tweet_type
-
                     //Add Account
-                    MERGE (user:Account {id:t.user_id})                    
-                        ON CREATE SET 
+                    MERGE (user:Account {id:t.user_id})
+                        ON CREATE SET
                             user.id = t.user_id,
                             user.name = t.name,
                             user.screen_name = t.user_screen_name,
@@ -79,8 +76,9 @@ class Neo4jDataAccess:
                             user.created_at = t.user_created_at,
                             user.record_created_at = timestamp(),
                             user.job_name = t.job_name,
+                            user.hydrated = 'FULL',
                             user.job_id = t.job_id
-                        ON MATCH SET 
+                        ON MATCH SET
                             user.name = t.user_name,
                             user.screen_name = t.user_screen_name,
                             user.followers_count = t.user_followers_count,
@@ -90,31 +88,29 @@ class Neo4jDataAccess:
                             user.created_at = t.user_created_at,
                             user.record_updated_at = timestamp(),
                             user.job_name = t.job_name,
-                            user.job_id = t.job_id                  
-
+                            user.hydrated = 'FULL',
+                            user.job_id = t.job_id
                     //Add Reply to tweets if needed
-                    FOREACH(ignoreMe IN CASE WHEN t.tweet_type='REPLY' THEN [1] ELSE [] END | 
-                        MERGE (retweet:Tweet {id:t.reply_tweet_id})            
+                    FOREACH(ignoreMe IN CASE WHEN t.tweet_type='REPLY' THEN [1] ELSE [] END |
+                        MERGE (retweet:Tweet {id:t.reply_tweet_id})
                             ON CREATE SET retweet.id=t.reply_tweet_id,
                             retweet.record_created_at = timestamp(),
                             retweet.job_name = t.job_name,
                             retweet.job_id = t.job_id,
                             retweet.hydrated = 'PARTIAL'
                     )
-
                     //Add QUOTE_RETWEET to tweets if needed
-                    FOREACH(ignoreMe IN CASE WHEN t.tweet_type='QUOTE_RETWEET' THEN [1] ELSE [] END | 
-                        MERGE (quoteTweet:Tweet {id:t.quoted_status_id})            
+                    FOREACH(ignoreMe IN CASE WHEN t.tweet_type='QUOTE_RETWEET' THEN [1] ELSE [] END |
+                        MERGE (quoteTweet:Tweet {id:t.quoted_status_id})
                             ON CREATE SET quoteTweet.id=t.quoted_status_id,
                             quoteTweet.record_created_at = timestamp(),
                             quoteTweet.job_name = t.job_name,
                             quoteTweet.job_id = t.job_id,
                             quoteTweet.hydrated = 'PARTIAL'
                     )
-
                     //Add RETWEET to tweets if needed
-                    FOREACH(ignoreMe IN CASE WHEN t.tweet_type='RETWEET' THEN [1] ELSE [] END | 
-                        MERGE (retweet:Tweet {id:t.retweet_id})            
+                    FOREACH(ignoreMe IN CASE WHEN t.tweet_type='RETWEET' THEN [1] ELSE [] END |
+                        MERGE (retweet:Tweet {id:t.retweet_id})
                             ON CREATE SET retweet.id=t.retweet_id,
                             retweet.record_created_at = timestamp(),
                             retweet.job_name = t.job_name,
@@ -125,77 +121,78 @@ class Neo4jDataAccess:
 
         self.tweeted_rel = """UNWIND $tweets AS t
                     MATCH (user:Account {id:t.user_id})
-                    MATCH (tweet:Tweet {id:t.tweet_id})  
-                    OPTIONAL MATCH (replied:Tweet {id:t.reply_tweet_id})     
-                    OPTIONAL MATCH (quoteTweet:Tweet {id:t.quoted_status_id})    
-                    OPTIONAL MATCH (retweet:Tweet {id:t.retweet_id})   
+                    MATCH (tweet:Tweet {id:t.tweet_id})
+                    OPTIONAL MATCH (replied:Tweet {id:t.reply_tweet_id})
+                    OPTIONAL MATCH (quoteTweet:Tweet {id:t.quoted_status_id})
+                    OPTIONAL MATCH (retweet:Tweet {id:t.retweet_id})
                     WITH user, tweet, replied, quoteTweet, retweet
-
                     MERGE (user)-[r:TWEETED]->(tweet)
-
-                    FOREACH(ignoreMe IN CASE WHEN tweet.type='REPLY' AND replied.id>0 THEN [1] ELSE [] END | 
+                    FOREACH(ignoreMe IN CASE WHEN tweet.type='REPLY' AND replied.id>0 THEN [1] ELSE [] END |
                         MERGE (tweet)-[:REPLYED]->(replied)
                     )
-
-                    FOREACH(ignoreMe IN CASE WHEN tweet.type='QUOTE_RETWEET' AND quoteTweet.id>0 THEN [1] ELSE [] END | 
+                    FOREACH(ignoreMe IN CASE WHEN tweet.type='QUOTE_RETWEET' AND quoteTweet.id>0 THEN [1] ELSE [] END |
                         MERGE (tweet)-[:QUOTED]->(quoteTweet)
                     )
-
-                    FOREACH(ignoreMe IN CASE WHEN tweet.type='RETWEET' AND retweet.id>0 THEN [1] ELSE [] END | 
+                    FOREACH(ignoreMe IN CASE WHEN tweet.type='RETWEET' AND retweet.id>0 THEN [1] ELSE [] END |
                         MERGE (tweet)-[:RETWEETED]->(retweet)
                     )
-
         """
 
-        self.mentions = """UNWIND $mentions AS t                    
+        self.mentions = """UNWIND $mentions AS t
                     MATCH (tweet:Tweet {id:t.tweet_id})
-                    MERGE (user:Account {id:t.user_id})                    
-                        ON CREATE SET 
+                    MERGE (user:Account {id:t.user_id})
+                        ON CREATE SET
                             user.id = t.user_id,
                             user.mentioned_name = t.name,
                             user.mentioned_screen_name = t.user_screen_name,
                             user.record_created_at = timestamp(),
                             user.job_name = t.job_name,
+                            user.hydrated = 'PARTIAL',
                             user.job_id = t.job_id
-                    WITH user, tweet                                        
-                    MERGE (tweet)-[:MENTIONED]->(user)                  
+                    WITH user, tweet
+                    MERGE (tweet)-[:MENTIONED]->(user)
         """
 
-        self.urls = """UNWIND $urls AS t                    
+        self.urls = """UNWIND $urls AS t
                     MATCH (tweet:Tweet {id:t.tweet_id})
-                    MERGE (url:Url {full_url:t.url})                    
-                        ON CREATE SET 
+                    MERGE (url:Url {full_url:t.url})
+                        ON CREATE SET
                             url.full_url = t.url,
                             url.job_name = t.job_name,
                             url.job_id = t.job_id,
                             url.record_created_at = timestamp(),
-                            url.schema=t.scheme,   
-                            url.netloc=t.netloc,   
-                            url.path=t.path,   
-                            url.params=t.params,   
-                            url.query=t.query,       
-                            url.fragment=t.fragment,       
-                            url.username=t.username,       
-                            url.password=t.password,       
-                            url.hostname=t.hostname,      
+                            url.schema=t.scheme,
+                            url.netloc=t.netloc,
+                            url.path=t.path,
+                            url.params=t.params,
+                            url.query=t.query,
+                            url.fragment=t.fragment,
+                            url.username=t.username,
+                            url.password=t.password,
+                            url.hostname=t.hostname,
                             url.port=t.port
-                    WITH url, tweet                                        
-                    MERGE (tweet)-[:INCLUDES]->(url)                  
+                    WITH url, tweet
+                    MERGE (tweet)-[:INCLUDES]->(url)
         """
 
-        self.fetch_tweet_status = """UNWIND $ids AS i                    
+        self.fetch_tweet_status = """UNWIND $ids AS i
                     MATCH (tweet:Tweet {id:i.id})
                     RETURN tweet.id, tweet.hydrated
         """
 
-        self.fetch_tweet = """UNWIND $ids AS i                    
+        self.fetch_tweet = """UNWIND $ids AS i
                     MATCH (tweet:Tweet {id:i.id})
                     RETURN tweet
         """
 
+        self.fetch_account_status = """UNWIND $ids AS i
+                    MATCH (user:Account {id:i.id})
+                    RETURN user.id, user.hydrated
+        """
+
     def __get_neo4j_graph(self, role_type):
         creds = None
-        logger.debug('role_type: %s', role_type)
+        logging.debug('role_type: %s', role_type)
         if not (self.creds is None):
             creds = self.creds
         else:
@@ -203,7 +200,7 @@ class Neo4jDataAccess:
                 creds = json.load(json_file)
         res = list(filter(lambda c: c["type"] == role_type, creds))
         if len(res):
-            logger.debug("creds %s", res)
+            logging.debug("creds %s", res)
             creds = res[0]["creds"]
             uri = f'bolt://{creds["host"]}:{creds["port"]}'
             self.graph = GraphDatabase.driver(
@@ -212,18 +209,25 @@ class Neo4jDataAccess:
             self.graph = None
         return self.graph
 
-    def get_from_neo(self, cypher, limit=1000):
+    def get_neo4j_graph(self, role_type: RoleType):
+        if not isinstance(role_type, self.RoleType):
+            raise TypeError('The role_type parameter is not of type RoleType')
+        return self.__get_neo4j_graph(role_type.value)
+
+    def get_from_neo(self, cypher: str, limit=1000):
         graph = self.__get_neo4j_graph('reader')
-        # If the limit isn't set in the traversal then add it
-        if not re.search('LIMIT', cypher, re.IGNORECASE):
+        # If the limit isn't set in the traversal, and it isn't None, then add it
+        if limit and not re.search('LIMIT', cypher, re.IGNORECASE):
             cypher = cypher + " LIMIT " + str(limit)
         with graph.session() as session:
             result = session.run(cypher, timeout=self.timeout)
             df = pd.DataFrame([dict(record) for record in result])
-        rdf = df.head(limit)
-        return rdf
+        if not limit:
+            return df
+        else:
+            return df.head(limit)
 
-    def get_tweet_by_id(self, df, cols=[]):
+    def get_tweet_by_id(self, df: pd.DataFrame, cols=[]):
         if 'id' in df:
             graph = self.__get_neo4j_graph('reader')
             ids = []
@@ -233,8 +237,8 @@ class Neo4jDataAccess:
                 result = session.run(
                     self.fetch_tweet, ids=ids, timeout=self.timeout)
                 res = pd.DataFrame([dict(record) for record in result])
-            logger.debug('Response info: %s rows, %s columns: %s' %
-                         (len(res), len(res.columns), res.columns))
+            logging.debug('Response info: %s rows, %s columns: %s' %
+                          (len(res), len(res.columns), res.columns))
             pdf = pd.DataFrame()
             for r in res.iterrows():
                 props = {}
@@ -247,18 +251,41 @@ class Neo4jDataAccess:
                 pdf = pdf.append(props, ignore_index=True)
             return pdf
         else:
-            logger.debug('df columns %s', df.columns)
-            raise Exception(
+            raise TypeError(
                 'Parameter df must be a DataFrame with a column named "id" ')
 
-    def save_parquet_df_to_graph(self, df, job_name, job_id=None):
+    def save_enrichment_df_to_graph(self, label: NodeLabel, df: pd.DataFrame, job_name: str, job_id=None):
+        if not isinstance(label, self.NodeLabel):
+            raise TypeError('The label parameter is not of type NodeType')
+
+        if not isinstance(df, pd.DataFrame):
+            raise TypeError(
+                'The df parameter is not of type Pandas.DataFrame')
+
+        idColName = 'full_url' if label == self.NodeLabel.Url else 'id'
+        statement = 'UNWIND $rows AS t'
+        statement += '   MERGE (n:' + label.value + \
+            ' {' + idColName + ':t.' + idColName + '}) ' + \
+            ' SET '
+
+        props = []
+        for column in df:
+            if not column == idColName:
+                props.append(f' n.{column} = t.{column} ')
+
+        statement += ','.join(props)
+        graph = self.__get_neo4j_graph('writer')
+        with graph.session() as session:
+            result = session.run(
+                statement, rows=df.to_dict(orient='records'), timeout=self.timeout)
+
+    def save_parquet_df_to_graph(self, df: pd.DataFrame, job_name: str, job_id=None):
         pdf = DfHelper().normalize_parquet_dataframe(df)
-        logger.info('Saving to Neo4j')
-        self.save_df_to_graph(pdf, job_name, job_id)
-        return pdf
+        logging.info('Saving to Neo4j')
+        self.__save_df_to_graph(pdf, job_name)
 
     # Get the status of a DataFrame of Tweets by id.  Returns a dataframe with the hydrated status
-    def get_tweet_hydrated_status_by_id(self, df):
+    def get_tweet_hydrated_status_by_id(self, df: pd.DataFrame):
         if 'id' in df:
             graph = self.__get_neo4j_graph('reader')
             ids = []
@@ -267,8 +294,8 @@ class Neo4jDataAccess:
             with graph.session() as session:
                 result = session.run(self.fetch_tweet_status, ids=ids)
                 res = pd.DataFrame([dict(record) for record in result])
-            logger.debug('Response info: %s rows, %s columns: %s' %
-                         (len(res), len(res.columns), res.columns))
+            logging.debug('Response info: %s rows, %s columns: %s' %
+                          (len(res), len(res.columns), res.columns))
             if len(res) == 0:
                 return df[['id']].assign(hydrated=None)
             else:
@@ -278,7 +305,34 @@ class Neo4jDataAccess:
                 res = df[['id']].merge(res, how='left', on='id')
                 return res
         else:
-            logger.debug('df columns %s', df.columns)
+            logging.debug('df columns %s', df.columns)
+            raise Exception(
+                'Parameter df must be a DataFrame with a column named "id" ')
+
+     # Get the status of a DataFrame of Tweets by id.  Returns a dataframe with the hydrated status
+
+    # Get the status of a DataFrame of Account by id.  Returns a dataframe with the hydrated status
+    def get_account_hydrated_status_by_id(self, df: pd.DataFrame):
+        if 'id' in df:
+            graph = self.__get_neo4j_graph('reader')
+            ids = []
+            for index, row in df.iterrows():
+                ids.append({'id': int(row['id'])})
+            with graph.session() as session:
+                result = session.run(self.fetch_account_status, ids=ids)
+                res = pd.DataFrame([dict(record) for record in result])
+            logging.debug('Response info: %s rows, %s columns: %s' %
+                          (len(res), len(res.columns), res.columns))
+            if len(res) == 0:
+                return df[['id']].assign(hydrated=None)
+            else:
+                res = res.rename(
+                    columns={'user.id': 'id', 'user.hydrated': 'hydrated'})
+                # ensures hydrated=None if Neo4j does not answer for id
+                res = df[['id']].merge(res, how='left', on='id')
+                return res
+        else:
+            logging.debug('df columns %s', df.columns)
             raise Exception(
                 'Parameter df must be a DataFrame with a column named "id" ')
 
@@ -365,11 +419,6 @@ class Neo4jDataAccess:
     def __write_to_neo(self, params, url_params, mention_params):
         try:
             with self.graph.session() as session:
-                logger.debug('params :: %s', type(params))
-                for k in params:
-                    logger.debug('%s :: %s', k, type(k))
-                logger.debug('-----------------')
-                logger.debug('tweetsandaccounts: %s', self.tweetsandaccounts)
                 session.run(self.tweetsandaccounts,
                             tweets=params, timeout=self.timeout)
                 session.run(self.tweeted_rel, tweets=params,
@@ -378,12 +427,50 @@ class Neo4jDataAccess:
                             timeout=self.timeout)
                 session.run(self.urls, urls=url_params, timeout=self.timeout)
         except Exception as inst:
-            logger.error('Neo4j Transaction error', exc_info=True)
-            logger.error(type(inst))  # the exception instance
-            logger.error(inst.args)  # arguments stored in .args
+            logging.error('Neo4j Transaction error')
+            logging.error(type(inst))    # the exception instance
+            logging.error(inst.args)     # arguments stored in .args
             # __str__ allows args to be printed directly,
-            logger.error(inst)
+            logging.error(inst)
             raise inst
+
+    def __normalize_hashtags(self, value):
+        if value:
+            hashtags = []
+            for h in value:
+                hashtags.append(h['text'])
+            return ','.join(hashtags)
+        else:
+            return None
+
+    def __parse_urls(self, row, url_params, job_name, job_id=None):
+        for u in row['urls']:
+            try:
+                parsed = urlparse(u['expanded_url'])
+                url_params.append({
+                    'tweet_id': row['status_id'],
+                    'url': u['expanded_url'],
+                    'job_id': job_id,
+                    'job_name': job_name,
+                    'schema': parsed.scheme,
+                    'netloc': parsed.netloc,
+                    'path': parsed.path,
+                    'params': parsed.params,
+                    'query': parsed.query,
+                    'fragment': parsed.fragment,
+                    'username': parsed.username,
+                    'password': parsed.password,
+                    'hostname': parsed.hostname,
+                    'port': parsed.port,
+                })
+            except Exception as inst:
+                logging.error(type(inst))    # the exception instance
+                logging.error(inst.args)     # arguments stored in .args
+                # __str__ allows args to be printed directly,
+                logging.error(inst)
+        return url_params
+
+
 
     def save_twintdf_to_neo(self, df, job_name, job_id=None):
 
@@ -546,32 +633,6 @@ class Neo4jDataAccess:
         return mention_df
 
 
-    def __parse_urls(self, row, url_params, job_name, job_id=None):
-        for u in row['urls']:
-            try:
-                parsed = urlparse(u['expanded_url'])
-                url_params.append({
-                    'tweet_id': row['status_id'],
-                    'url': u['expanded_url'],
-                    'job_id': job_id,
-                    'job_name': job_name,
-                    'schema': parsed.scheme,
-                    'netloc': parsed.netloc,
-                    'path': parsed.path,
-                    'params': parsed.params,
-                    'query': parsed.query,
-                    'fragment': parsed.fragment,
-                    'username': parsed.username,
-                    'password': parsed.password,
-                    'hostname': parsed.hostname,
-                    'port': parsed.port,
-                })
-            except Exception as inst:
-                logging.error(type(inst))  # the exception instance
-                logging.error(inst.args)  # arguments stored in .args
-                # __str__ allows args to be printed directly,
-                logging.error(inst)
-        return url_params
 
     def __write_twint_enriched_tweetdf_to_neo(self, res, job_name, job_id=None):
         dflst = []
@@ -616,28 +677,3 @@ class Neo4jDataAccess:
 
 
 
-
-    def save_enrichment_df_to_graph(self, label: NodeLabel, df: pd.DataFrame, job_name: str, job_id=None):
-        if not isinstance(label, self.NodeLabel):
-            raise TypeError('The label parameter is not of type NodeType')
-
-        if not isinstance(df, pd.DataFrame):
-            raise TypeError(
-                'The df parameter is not of type Pandas.DataFrame')
-
-        idColName = 'full_url' if label == self.NodeLabel.Url else 'id'
-        statement = 'UNWIND $rows AS t'
-        statement += '   MERGE (n:' + label.value + \
-                     ' {' + idColName + ':t.' + idColName + '}) ' + \
-                     ' SET '
-
-        props = []
-        for column in df:
-            if not column == idColName:
-                props.append(f' n.{column} = t.{column} ')
-
-        statement += ','.join(props)
-        graph = self.__get_neo4j_graph('writer')
-        with graph.session() as session:
-            result = session.run(
-                statement, rows=df.to_dict(orient='records'), timeout=self.timeout)
