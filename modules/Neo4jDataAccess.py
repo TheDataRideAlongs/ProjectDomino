@@ -586,37 +586,60 @@ class Neo4jDataAccess:
         mention_df=pd.concat(mention_lst, ignore_index=True, sort=False)
         return mention_df
 
-    def __write_twint_enriched_tweetdf_to_neo(self, res, job_name, job_id):
+    def urldf_to_neo4jdf(df):
+        neourldf = df.rename(columns={
+            'full_url': "full_url",
+            'job_name': "job_name",
+            'schema': "schema",
+            'netloc': 'netloc',
+            'path': 'path',
+            'params': 'params',
+            'query': 'query',
+            'fragment': 'fragment',
+            'username': 'username',
+            'password': 'password',
+            'hostname': 'hostname',
+            'port': 'port'})
+        neourldf['hydrated'] = 'FULL'
+        neourldf['record_created at'] = str(datetime.now())
+        return neourldf
+
+    def tweetdf_to_neodf(df):
+        neotweetdf = df.rename(columns={'id': "id",
+                                        'text': "text",
+                                        'created_at': "tweet_created_at",
+                                        'favorite_count': "favorite_count",
+                                        'retweet_count': "retweet_count",
+                                        'job_name': "job_name",
+                                        'hashtags': "hashtags",
+                                        'type': "tweet_type",
+                                        'conversation_id': "conversation_id",
+                                        })
+        neotweetdf['hydrated'] = 'FULL'
+        return neotweetdf
+
+    def write_twint_enriched_tweetdf_to_neo(self, res, job_name, job_id):
+        graph = self.__get_neo4j_graph('writer')
         global_tic = time.perf_counter()
         tic = time.perf_counter()
-        graph = self.__get_neo4j_graph('writer')
         for key in list(res.keys()):
             df = res[key]
-            if df.index % self.batch_size == 0 and df.index > 0:
-                try:
-                    if key =='mentions':
-                        with self.graph.session() as session:
-                            session.run(self.mentions,mentions=df,timeout=self.timeout)
-                    elif key =='urls':
-                        self.save_enrichment_df_to_graph(Neo4jDataAccess.NodeLabel.Url,df, job_name, job_id)
-                    elif key =='params':
-                        neodf= df.rename(columns={'id': "id",
-                             'text': "text",
-                             'created_at':"tweet_created_at",
-                             'favorite_count':"favorite_count",
-                             'retweet_count':"retweet_count",
-                             'job_name':"job_name",
-                             'hashtags':"hashtags",
-                             'type': "tweet_type",
-                             'conversation_id':"conversation_id",
-                            })
-                        neodf['hydrated']='FULL'
-                        self.save_enrichment_df_to_graph(Neo4jDataAccess.NodeLabel.Tweet,neodf,job_name,job_id)
-                    toc = time.perf_counter()
-                    logging.info(f'Neo4j Periodic Save Complete in  {toc - tic:0.4f} seconds')
-                    tic = time.perf_counter()
-                except Exception as inst:
-                            logging.error(type(inst))  # the exception instance
-                            logging.error(inst.args)  # arguments stored in .args
-                            # __str__ allows args to be printed directly,
-                            logging.error(inst)
+            # if df.index.all() % self.batch_size == 0 and df.index.all() > 0:
+            try:
+                if key == 'mentions':
+                    with self.graph.session() as session:
+                        session.run(self.mentions, mentions=df, timeout=self.timeout)
+                elif key == 'urls':
+                    df = self.urldf_to_neo4jdf(df)
+                    self.save_enrichment_df_to_graph(Neo4jDataAccess.NodeLabel.Url, df, job_name, job_id)
+                elif key == 'params':
+                    df = tweetdf_to_neodf(df)
+                    self.save_enrichment_df_to_graph(Neo4jDataAccess.NodeLabel.Tweet, neodf, job_name, job_id)
+                toc = time.perf_counter()
+                logging.info(f'Neo4j Periodic Save Complete in  {toc - tic:0.4f} seconds')
+                tic = time.perf_counter()
+            except Exception as inst:
+                logging.error(type(inst))  # the exception instance
+                logging.error(inst.args)  # arguments stored in .args
+                # __str__ allows args to be printed directly,
+                logging.error(inst)
