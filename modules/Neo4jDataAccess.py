@@ -629,7 +629,7 @@ class Neo4jDataAccess:
             try:
                 if key == 'mentions':
                     with self.graph.session() as session:
-                        session.run(self.mentions, mentions=df.stack().to_list(), timeout=self.timeout)
+                        session.run(self.mentions, mentions=df.stack(), timeout=self.timeout)
                 elif key == 'urls':
                     df = self.urldf_to_neo4jdf(df)
                     self.save_enrichment_df_to_graph(Neo4jDataAccess.NodeLabel.Url, df, job_name, job_id)
