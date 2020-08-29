@@ -589,6 +589,7 @@ class Neo4jDataAccess:
 
     def urldf_to_neodf(self, df):
         neourldf = df.rename(columns={
+            'id': "id",
             'full_url': "full_url",
             'job_name': "job_name",
             'schema': "schema",
