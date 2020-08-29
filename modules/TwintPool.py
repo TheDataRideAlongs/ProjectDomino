@@ -3,6 +3,7 @@ import twint
 from urlextract import URLExtract
 from datetime import datetime, timedelta
 import logging
+import pandas as pd
 logger = logging.getLogger()
 
 class TwintPool:
