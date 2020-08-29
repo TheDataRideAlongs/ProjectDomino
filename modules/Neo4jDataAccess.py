@@ -634,7 +634,7 @@ class Neo4jDataAccess:
                     self.save_enrichment_df_to_graph(Neo4jDataAccess.NodeLabel.Url, df, job_name, job_id)
                 elif key == 'params':
                     df = tweetdf_to_neodf(df)
-                    self.save_enrichment_df_to_graph(Neo4jDataAccess.NodeLabel.Tweet, neodf, job_name, job_id)
+                    self.save_enrichment_df_to_graph(Neo4jDataAccess.NodeLabel.Tweet, df, job_name, job_id)
                 toc = time.perf_counter()
                 logging.info(f'Neo4j Periodic Save Complete in  {toc - tic:0.4f} seconds')
                 tic = time.perf_counter()
