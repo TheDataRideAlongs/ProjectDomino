@@ -586,7 +586,6 @@ class Neo4jDataAccess:
         mention_df=pd.concat(mention_lst, ignore_index=True, sort=False)
         return mention_df
 
-
     def __write_twint_enriched_tweetdf_to_neo(self, res, job_name, job_id):
         mentions_params = res['mentions']
         url_params = res["urls"]
@@ -596,36 +595,12 @@ class Neo4jDataAccess:
             if df.index % self.batch_size == 0 and df.index > 0:
                 try:
                     if key =='mentions':
-                        try:
-                            with self.graph.session() as session:
-                                session.run(self.mentions, mentions=mentions_params,timeout=self.timeout)
-                        except Exception as inst:
-                            logging.error('Neo4j Transaction error')
-                            logging.error(type(inst))    # the exception instance
-                            logging.error(inst.args)     # arguments stored in .args
-                            # __str__ allows args to be printed directly,
-                            logging.error(inst)
-                            raise inst
+                        with self.graph.session() as session:
+                            session.run(self.mentions,mentions=mentions_params,timeout=self.timeout)
                     elif key =='urls':
-                        try:
-                            self.save_enrichment_df_to_graph(Neo4jDataAccess.NodeLabel.Url, url_params , job_name, job_id)
-                        except Exception as inst:
-                            logging.error('Neo4j Transaction error')
-                            logging.error(type(inst))    # the exception instance
-                            logging.error(inst.args)     # arguments stored in .args
-                            # __str__ allows args to be printed directly,
-                            logging.error(inst)
-                            raise inst
+                        self.save_enrichment_df_to_graph(Neo4jDataAccess.NodeLabel.Url, url_params , job_name, job_id)
                     elif key =='params':
-                        try:
-                            self.save_enrichment_df_to_graph(Neo4jDataAccess.NodeLabel.Tweet,params,job_name,job_id)
-                        except Exception as inst:
-                            logging.error('Neo4j Transaction error')
-                            logging.error(type(inst))    # the exception instance
-                            logging.error(inst.args)     # arguments stored in .args
-                                            # __str__ allows args to be printed directly,
-                            logging.error(inst)
-                            raise inst
+                        self.save_enrichment_df_to_graph(Neo4jDataAccess.NodeLabel.Tweet,params,job_name,job_id)
                     toc = time.perf_counter()
                     logging.info(f'Neo4j Periodic Save Complete in  {toc - tic:0.4f} seconds')
                     params = []
@@ -633,7 +608,7 @@ class Neo4jDataAccess:
                     url_params = []
                     tic = time.perf_counter()
                 except Exception as inst:
-                        logging.error(type(inst))  # the exception instance
-                        logging.error(inst.args)  # arguments stored in .args
-                        # __str__ allows args to be printed directly,
-                        logging.error(inst)
+                            logging.error(type(inst))  # the exception instance
+                            logging.error(inst.args)  # arguments stored in .args
+                            # __str__ allows args to be printed directly,
+                            logging.error(inst)
