@@ -2,7 +2,6 @@ import pyarrow as pa
 import twint
 from urlextract import URLExtract
 from datetime import datetime, timedelta
-from .Neo4jDataAccess import Neo4jDataAccess
 import logging
 logger = logging.getLogger()
 
@@ -76,6 +75,7 @@ class TwintPool:
         return twint.storage.panda.User_df
 
     def __check_hydrate(self,df):
+        from .Neo4jDataAccess import Neo4jDataAccess
         needs_hydrate = []
         checked_df = []
         creds = None
