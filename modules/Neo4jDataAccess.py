@@ -2,6 +2,7 @@ import ast
 import json
 import time
 import re
+from datetime import datetime
 
 import enum
 
@@ -587,22 +588,22 @@ class Neo4jDataAccess:
         return mention_df
 
     def urldf_to_neo4jdf(df):
-        neourldf = df.rename(columns={
-            'full_url': "full_url",
-            'job_name': "job_name",
-            'schema': "schema",
-            'netloc': 'netloc',
-            'path': 'path',
-            'params': 'params',
-            'query': 'query',
-            'fragment': 'fragment',
-            'username': 'username',
-            'password': 'password',
-            'hostname': 'hostname',
-            'port': 'port'})
-        neourldf['hydrated'] = 'FULL'
-        neourldf['record_created at'] = str(datetime.now())
-        return neourldf
+            neourldf = df.rename(columns={
+                'full_url': "full_url",
+                'job_name': "job_name",
+                'schema': "schema",
+                'netloc': 'netloc',
+                'path': 'path',
+                'params': 'params',
+                'query': 'query',
+                'fragment': 'fragment',
+                'username': 'username',
+                'password': 'password',
+                'hostname': 'hostname',
+                'port': 'port'})
+            neourldf['hydrated'] = 'FULL'
+            neourldf['record_created at'] = pd.Timestamp(str(datetime.now()))
+            return neourldf
 
     def tweetdf_to_neodf(df):
         neotweetdf = df.rename(columns={'id': "id",
@@ -616,6 +617,7 @@ class Neo4jDataAccess:
                                         'conversation_id': "conversation_id",
                                         })
         neotweetdf['hydrated'] = 'FULL'
+        neotweetdf['record_created at'] = pd.Timestamp(str(datetime.now()))
         return neotweetdf
 
     def write_twint_enriched_tweetdf_to_neo(self, res, job_name, job_id):
