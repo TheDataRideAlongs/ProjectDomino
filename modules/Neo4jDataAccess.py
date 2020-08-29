@@ -550,7 +550,7 @@ class Neo4jDataAccess:
                     parsed = urlparse(urls[counter])
                     url_params_lst.append(pd.DataFrame([{
                         'id': int(row["status_id"]),
-                        'url': urls[counter],
+                        'full_url': urls[counter],
                         'job_id': job_id,
                         'job_name': job_name,
                         'schema': parsed.scheme,
@@ -587,6 +587,9 @@ class Neo4jDataAccess:
         return mention_df
 
     def __write_twint_enriched_tweetdf_to_neo(self, res, job_name, job_id):
+        global_tic = time.perf_counter()
+        tic = time.perf_counter()
+        graph = self.__get_neo4j_graph('writer')
         for key in list(res.keys()):
             df = res[key]
             if df.index % self.batch_size == 0 and df.index > 0:
