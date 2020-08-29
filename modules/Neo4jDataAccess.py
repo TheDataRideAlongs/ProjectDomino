@@ -255,7 +255,7 @@ class Neo4jDataAccess:
             raise TypeError(
                 'Parameter df must be a DataFrame with a column named "id" ')
 
-    def save_enrichment_df_to_graph(self, label: NodeLabel, df: pd.DataFrame, job_name: str, job_id=None):
+    def __save_enrichment_df_to_graph(self, label: NodeLabel, df: pd.DataFrame, job_name: str, job_id=None):
         if not isinstance(label, self.NodeLabel):
             raise TypeError('The label parameter is not of type NodeType')
 
@@ -587,7 +587,7 @@ class Neo4jDataAccess:
         mention_df=pd.concat(mention_lst, ignore_index=True, sort=False)
         return mention_df
 
-    def urldf_to_neodf(self, df):
+    def __urldf_to_neodf(self, df):
         neourldf = df.rename(columns={
             'id': "id",
             'full_url': "full_url",
@@ -605,7 +605,7 @@ class Neo4jDataAccess:
         neourldf['record_created at'] = str(datetime.now())
         return neourldf
 
-    def tweetdf_to_neodf(self, df):
+    def __tweetdf_to_neodf(self, df):
         neotweetdf = df.rename(columns={'id': "id",
                                         'text': "text",
                                         'created_at': "tweet_created_at",
@@ -629,13 +629,13 @@ class Neo4jDataAccess:
             try:
                 if key == 'mentions':
                     with self.graph.session() as session:
-                        session.run(self.mentions, mentions=df.stack(), timeout=self.timeout)
+                        session.run(self.mentions, mentions=df.stack().to_list(), timeout=self.timeout)
                 elif key == 'urls':
-                    df = self.urldf_to_neo4jdf(df)
-                    self.save_enrichment_df_to_graph(Neo4jDataAccess.NodeLabel.Url, df, job_name, job_id)
+                    df = self.__urldf_to_neodf(df)
+                    self.__save_enrichment_df_to_graph(Neo4jDataAccess.NodeLabel.Url, df, job_name, job_id)
                 elif key == 'params':
-                    df = tweetdf_to_neodf(df)
-                    self.save_enrichment_df_to_graph(Neo4jDataAccess.NodeLabel.Tweet, df, job_name, job_id)
+                    df = self.__tweetdf_to_neodf(df)
+                    self.__save_enrichment_df_to_graph(Neo4jDataAccess.NodeLabel.Tweet, df, job_name, job_id)
                 toc = time.perf_counter()
                 logging.info(f'Neo4j Periodic Save Complete in  {toc - tic:0.4f} seconds')
                 tic = time.perf_counter()
