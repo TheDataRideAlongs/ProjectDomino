@@ -601,7 +601,6 @@ class Neo4jDataAccess:
                 'password': 'password',
                 'hostname': 'hostname',
                 'port': 'port'})
-            neourldf['hydrated'] = 'FULL'
             neourldf['record_created at'] = pd.Timestamp(str(datetime.now()))
             return neourldf
 
