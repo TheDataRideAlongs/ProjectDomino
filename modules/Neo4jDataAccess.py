@@ -593,49 +593,49 @@ class Neo4jDataAccess:
         params = res["params"]
         for key in list(res.keys()):
             df = res[key]
-            for index, row in df.iterrows():
-                if index % self.batch_size == 0 and index > 0:
-                        try:
-                            if key =='mentions':
-                                        try:
-                                            with self.graph.session() as session:
-                                                session.run(self.mentions, mentions=mentions_params,timeout=self.timeout)
-                                        except Exception as inst:
+
+            if df.index % self.batch_size == 0 and df.index > 0:
+                    try:
+                        if key =='mentions':
+                                try:
+                                    with self.graph.session() as session:
+                                        session.run(self.mentions, mentions=mentions_params,timeout=self.timeout)
+                                except Exception as inst:
                                             logging.error('Neo4j Transaction error')
                                             logging.error(type(inst))    # the exception instance
                                             logging.error(inst.args)     # arguments stored in .args
                                             # __str__ allows args to be printed directly,
                                             logging.error(inst)
                                             raise inst
-                            elif key =='urls':
-                                        try:
-                                            self.save_enrichment_df_to_graph(Neo4jDataAccess.NodeLabel.Url, url_params , job_name, job_id)
-                                        except Exception as inst:
-                                            logging.error('Neo4j Transaction error')
-                                            logging.error(type(inst))    # the exception instance
-                                            logging.error(inst.args)     # arguments stored in .args
+                        elif key =='urls':
+                                try:
+                                    self.save_enrichment_df_to_graph(Neo4jDataAccess.NodeLabel.Url, url_params , job_name, job_id)
+                                except Exception as inst:
+                                    logging.error('Neo4j Transaction error')
+                                    logging.error(type(inst))    # the exception instance
+                                    logging.error(inst.args)     # arguments stored in .args
                                             # __str__ allows args to be printed directly,
-                                            logging.error(inst)
-                                            raise inst
-                            elif key =='params':
-                                        try:
-                                            self.save_enrichment_df_to_graph(Neo4jDataAccess.NodeLabel.Tweet,params,job_name,job_id)
-                                        except Exception as inst:
-                                            logging.error('Neo4j Transaction error')
-                                            logging.error(type(inst))    # the exception instance
-                                            logging.error(inst.args)     # arguments stored in .args
+                                    logging.error(inst)
+                                     raise inst
+                        elif key =='params':
+                                 try:
+                                    self.save_enrichment_df_to_graph(Neo4jDataAccess.NodeLabel.Tweet,params,job_name,job_id)
+                                 except Exception as inst:
+                                        logging.error('Neo4j Transaction error')
+                                        logging.error(type(inst))    # the exception instance
+                                        logging.error(inst.args)     # arguments stored in .args
                                             # __str__ allows args to be printed directly,
-                                            logging.error(inst)
-                                            raise inst
-                            toc = time.perf_counter()
-                            logging.info(
+                                        logging.error(inst)
+                                        raise inst
+                        toc = time.perf_counter()
+                        logging.info(
                                 f'Neo4j Periodic Save Complete in  {toc - tic:0.4f} seconds')
-                            params = []
-                            mentions_params = []
-                            url_params = []
-                            tic = time.perf_counter()
-                        except Exception as inst:
-                            logging.error(type(inst))  # the exception instance
-                            logging.error(inst.args)  # arguments stored in .args
+                        params = []
+                        mentions_params = []
+                        url_params = []
+                        tic = time.perf_counter()
+                    except Exception as inst:
+                        logging.error(type(inst))  # the exception instance
+                        logging.error(inst.args)  # arguments stored in .args
                             # __str__ allows args to be printed directly,
-                            logging.error(inst)
+                        logging.error(inst)
