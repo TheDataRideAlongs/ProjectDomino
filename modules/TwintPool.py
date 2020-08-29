@@ -2,7 +2,8 @@ import pyarrow as pa
 import twint
 from urlextract import URLExtract
 from datetime import datetime, timedelta
-from .Neo4jDataAccess import Neo4jDataAccess
+import pandas as pd
+import json
 import logging
 
 logger = logging.getLogger()
@@ -19,9 +20,9 @@ class TwintPool:
         self.config.Verified = None
         self.config.Username = None
         # self.config.User_full = True
-        self.config.Proxy_host = "tor"
-        self.config.Proxy_port = "9050"
-        self.config.Proxy_type = "socks5"
+        # self.config.Proxy_host = "tor"
+        # self.config.Proxy_port = "9050"
+        # self.config.Proxy_type = "socks5"
 
     def twint_loop(self, since, until, stride_sec=600, limit=None):
         def get_unix_time(time_str):
@@ -73,7 +74,11 @@ class TwintPool:
         twint.run.Lookup(self.config)
         return twint.storage.panda.User_df
 
-    def __check_hydrate(self, df):
+    def check_hydrate(self, df):
+        from .Neo4jDataAccess import Neo4jDataAccess
+        neo4j_creds = None
+        with open('../neo4jcreds.json') as json_file:
+            neo4j_creds = json.load(json_file)
         needs_hydrate = []
         checked_df = []
         dft = Neo4jDataAccess(neo4j_creds=neo4j_creds).get_tweet_hydrated_status_by_id(df)
@@ -88,7 +93,7 @@ class TwintPool:
         return checked_df
 
     def twint_df_to_neo4j_df(self, df):
-        df = self.__check_hydrate(df)
+        # df=self.__check_hydrate(df)
         neo4j_df = df.rename(columns={
             'id': 'status_id',
             'tweet': 'full_text',
@@ -145,6 +150,7 @@ class TwintPool:
 
     def to_arrow(self, tweets_df):
         pass
+
 
 
 
