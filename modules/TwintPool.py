@@ -2,7 +2,7 @@ import pyarrow as pa
 import twint
 from urlextract import URLExtract
 from datetime import datetime, timedelta
-
+from .Neo4jDataAccess import Neo4jDataAccess
 import logging
 logger = logging.getLogger()
 

@@ -11,7 +11,7 @@ from neo4j import GraphDatabase, basic_auth
 from urllib.parse import urlparse
 import logging
 from .DfHelper import DfHelper
-
+from .TwintPool import TwintPool
 logger = logging.getLogger('Neo4jDataAccess')
 
 
