@@ -578,7 +578,7 @@ class Neo4jDataAccess:
             mentions = [x for x in row['user_mentions']]
             for m in mentions:
                     mention_lst.append(pd.DataFrame([{
-                                'id': row['status_id'],
+                                'id': int(row['status_id']),
                                 'user_screen_name': m,
                                 'job_id': job_id,
                                 'job_name': job_name,
