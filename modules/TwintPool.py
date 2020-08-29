@@ -78,7 +78,12 @@ class TwintPool:
     def __check_hydrate(self,df):
         needs_hydrate = []
         checked_df = []
-        dft = Neo4jDataAccess(neo4j_creds=neo4j_creds).get_tweet_hydrated_status_by_id(df)
+        creds = None
+        if not (creds is None):
+        else:
+            with open('neo4jcreds.json') as json_file:
+                creds = json.load(json_file)
+        dft = Neo4jDataAccess(neo4j_creds=creds).get_tweet_hydrated_status_by_id(df)
         for index, row in dft.iterrows():
             if row["hydrated"] == "FULL":
                 pass
