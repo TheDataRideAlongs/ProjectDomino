@@ -593,7 +593,6 @@ class Neo4jDataAccess:
         params = res["params"]
         for key in list(res.keys()):
             df = res[key]
-
             if df.index % self.batch_size == 0 and df.index > 0:
                 try:
                     if key =='mentions':
@@ -628,8 +627,7 @@ class Neo4jDataAccess:
                             logging.error(inst)
                             raise inst
                     toc = time.perf_counter()
-                    logging.info(
-                                f'Neo4j Periodic Save Complete in  {toc - tic:0.4f} seconds')
+                    logging.info(f'Neo4j Periodic Save Complete in  {toc - tic:0.4f} seconds')
                     params = []
                     mentions_params = []
                     url_params = []
