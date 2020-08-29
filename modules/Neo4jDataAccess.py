@@ -587,25 +587,19 @@ class Neo4jDataAccess:
         return mention_df
 
     def __write_twint_enriched_tweetdf_to_neo(self, res, job_name, job_id):
-        mentions_params = res['mentions']
-        url_params = res["urls"]
-        params = res["params"]
         for key in list(res.keys()):
             df = res[key]
             if df.index % self.batch_size == 0 and df.index > 0:
                 try:
                     if key =='mentions':
                         with self.graph.session() as session:
-                            session.run(self.mentions,mentions=mentions_params,timeout=self.timeout)
+                            session.run(self.mentions,mentions=df,timeout=self.timeout)
                     elif key =='urls':
-                        self.save_enrichment_df_to_graph(Neo4jDataAccess.NodeLabel.Url, url_params , job_name, job_id)
+                        self.save_enrichment_df_to_graph(Neo4jDataAccess.NodeLabel.Url,df, job_name, job_id)
                     elif key =='params':
-                        self.save_enrichment_df_to_graph(Neo4jDataAccess.NodeLabel.Tweet,params,job_name,job_id)
+                        self.save_enrichment_df_to_graph(Neo4jDataAccess.NodeLabel.Tweet,df,job_name,job_id)
                     toc = time.perf_counter()
                     logging.info(f'Neo4j Periodic Save Complete in  {toc - tic:0.4f} seconds')
-                    params = []
-                    mentions_params = []
-                    url_params = []
                     tic = time.perf_counter()
                 except Exception as inst:
                             logging.error(type(inst))  # the exception instance
