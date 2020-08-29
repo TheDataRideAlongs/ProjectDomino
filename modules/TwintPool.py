@@ -15,7 +15,7 @@ class TwintPool:
         self.config.Hide_output = True
         self.config.Verified = None
         self.config.Username = None
-        #self.config.User_full = True
+        #self.config.User_full = True #leave commented for twint functionality.
         self.config.Proxy_host = "tor"
         self.config.Proxy_port = "9050"
         self.config.Proxy_type = "socks5"
@@ -83,7 +83,6 @@ class TwintPool:
         else:
             with open('neo4jcreds.json') as json_file:
                 creds = json.load(json_file)
-
         dft = Neo4jDataAccess(neo4j_creds=creds).get_tweet_hydrated_status_by_id(df)
         for index, row in dft.iterrows():
             if row["hydrated"] == "FULL":

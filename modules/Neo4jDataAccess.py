@@ -635,5 +635,5 @@ class Neo4jDataAccess:
                 except Exception as inst:
                         logging.error(type(inst))  # the exception instance
                         logging.error(inst.args)  # arguments stored in .args
-                            # __str__ allows args to be printed directly,
+                        # __str__ allows args to be printed directly,
                         logging.error(inst)
