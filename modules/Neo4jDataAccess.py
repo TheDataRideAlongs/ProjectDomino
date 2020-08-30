@@ -607,10 +607,10 @@ class Neo4jDataAccess:
                         session.run(self.mentions, mentions=df.stack().to_list(), timeout=self.timeout)
                 elif key == 'urls':
                     df = self.__urldf_to_neodf(df)
-                    self.__save_enrichment_df_to_graph(Neo4jDataAccess.NodeLabel.Url, df, job_name, job_id)
+                    self.__save_enrichment_df_to_graph(self.NodeLabel.Url, df, job_name, job_id)
                 elif key == 'params':
                     df = self.__tweetdf_to_neodf(df)
-                    self.__save_enrichment_df_to_graph(Neo4jDataAccess.NodeLabel.Tweet, df, job_name, job_id)
+                    self.__save_enrichment_df_to_graph(self.NodeLabel.Tweet, df, job_name, job_id)
                 toc = time.perf_counter()
                 logging.info(f'Neo4j Periodic Save Complete in  {toc - tic:0.4f} seconds')
                 tic = time.perf_counter()
