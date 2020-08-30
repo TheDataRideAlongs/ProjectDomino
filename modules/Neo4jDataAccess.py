@@ -603,7 +603,7 @@ class Neo4jDataAccess:
             # if df.index.all() % self.batch_size == 0 and df.index.all() > 0:
             try:
                 if key == 'mentions':
-                    with self.graph.session() as session:
+                    with graph.session() as session:
                         session.run(self.mentions, mentions=df.stack().to_list(), timeout=self.timeout)
                 elif key == 'urls':
                     df = self.__urldf_to_neodf(df)
