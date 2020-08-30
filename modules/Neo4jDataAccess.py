@@ -567,17 +567,15 @@ class Neo4jDataAccess:
     def __parse_mentions_twint(self, df, job_name, job_id=None):
         counter = 0
         mention_lst = []
-
         mentions = [x for x in df['user_mentions'].to_list()]
         ids = [i for i in df["status_id"].to_list()]
-        tweet_id = [i for i in ids]
         for m in mentions:
             mention_lst.append(pd.DataFrame([{
                 'id': ids[counter],
                 'user_screen_name': m,
                  'job_id': job_id,
-                 'job_name': job_name,
-                }]))
+                 'job_name': job_name
+                                    }]))
             counter += 1
         mention_df = pd.concat(mention_lst, ignore_index=True, sort=False)
         return mention_df
