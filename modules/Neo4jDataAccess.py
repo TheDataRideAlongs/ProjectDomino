@@ -577,7 +577,7 @@ class Neo4jDataAccess:
                 'user_screen_name': m,
                  'job_id': job_id,
                  'job_name': job_name,
-            }]))
+                }]))
             counter += 1
         mention_df = pd.concat(mention_lst, ignore_index=True, sort=False)
         return mention_df
