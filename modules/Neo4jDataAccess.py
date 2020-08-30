@@ -532,14 +532,6 @@ class Neo4jDataAccess:
         res = {"mentions":mention_df,"urls":url_df,"params":params_df}
         self.__write_twint_enriched_tweetdf_to_neo(res, job_name, job_id)
 
-    def __normalize_hashtags(self, value):
-        if value:
-            hashtags = []
-            for h in value:
-                hashtags.append(h['text'])
-            return ','.join(hashtags)
-        else:
-            return None
 
     def __parse_urls_twint(self, df, job_name, job_id):
         counter = 0
