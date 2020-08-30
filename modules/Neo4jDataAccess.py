@@ -590,6 +590,7 @@ class Neo4jDataAccess:
         neotweetdf = df[['id','text','created_at','favorite_count','retweet_count',
                             'job_name','hashtags','type','conversation_id']]
         neotweetdf['hydrated'] = 'FULL'
+        neotweetdf['record_created at'] = str(datetime.now())
         return neotweetdf
 
     def write_twint_enriched_tweetdf_to_neo(self, res, job_name, job_id):
