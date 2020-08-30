@@ -499,7 +499,7 @@ class Neo4jDataAccess:
                                'created_at': str(pd.to_datetime(row['created_at'])),
                                'favorite_count': row['favorite_count'],
                                'retweet_count': row['retweet_count'],
-                               'tweet_type': tweet_type,
+                               'type': tweet_type,
                                'job_id': job_id,
                                'job_name': job_name,
                                'hashtags': self.__normalize_hashtags(row['hashtags']),
@@ -587,16 +587,8 @@ class Neo4jDataAccess:
         return neourldf
 
     def __tweetdf_to_neodf(self, df):
-        neotweetdf = df.rename(columns={'id': "id",
-                                        'text': "text",
-                                        'created_at': "tweet_created_at",
-                                        'favorite_count': "favorite_count",
-                                        'retweet_count': "retweet_count",
-                                        'job_name': "job_name",
-                                        'hashtags': "hashtags",
-                                        'type': "tweet_type",
-                                        'conversation_id': "conversation_id",
-                                        })
+        neotweetdf = df[['id','text','created_at','favorite_count','retweet_count',
+                            'job_name','hashtags','type','conversation_id']]
         neotweetdf['hydrated'] = 'FULL'
         return neotweetdf
 
