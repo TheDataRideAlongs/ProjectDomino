@@ -580,7 +580,7 @@ class Neo4jDataAccess:
         return mention_df
 
     def __urldf_to_neodf(self,df):
-        neourldf=df[[ 'id','full_url','job_name','schema','netloc',
+        neourldf = df[[ 'id','full_url','job_name','schema','netloc',
                     'path','params','query','fragment','username',
                     'password','hostname','port']]
         neourldf['record_created at']= str(datetime.now())
