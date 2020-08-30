@@ -579,22 +579,11 @@ class Neo4jDataAccess:
         mention_df=pd.concat(mention_lst, ignore_index=True, sort=False)
         return mention_df
 
-    def __urldf_to_neodf(self, df):
-        neourldf = df.rename(columns={
-            'id': "id",
-            'full_url': "full_url",
-            'job_name': "job_name",
-            'schema': "schema",
-            'netloc': 'netloc',
-            'path': 'path',
-            'params': 'params',
-            'query': 'query',
-            'fragment': 'fragment',
-            'username': 'username',
-            'password': 'password',
-            'hostname': 'hostname',
-            'port': 'port'})
-        neourldf['record_created at'] = str(datetime.now())
+    def __urldf_to_neodf(self,df):
+        neourldf=df[[ 'id','full_url','job_name','schema','netloc',
+                    'path','params','query','fragment','username',
+                    'password','hostname','port']]
+        neourldf['record_created at']= str(datetime.now())
         return neourldf
 
     def __tweetdf_to_neodf(self, df):
