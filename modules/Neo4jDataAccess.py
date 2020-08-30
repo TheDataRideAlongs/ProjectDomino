@@ -565,18 +565,21 @@ class Neo4jDataAccess:
         return url_df
 
     def __parse_mentions_twint(self, df, job_name, job_id=None):
+        counter = 0
         mention_lst = []
-        for index, row in df.iterrows():
-            mentions = [x for x in row['user_mentions']]
-            for m in mentions:
-                    mention_lst.append(pd.DataFrame([{
-                                'id': int(row['status_id']),
-                                'user_screen_name': m,
-                                'job_id': job_id,
-                                'job_name': job_name,
-                                 }]))
 
-        mention_df=pd.concat(mention_lst, ignore_index=True, sort=False)
+        mentions = [x for x in df['user_mentions'].to_list()]
+        ids = [i for i in df["status_id"].to_list()]
+        tweet_id = [i for i in ids]
+        for m in mentions:
+            mention_lst.append(pd.DataFrame([{
+                'id': ids[counter],
+                'user_screen_name': m,
+                 'job_id': job_id,
+                 'job_name': job_name,
+            }]))
+            counter += 1
+        mention_df = pd.concat(mention_lst, ignore_index=True, sort=False)
         return mention_df
 
     def __urldf_to_neodf(self,df):
@@ -603,7 +606,7 @@ class Neo4jDataAccess:
             try:
                 if key == 'mentions':
                     with self.graph.session() as session:
-                        session.run(self.mentions, mentions=df.stack(), timeout=self.timeout)
+                        session.run(self.mentions, mentions=df.stack().to_list(), timeout=self.timeout)
                 elif key == 'urls':
                     df = self.__urldf_to_neodf(df)
                     self.__save_enrichment_df_to_graph(Neo4jDataAccess.NodeLabel.Url, df, job_name, job_id)
