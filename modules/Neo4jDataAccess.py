@@ -604,7 +604,7 @@ class Neo4jDataAccess:
             try:
                 if key == 'mentions':
                     with graph.session() as session:
-                        session.run(self.mentions, mentions=df.to_dict(orient='records') timeout=self.timeout)
+                        session.run(self.mentions, mentions=df.to_dict(orient='records') ,timeout=self.timeout)
                 elif key == 'urls':
                     self.__save_enrichment_df_to_graph(self.NodeLabel.Url, df, job_name, job_id)
                 elif key == 'params':
