@@ -589,7 +589,7 @@ class Neo4jDataAccess:
 
     def __tweetdf_to_neodf(self, df):
         neotweetdf = df[['id','text','created_at','favorite_count','retweet_count',
-                            'job_name','hashtags','type','conversation_id']]
+                        'job_name','hashtags','type','conversation_id']]
         neotweetdf['hydrated'] = 'FULL'
         neotweetdf['record_created at'] = str(datetime.now())
         return neotweetdf
@@ -604,7 +604,7 @@ class Neo4jDataAccess:
             try:
                 if key == 'mentions':
                     with graph.session() as session:
-                        session.run(self.mentions, mentions=df.stack().to_list(), timeout=self.timeout)
+                        session.run(self.mentions, mentions=df.to_dict(orient='records') timeout=self.timeout)
                 elif key == 'urls':
                     self.__save_enrichment_df_to_graph(self.NodeLabel.Url, df, job_name, job_id)
                 elif key == 'params':
