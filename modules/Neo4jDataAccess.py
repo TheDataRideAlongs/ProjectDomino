@@ -530,7 +530,7 @@ class Neo4jDataAccess:
         url_df = self.__urldf_to_neodf(self.__parse_urls_twint(df, job_name, job_id))
         mention_df = self.__parse_mentions_twint(df, job_name, job_id)
         res = {"mentions":mention_df,"urls":url_df,"params":params_df}
-        self.__write_twint_enriched_tweetdf_to_neo(res, job_name, job_id)
+        self.write_twint_enriched_tweetdf_to_neo(res, job_name, job_id)
 
 
     def __parse_urls_twint(self, df, job_name, job_id):
