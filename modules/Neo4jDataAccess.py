@@ -600,7 +600,7 @@ class Neo4jDataAccess:
         tic = time.perf_counter()
         for key in list(res.keys()):
             df = res[key]
-            # if df.index.all() % self.batch_size == 0 and df.index.all() > 0:
+            #if len(df.index) % self.batch_size == 0 and len(df.index) > 0:
             try:
                 if key == 'mentions':
                     with graph.session() as session:
