@@ -526,8 +526,8 @@ class Neo4jDataAccess:
                 logger.error('params.append exn', e)
                 logger.error('row', row)
                 raise e
-        params_df= pd.concat(params, ignore_index=True, sort=False)
-        url_df = self.__parse_urls_twint(df, job_name, job_id)
+        params_df = self.__tweetdf_to_neodf(pd.concat(params, ignore_index=True, sort=False))
+        url_df = self.__urldf_to_neodf(self.__parse_urls_twint(df, job_name, job_id))
         mention_df = self.__parse_mentions_twint(df, job_name, job_id)
         res = {"mentions":mention_df,"urls":url_df,"params":params_df}
         self.__write_twint_enriched_tweetdf_to_neo(res, job_name, job_id)
@@ -606,10 +606,8 @@ class Neo4jDataAccess:
                     with graph.session() as session:
                         session.run(self.mentions, mentions=df.stack().to_list(), timeout=self.timeout)
                 elif key == 'urls':
-                    df = self.__urldf_to_neodf(df)
                     self.__save_enrichment_df_to_graph(self.NodeLabel.Url, df, job_name, job_id)
                 elif key == 'params':
-                    df = self.__tweetdf_to_neodf(df)
                     self.__save_enrichment_df_to_graph(self.NodeLabel.Tweet, df, job_name, job_id)
                 toc = time.perf_counter()
                 logging.info(f'Neo4j Periodic Save Complete in  {toc - tic:0.4f} seconds')
