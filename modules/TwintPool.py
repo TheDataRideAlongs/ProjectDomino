@@ -17,7 +17,7 @@ class TwintPool:
         self.config.Hide_output = True
         self.config.Verified = None
         self.config.Username = None
-        #self.config.User_full = True
+        self.config.User_full = None
         self.config.Proxy_host = None #"tor"
         self.config.Proxy_port = None #"9050"
         self.config.Proxy_type = None #"socks5"
@@ -71,6 +71,7 @@ class TwintPool:
     
     
     def _get_user_info(self, username):
+        self.config.User_full = True
         self.config.Username = username
         self.config.Limit = 1
         twint.run.Lookup(self.config)
