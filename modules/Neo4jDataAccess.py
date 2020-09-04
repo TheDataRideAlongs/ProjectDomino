@@ -291,7 +291,7 @@ class Neo4jDataAccess:
             with graph.session() as session:
                 result = session.run(self.fetch_tweet_status, ids=ids)
                 res = pd.DataFrame([dict(record) for record in result])
-                res['tweet.id'] = res['tweet.id'].astype('int64')
+                #res['tweet.id'] = res['tweet.id'].astype('int64')
             logging.debug('Response info: %s rows, %s columns: %s' %
                           (len(res), len(res.columns), res.columns))
             if len(res) == 0:
@@ -637,7 +637,7 @@ class Neo4jDataAccess:
         counter = 0 
         mention_lst = []
         mentions = [x for x in df['user_mentions'].to_list()]
-        ids= [i for i in df["status_id"].to_list()]
+        ids = [i for i in df["status_id"].to_list()]
         for m in mentions:
                     mention_lst.append(pd.DataFrame([{
                                 'id': ids[counter],
