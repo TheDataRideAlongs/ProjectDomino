@@ -65,15 +65,11 @@ class TwintPool:
         twint.run.Search(self.config)
         tweets_df = twint.storage.panda.Tweets_df
         return tweets_df
-        
 
-
-    
-    
     def _get_user_info(self, username):
         self.config.User_full = True
         self.config.Username = username
-        self.config.Limit = 1
+        self.config.Pandas = True
         twint.run.Lookup(self.config)
         return twint.storage.panda.User_df
 
