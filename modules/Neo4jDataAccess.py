@@ -263,8 +263,8 @@ class Neo4jDataAccess:
         idColName = 'full_url' if label == self.NodeLabel.Url else 'id'
         statement = 'UNWIND $rows AS t'
         statement += '   MERGE (n:' + label.value + \
-            ' {' + idColName + ':t.' + idColName + '}) ' + \
-            ' SET '
+                     ' {' + idColName + ':t.' + idColName + '}) ' + \
+                     ' SET '
 
         props = []
         for column in df:
@@ -287,11 +287,11 @@ class Neo4jDataAccess:
         df = df.assign(id=df['id'].astype('int64'))
         if 'id' in df:
             graph = self.__get_neo4j_graph('reader')
-            ids = df[['id']].assign(id=df['id'].astype('int64')).to_dict(orient='records')                
+            ids = df[['id']].assign(id=df['id'].astype('int64')).to_dict(orient='records')
             with graph.session() as session:
                 result = session.run(self.fetch_tweet_status, ids=ids)
                 res = pd.DataFrame([dict(record) for record in result])
-                #res['tweet.id'] = res['tweet.id'].astype('int64')
+                # res['tweet.id'] = res['tweet.id'].astype('int64')
             logging.debug('Response info: %s rows, %s columns: %s' %
                           (len(res), len(res.columns), res.columns))
             if len(res) == 0:
@@ -307,7 +307,7 @@ class Neo4jDataAccess:
             raise Exception(
                 'Parameter df must be a DataFrame with a column named "id" ')
 
-     # Get the status of a DataFrame of Tweets by id.  Returns a dataframe with the hydrated status
+    # Get the status of a DataFrame of Tweets by id.  Returns a dataframe with the hydrated status
 
     # Get the status of a DataFrame of Account by id.  Returns a dataframe with the hydrated status
     def get_account_hydrated_status_by_id(self, df: pd.DataFrame):
@@ -424,8 +424,8 @@ class Neo4jDataAccess:
                 session.run(self.urls, urls=url_params, timeout=self.timeout)
         except Exception as inst:
             logging.error('Neo4j Transaction error')
-            logging.error(type(inst))    # the exception instance
-            logging.error(inst.args)     # arguments stored in .args
+            logging.error(type(inst))  # the exception instance
+            logging.error(inst.args)  # arguments stored in .args
             # __str__ allows args to be printed directly,
             logging.error(inst)
             raise inst
@@ -460,8 +460,8 @@ class Neo4jDataAccess:
                     'port': parsed.port,
                 })
             except Exception as inst:
-                logging.error(type(inst))    # the exception instance
-                logging.error(inst.args)     # arguments stored in .args
+                logging.error(type(inst))  # the exception instance
+                logging.error(inst.args)  # arguments stored in .args
                 # __str__ allows args to be printed directly,
                 logging.error(inst)
         return url_params
@@ -477,10 +477,9 @@ class Neo4jDataAccess:
         url_params = []
         tic = time.perf_counter()
         logger.debug('df columns %s', df.columns)
-        
+
         logger.error('HERE I AM!')
-        
-        
+
         for index, row in df.iterrows():
             # determine the type of tweet
             tweet_type = 'TWEET'
@@ -494,46 +493,50 @@ class Neo4jDataAccess:
                 tweet_type = "RETWEET"
             try:
                 params.append(pd.DataFrame([{'id': int(row['status_id']),
-                               'text': row['full_text'],
-                               'created_at': str(pd.to_datetime(row['created_at'])),
-                               'favorite_count': row['favorite_count'],
-                               'retweet_count': row['retweet_count'],
-                               'type': tweet_type,
-                               'job_id': job_id,
-                               'job_name': job_name,
-                               'hashtags': self.__normalize_hashtags(row['hashtags']),
-                               'user_id': row['user_id'],
-                               'user_name': row['user_name'],
-                               'user_location': row['user_location'] if 'user_location' in row else None,
-                               'user_screen_name': row['user_screen_name'],
-                               'user_followers_count': row[
-                                   'user_followers_count'] if 'user_followers_count' in row else None,
-                               'user_friends_count': row['user_friends_count'] if 'user_friends_count' in row else None,
-                               'user_created_at': pd.to_datetime(
-                                   df['user_created_at']) if 'user_created_at' in row else None,
-                               'user_profile_image_url': row[
-                                   'user_profile_image_url'] if 'user_profile_image_url' in row else None,
-                               'reply_tweet_id': row[
-                                   'in_reply_to_status_id'] if 'in_reply_to_status_id' in row else None,
-                               'conversation_id': row['conversation_id'] if 'conversation_id' in row else None,
-                               'quoted_status_id': row['quoted_status_id'] if 'quoted_status_id' in row else None,
-                               'retweet_id': row['retweet_id'] if 'retweet_id' in row else None,
-                               'geo': row['geo'] if 'geo' in row else None,
-                               }]))
+                                             'text': row['full_text'],
+                                             'created_at': str(pd.to_datetime(row['created_at'])),
+                                             'favorite_count': row['favorite_count'],
+                                             'retweet_count': row['retweet_count'],
+                                             'type': tweet_type,
+                                             'job_id': job_id,
+                                             'job_name': job_name,
+                                             'hashtags': self.__normalize_hashtags(row['hashtags']),
+                                             'user_id': row['user_id'],
+                                             'user_name': row['user_name'],
+                                             'user_location': row['user_location'] if 'user_location' in row else None,
+                                             'user_screen_name': row['user_screen_name'],
+                                             'user_followers_count': row[
+                                                 'user_followers_count'] if 'user_followers_count' in row else None,
+                                             'user_friends_count': row[
+                                                 'user_friends_count'] if 'user_friends_count' in row else None,
+                                             'user_created_at': pd.to_datetime(
+                                                 df['user_created_at']) if 'user_created_at' in row else None,
+                                             'user_profile_image_url': row[
+                                                 'user_profile_image_url'] if 'user_profile_image_url' in row else None,
+                                             'reply_tweet_id': row[
+                                                 'in_reply_to_status_id'] if 'in_reply_to_status_id' in row else None,
+                                             'conversation_id': row[
+                                                 'conversation_id'] if 'conversation_id' in row else None,
+                                             'quoted_status_id': row[
+                                                 'quoted_status_id'] if 'quoted_status_id' in row else None,
+                                             'retweet_id': row['retweet_id'] if 'retweet_id' in row else None,
+                                             'geo': row['geo'] if 'geo' in row else None,
+                                             }]))
 
             except Exception as e:
                 logger.error('params.append exn', e)
                 logger.error('row', row)
                 raise e
-        
+
         import uuid
-        
+
         for i in range(len(df)):
-            df2 = df[i:i+1]
-            params_df2=self.__tweetdf_to_neodf(pd.concat(params[i:i+1], ignore_index=True, sort=False))        
+            df2 = df[i:i + 1]
+            params_df2 = self.__tweetdf_to_neodf(pd.concat(params[i:i + 1], ignore_index=True, sort=False))
             url_df2 = self.__urldf_to_neodf(self.__parse_urls_twint(df2, job_name, job_id))
             mention_df2 = self.__parse_mentions_twint(df2, job_name, job_id)
-            res = {"mentions":mention_df2,"urls":url_df2,"params":params_df2}
+            acct_df2 = self.__tweetdf_to_neo_account_df(pd.concat(params[i:i + 1], ignore_index=True, sort=False))
+            res = {"mentions": mention_df2, "urls": url_df2, "params": params_df2, "accts": acct_df2}
             try:
                 self.write_twint_enriched_tweetdf_to_neo(res, job_name, job_id)
             except Exception as e:
@@ -544,37 +547,37 @@ class Neo4jDataAccess:
                 logger.error('retrying single from pickle')
                 try:
                     df3 = pd.read_pickle('./twint_errors/single_' + str(i) + '_' + e_id + '.pki')
-                    params_df3=self.__tweetdf_to_neodf(pd.concat(params[i:i+1], ignore_index=True, sort=False))        
+                    params_df3 = self.__tweetdf_to_neodf(pd.concat(params[i:i + 1], ignore_index=True, sort=False))
                     url_df3 = self.__urldf_to_neodf(self.__parse_urls_twint(df3, job_name, job_id))
                     mention_df3 = self.__parse_mentions_twint(df3, job_name, job_id)
-                    res = {"mentions":mention_df3,"urls":url_df3,"params":params_df3}
+                    acct_df3 = self.__tweetdf_to_neo_account_df(
+                        pd.concat(params[i:i + 1], ignore_index=True, sort=False))
+                    res = {"mentions": mention_df3, "urls": url_df3, "params": params_df3, "accts": acct_df3}
                     self.write_twint_enriched_tweetdf_to_neo(res, job_name, job_id)
                     logger.error('wat it worked???')
                 except Exception as e:
                     logger.error('It indeed re-failed!', exc_info=True)
-                    
 
         try:
-            params_df=self.__tweetdf_to_neodf(pd.concat(params, ignore_index=True, sort=False))        
+            params_df = self.__tweetdf_to_neodf(pd.concat(params, ignore_index=True, sort=False))
             url_df = self.__urldf_to_neodf(self.__parse_urls_twint(df, job_name, job_id))
+            acct_df = self.__tweetdf_to_neo_account_df(pd.concat(params, ignore_index=True, sort=False))
             mention_df = self.__parse_mentions_twint(df, job_name, job_id)
-            res = {"mentions":mention_df,"urls":url_df,"params":params_df}
+            res = {"mentions": mention_df, "urls": url_df, "params": params_df, "accts": acct_df}
         except Exception as e:
             e_id = str(uuid.uuid1())
             logger.error('error on combined rows (%s)', len(df), exc_info=True)
             df.to_csv('./twint_errors/multi_' + str(i) + '_' + e_id + '.csv')
             df.to_pickle('./twint_errors/multi_' + str(i) + '_' + e_id + '.pki')
             raise e
-            
-         
-        params_df=self.__tweetdf_to_neodf(pd.concat(params, ignore_index=True, sort=False))        
+
+        params_df = self.__tweetdf_to_neodf(pd.concat(params, ignore_index=True, sort=False))
         url_df = self.__urldf_to_neodf(self.__parse_urls_twint(df, job_name, job_id))
+        acct_df = self.__tweetdf_to_neo_account_df(pd.concat(params, ignore_index=True, sort=False))
         mention_df = self.__parse_mentions_twint(df, job_name, job_id)
-        res = {"mentions":mention_df,"urls":url_df,"params":params_df}
-        #self.__write_twint_enriched_tweetdf_to_neo(res, job_name, job_id)
+        res = {"mentions": mention_df, "urls": url_df, "params": params_df, "accts": acct_df}
+        # self.__write_twint_enriched_tweetdf_to_neo(res, job_name, job_id)
         return res
-        
-    
 
     def __normalize_hashtags(self, value):
         if value:
@@ -629,49 +632,55 @@ class Neo4jDataAccess:
                 'hostname': pd.Series([], dtype='object'),
                 'port': pd.Series([], dtype='int64')
             })
-        url_df=pd.concat(url_params_lst, ignore_index=True, sort=False)
+        url_df = pd.concat(url_params_lst, ignore_index=True, sort=False)
         counter += 1
         return url_df
 
     def __parse_mentions_twint(self, df, job_name, job_id=None):
-        counter = 0 
+        counter = 0
         mention_lst = []
         mentions = [x for x in df['user_mentions'].to_list()]
         ids = [i for i in df["status_id"].to_list()]
         for m in mentions:
-                    mention_lst.append(pd.DataFrame([{
-                                'id': ids[counter],
-                                'user_screen_name': m,
-                                'job_id': job_id,
-                                'job_name': job_name,
-                                 }]))
-                    counter +=1
+            mention_lst.append(pd.DataFrame([{
+                'id': ids[counter],
+                'user_screen_name': m,
+                'job_id': job_id,
+                'job_name': job_name,
+            }]))
+            counter += 1
         if len(mention_lst) == 0:
             return pd.DataFrame({
-                'id': pd.Series([], dtype='int64'), 
+                'id': pd.Series([], dtype='int64'),
                 'user_screen_name': pd.Series([], dtype='object'),
                 'job_id': pd.Series([], dtype='object'),
                 'job_name': pd.Series([], dtype='object')
             })
-        mention_df=pd.concat(mention_lst, ignore_index=True, sort=False)
+        mention_df = pd.concat(mention_lst, ignore_index=True, sort=False)
         return mention_df
 
-    def __urldf_to_neodf(self,df):
-        neourldf=df[[ 'id','full_url','job_name','schema','netloc',
-                    'path','params','query','fragment','username',
-                    'password','hostname','port']]
-        neourldf['record_created_at']= str(datetime.now())
+    def __urldf_to_neodf(self, df):
+        neourldf = df[['id', 'full_url', 'job_name', 'schema', 'netloc',
+                       'path', 'params', 'query', 'fragment', 'username',
+                       'password', 'hostname', 'port']]
+        neourldf['record_created_at'] = str(datetime.now())
         return neourldf
 
-                                            
-        
-    def __tweetdf_to_neodf(self,df):
-        neotweetdf = df[['id','text','created_at','favorite_count','retweet_count',
-                            'job_name','hashtags','type','conversation_id']]
+    def __tweetdf_to_neodf(self, df):
+        neotweetdf = df[['id', 'text', 'created_at', 'favorite_count', 'retweet_count',
+                         'job_name', 'hashtags', 'type', 'conversation_id']]
         neotweetdf['hydrated'] = 'FULL'
         neotweetdf['record_created_at'] = str(datetime.now())
         return neotweetdf
 
+    def __tweetdf_to_neo_account_df(self, df):
+        acctdf = df[['id', 'job_name', 'hashtags', 'type', 'conversation_id']]
+        acctdf['hydrated'] = 'FULL'
+        acctdf['record_created_at'] = str(datetime.now())
+        acctdf['screen_name'] = df['user_name']
+        acctdf['name'] = df["user_screen_name"]
+        acctdf["created_at"] = df["user_created_at"]
+        return acctdf
 
     def write_twint_enriched_tweetdf_to_neo(self, res, job_name, job_id):
         graph = self.__get_neo4j_graph('writer')
@@ -679,15 +688,17 @@ class Neo4jDataAccess:
         tic = time.perf_counter()
         for key in list(res.keys()):
             df = res[key]
-            #if df.index.all() % self.batch_size == 0 and df.index.all() > 0:
+            # if df.index.all() % self.batch_size == 0 and df.index.all() > 0:
             try:
-                if key =='mentions':
+                if key == 'mentions':
                     with graph.session() as session:
-                        session.run(self.mentions,mentions=df.to_dict(orient='records'),timeout=self.timeout)
-                elif key =='urls':
-                    self.save_enrichment_df_to_graph(self.NodeLabel.Url,df, job_name, job_id)  
-                elif key =='params':
-                    self.save_enrichment_df_to_graph(self.NodeLabel.Tweet,df,job_name,job_id)
+                        session.run(self.mentions, mentions=df.to_dict(orient='records'), timeout=self.timeout)
+                elif key == 'urls':
+                    self.save_enrichment_df_to_graph(self.NodeLabel.Url, df, job_name, job_id)
+                elif key == 'params':
+                    self.save_enrichment_df_to_graph(self.NodeLabel.Tweet, df, job_name, job_id)
+                elif key == 'accts':
+                    self.save_enrichment_df_to_graph(self.NodeLabel.Tweet, df, job_name, job_id)
                 toc = time.perf_counter()
                 logging.info(f'Neo4j Periodic Save Complete in  {toc - tic:0.4f} seconds')
                 tic = time.perf_counter()
@@ -697,3 +708,4 @@ class Neo4jDataAccess:
                 # __str__ allows args to be printed directly,
                 logging.error(inst)
                 raise inst
+
