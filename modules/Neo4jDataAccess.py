@@ -487,9 +487,9 @@ class Neo4jDataAccess:
                 tweet_type = row['tweet_type_twint']
             elif row["in_reply_to_status_id"] is not None and row["in_reply_to_status_id"] > 0:
                 tweet_type = "REPLY"
-            elif row["quoted_status_id"] is not None and row["quoted_status_id"] > 0:
+            elif "quoted_status_id" in row and row["quoted_status_id"] is not None and row["quoted_status_id"] > 0:
                 tweet_type = "QUOTE_RETWEET"
-            elif row["retweet_id"] is not None and row["retweet_id"] > 0:
+            elif "retweet_id" in row and row["retweet_id"] is not None and row["retweet_id"] > 0:
                 tweet_type = "RETWEET"
             try:
                 params.append(pd.DataFrame([{'id': int(row['status_id']),
