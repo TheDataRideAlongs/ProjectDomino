@@ -1,8 +1,9 @@
 import pyarrow as pa
-import ProjectDomino.modules.Twint.twint as twint
+import twint
 from urlextract import URLExtract
 from datetime import datetime, timedelta
-
+import pandas as pd
+import json
 import logging
 logger = logging.getLogger()
 
@@ -17,10 +18,9 @@ class TwintPool:
         self.config.Verified = None
         self.config.Username = None
         #self.config.User_full = True
-        self.config.Proxy_host = "tor"
-        self.self.config.Proxy_port = "9050"
-        self.config.Proxy_type = "socks5"
-
+        #self.config.Proxy_host = "tor"
+        #self.config.Proxy_port = "9050"
+        #self.config.Proxy_type = "socks5"
 
     def twint_loop(self, since, until, stride_sec=600, limit=None):
         def get_unix_time(time_str):
@@ -58,9 +58,10 @@ class TwintPool:
         for df,t0,t1 in self.twint_loop(Since, Until, stride_sec, self.config.Limit):
             yield (df, t0, t1)
     
-    def _get_timeline(self, username="lmeyerov"):
+    def _get_timeline(self, username, limit):
         self.config.Retweets = True
         self.config.Search = "from:"+username
+        self.config.Limit = limit
         twint.run.Search(self.config)
         tweets_df = twint.storage.panda.Tweets_df
         return tweets_df
@@ -74,16 +75,34 @@ class TwintPool:
         self.config.Limit = 1
         twint.run.Lookup(self.config)
         return twint.storage.panda.User_df
+
+    def check_hydrate(self,df):
+        
+        df = df.assign(id=df['id'].astype('int64'))
+        
+        from .Neo4jDataAccess import Neo4jDataAccess
+        neo4j_creds = None
+        with open('../neo4jcreds.json') as json_file:
+            neo4j_creds = json.load(json_file)
+
+        # dft : df[[id:int64, hydrated: NaN | 'FULL' | 'PARTIAL'??]]
+        dft = Neo4jDataAccess(neo4j_creds=neo4j_creds).get_tweet_hydrated_status_by_id(df)
+        needs_hydrate_ids = dft[ dft['hydrated'] != 'FULL' ][['id']]
+        needs_hydrate_df = df.merge(needs_hydrate_ids, how='inner', on='id')
+        
+        return needs_hydrate_df
+        
     
     
     def twint_df_to_neo4j_df(self, df):
+        #df=self.__check_hydrate(df)
         neo4j_df = df.rename(columns={
             'id': 'status_id',
             'tweet': 'full_text',
             'created_at': 'created_at', # needs to be datetime
             'nlikes': 'favorite_count',
             'nretweets': 'retweet_count',
-            'user_id_str': 'user_id',
+            #'user_id_str': 'user_id',
             'username': 'user_name',
             'name': 'user_screen_name'
             })
@@ -116,25 +135,28 @@ class TwintPool:
         neo4j_df['hashtags'] = df['hashtags'].apply(lambda x: [{'text': ht} for ht in x])
         neo4j_df['user_followers_count'] = None
         neo4j_df['user_friends_count'] = None
-        neo4j_df['user_created_at'] = None
+        #neo4j_df['user_created_at'] = None
         neo4j_df['user_profile_image_url'] = None
         neo4j_df['reply_tweet_id'] = None
         neo4j_df['user_mentions'] = df['tweet'].str.findall('@[\w]+')
         #neo4j_df['retweet_id'] is suspiciously empty (always)
         neo4j_df['retweeted_status'] = None
-        
+        neo4j_df['conversation_id'] = df['conversation_id'] #FIXME no-op?
         neo4j_df['created_at'] = (neo4j_df['created_at'] / 1000).apply(lambda n: datetime.fromtimestamp(n))
         
         #neo4j_df['quoted_status_id'] = df.apply(row_to_quoted_status_id, axis=1)
         #neo4j_df['is_quote_status'] = neo4j_df['quoted_status_id'] != None
         neo4j_df['in_reply_to_status_id'] = False
         neo4j_df['urls'] = df.apply(row_tweet_to_urls, axis=1)
-        
+        neo4j_df['user_id']= df['user_id']
         return neo4j_df
         
 
     def to_arrow(self, tweets_df):
         pass
         
+     
+        
+
      
         
