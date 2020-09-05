@@ -468,7 +468,7 @@ class Neo4jDataAccess:
 
     def __enrich_usr_info(self, df):
         lst = [TwintPool()._get_user_info(username=user) for user in df["user_name"].drop_duplicates().to_list()]
-        dfs=pd.concat(lst).drop_duplicates()
+        dfs = pd.concat(lst).drop_duplicates()
         return dfs
 
     def save_twintdf_to_neo(self, df, job_name, job_id=None):
