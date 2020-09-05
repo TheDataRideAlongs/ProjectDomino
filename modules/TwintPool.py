@@ -467,9 +467,9 @@ class Neo4jDataAccess:
         return url_params
 
     def __enrich_usr_info(self, df):
-        user_lst = df["user_name"].drop_duplicates().to_list()
+        #user_lst = df["user_name"].drop_duplicates().to_list()
         usr_df = []
-        for user in user_lst:
+        for user in df["user_name"].drop_duplicates().to_list():
             df = TwintPool()._get_user_info(username=user)
             usr_df.append(df)
         dfs = pd.concat(usr_df)
@@ -714,6 +714,7 @@ class Neo4jDataAccess:
                 elif key == 'params':
                     self.save_enrichment_df_to_graph(self.NodeLabel.Tweet, df, job_name, job_id)
                 elif key == 'accts':
+                    df = df.drop_duplicates()
                     self.save_enrichment_df_to_graph(self.NodeLabel.Tweet, df, job_name, job_id)
                 toc = time.perf_counter()
                 logging.info(f'Neo4j Periodic Save Complete in  {toc - tic:0.4f} seconds')
