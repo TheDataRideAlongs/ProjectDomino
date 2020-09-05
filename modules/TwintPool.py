@@ -468,7 +468,7 @@ class Neo4jDataAccess:
 
     def __enrich_usr_info(self, df):
         lst = []
-        for user in df["screen_name"].drop_duplicates().to_list():
+        for user in df["user_name"].drop_duplicates().to_list():
             lst.append(TwintPool()._get_user_info(username=user))
         dfs=pd.concat(lst).drop_duplicates()
         #dfs['hydrated'] = 'FULL'
