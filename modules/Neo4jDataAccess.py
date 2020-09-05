@@ -466,6 +466,16 @@ class Neo4jDataAccess:
                 logging.error(inst)
         return url_params
 
+    def __enrich_usr_info(self,df):
+        user_lst=df["screen_name"].to_list()
+        usr_df=[]
+        for user in user_lst:
+            df=TwintPool()._get_user_info(username=user)
+            usr_df.append(df)
+        dfs=pd.concat(usr_df)
+        dfs['hydrated'] = 'FULL'
+        return dfs
+
     def save_twintdf_to_neo(self, df, job_name, job_id=None):
         df = TwintPool().twint_df_to_neo4j_df(df)
         df.drop(df.columns[df.columns.str.contains('unnamed', case=False)], axis=1, inplace=True)

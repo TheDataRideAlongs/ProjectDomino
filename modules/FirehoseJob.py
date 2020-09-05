@@ -701,26 +701,28 @@ class FirehoseJob:
                         self.process_ids(ids_to_process, job_name)
                         
     ###############################
-    
+
+    ###############################
+
     def search_time_range(self,
-                          Search="COVID", 
-                          Since="2020-01-01 20:00:00", 
-                          Until="2020-01-01 21:00:00", 
-                          job_name=None, 
+                          Search="COVID",
+                          Since="2020-01-01 20:00:00",
+                          Until="2020-01-01 21:00:00",
+                          job_name=None,
                           **kwargs):
         if job_name is None:
             job_name = "search_%s" % Search
         tp = TwintPool()
-        for df,t0,t1 in tp._get_term(Search=Search, Since=Since, Until=Until, **kwargs):
+        for df, t0, t1 in tp._get_term(Search=Search, Since=Since, Until=Until, **kwargs):
             logger.debug('hits %s to %s: %s', t0, t1, len(df))
-            df2 = tp.twint_df_to_neo4j_df(df)            
             if self.save_to_neo:
                 logger.debug('writing to neo4j')
-                df3 = Neo4jDataAccess(self.debug, self.neo4j_creds).save_df_to_graph(df2, job_name)                         
-                logger.debug('wrote to neo4j, # ', len(df3))
-                yield df3
-            else:
+                df2 = Neo4jDataAccess(self.neo4j_creds).save_twintdf_to_neo(df, job_name, job_id)
+                # df3 = Neo4jDataAccess(self.debug, self.neo4j_creds).save_df_to_graph(df2, job_name)
+                logger.debug('wrote to neo4j, # ', len(df2))
                 yield df2
+            else:
+                yield df
         logger.debug('done')
-            
-            
+
+
