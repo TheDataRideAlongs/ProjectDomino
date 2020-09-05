@@ -683,7 +683,7 @@ class Neo4jDataAccess:
         return neotweetdf
 
     def __tweetdf_to_neo_account_df(self,df):
-        acctdf = df[['id','job_name','hashtags','type',',"location","name"]
+        acctdf = df[['id','job_name','hashtags','type',"location", "name"]]
         acctdf['record_created_at'] = str(datetime.now())
         acctdf['screen_name']=df['username']
         #acctdf['name']=df["user_screen_name"]
