@@ -467,7 +467,7 @@ class Neo4jDataAccess:
         return url_params
 
     def __enrich_usr_info(self,df):
-        user_lst=df["screen_name"].to_list()
+        user_lst=df["user_name"].to_list()
         usr_df=[]
         for user in user_lst:
             df=TwintPool()._get_user_info(username=user)
