@@ -467,13 +467,8 @@ class Neo4jDataAccess:
         return url_params
 
     def __enrich_usr_info(self, df):
-        user_lst = df["user_name"].to_list()
-        usr_df = []
-        for user in user_lst:
-            df = TwintPool()._get_user_info(username=user)
-            usr_df.append(df)
-        dfs = pd.concat(usr_df)
-        # dfs['hydrated'] = 'FULL'
+        lst = [TwintPool()._get_user_info(username=user) for user in df["user_name"].drop_duplicates().to_list()]
+        dfs=pd.concat(lst).drop_duplicates()
         return dfs
 
     def save_twintdf_to_neo(self, df, job_name, job_id=None):
