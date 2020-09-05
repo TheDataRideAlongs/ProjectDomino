@@ -473,7 +473,7 @@ class Neo4jDataAccess:
             df=TwintPool()._get_user_info(username=user)
             usr_df.append(df)
         dfs=pd.concat(usr_df)
-        dfs['hydrated'] = 'FULL'
+        #dfs['hydrated'] = 'FULL'
         return dfs
 
     def save_twintdf_to_neo(self, df, job_name, job_id=None):
@@ -545,7 +545,7 @@ class Neo4jDataAccess:
             params_df2 = self.__tweetdf_to_neodf(pd.concat(params[i:i + 1], ignore_index=True, sort=False))
             url_df2 = self.__urldf_to_neodf(self.__parse_urls_twint(df2, job_name, job_id))
             mention_df2 = self.__parse_mentions_twint(df2, job_name, job_id)
-            acct_df2 = self.__tweetdf_to_neo_account_df(pd.concat(params[i:i + 1], ignore_index=True, sort=False))
+            acct_df2 = self.__tweetdf_to_neo_account_df(self.__enrich_usr_info(pd.concat(params[i:i + 1], ignore_index=True, sort=False)))
             res = {"mentions": mention_df2, "urls": url_df2, "params": params_df2, "accts": acct_df2}
             try:
                 self.write_twint_enriched_tweetdf_to_neo(res, job_name, job_id)
@@ -560,8 +560,7 @@ class Neo4jDataAccess:
                     params_df3 = self.__tweetdf_to_neodf(pd.concat(params[i:i + 1], ignore_index=True, sort=False))
                     url_df3 = self.__urldf_to_neodf(self.__parse_urls_twint(df3, job_name, job_id))
                     mention_df3 = self.__parse_mentions_twint(df3, job_name, job_id)
-                    acct_df3 = self.__tweetdf_to_neo_account_df(
-                        pd.concat(params[i:i + 1], ignore_index=True, sort=False))
+                    acct_df3 = self.__tweetdf_to_neo_account_df(self.__enrich_usr_info(pd.concat(params[i:i + 1], ignore_index=True, sort=False)))
                     res = {"mentions": mention_df3, "urls": url_df3, "params": params_df3, "accts": acct_df3}
                     self.write_twint_enriched_tweetdf_to_neo(res, job_name, job_id)
                     logger.error('wat it worked???')
@@ -571,7 +570,7 @@ class Neo4jDataAccess:
         try:
             params_df = self.__tweetdf_to_neodf(pd.concat(params, ignore_index=True, sort=False))
             url_df = self.__urldf_to_neodf(self.__parse_urls_twint(df, job_name, job_id))
-            acct_df = self.__tweetdf_to_neo_account_df(pd.concat(params, ignore_index=True, sort=False))
+            acct_df = self.__tweetdf_to_neo_account_df(self.__enrich_usr_info(pd.concat(params, ignore_index=True, sort=False)))
             mention_df = self.__parse_mentions_twint(df, job_name, job_id)
             res = {"mentions": mention_df, "urls": url_df, "params": params_df, "accts": acct_df}
         except Exception as e:
@@ -583,7 +582,7 @@ class Neo4jDataAccess:
 
         params_df = self.__tweetdf_to_neodf(pd.concat(params, ignore_index=True, sort=False))
         url_df = self.__urldf_to_neodf(self.__parse_urls_twint(df, job_name, job_id))
-        acct_df = self.__tweetdf_to_neo_account_df(pd.concat(params, ignore_index=True, sort=False))
+        acct_df = self.__tweetdf_to_neo_account_df(self.__enrich_usr_info(pd.concat(params, ignore_index=True, sort=False)))
         mention_df = self.__parse_mentions_twint(df, job_name, job_id)
         res = {"mentions": mention_df, "urls": url_df, "params": params_df, "accts": acct_df}
         # self.__write_twint_enriched_tweetdf_to_neo(res, job_name, job_id)
@@ -683,15 +682,16 @@ class Neo4jDataAccess:
         neotweetdf['record_created_at'] = str(datetime.now())
         return neotweetdf
 
-    def __tweetdf_to_neo_account_df(self, df):
-        acctdf = df[['id', 'job_name', 'hashtags', 'type', 'conversation_id']]
-        acctdf['hydrated'] = 'FULL'
+    def __tweetdf_to_neo_account_df(self,df):
+        acctdf = df[['id','job_name','hashtags','type',',"location","name"]
         acctdf['record_created_at'] = str(datetime.now())
-        acctdf['screen_name'] = df['user_name']
-        acctdf['name'] = df["user_screen_name"]
-        acctdf["created_at"] = df["user_created_at"]
+        acctdf['screen_name']=df['username']
+        #acctdf['name']=df["user_screen_name"]
+        #acctdf["created_at"]=df["user_created_at"]
+        acctdf['friends_count']= df["following"]
+        acctdf['followers_count']=df["followers"]
+        acctdf['hydrated'] = 'FULL'
         return acctdf
-
     def write_twint_enriched_tweetdf_to_neo(self, res, job_name, job_id):
         graph = self.__get_neo4j_graph('writer')
         global_tic = time.perf_counter()
