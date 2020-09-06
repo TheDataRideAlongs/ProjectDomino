@@ -717,10 +717,11 @@ class FirehoseJob:
             logger.debug('hits %s to %s: %s', t0, t1, len(df))
             if self.save_to_neo:
                 logger.debug('writing to neo4j')
-                df2 = Neo4jDataAccess(self.neo4j_creds).save_twintdf_to_neo(df, job_name, job_id)
+                df = tp.check_hydrate(df)
+                res = Neo4jDataAccess(self.neo4j_creds).save_twintdf_to_neo(df, job_name, job_id)
                 # df3 = Neo4jDataAccess(self.debug, self.neo4j_creds).save_df_to_graph(df2, job_name)
                 logger.debug('wrote to neo4j, # ', len(df2))
-                yield df2
+                yield res
             else:
                 yield df
         logger.debug('done')

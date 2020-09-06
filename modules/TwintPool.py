@@ -68,22 +68,7 @@ class TwintPool:
         tweets_df = twint.storage.panda.Tweets_df
         return tweets_df
 
-    def twint_get(self, Search, Since, Until, job_name, Limit, **kwargs):
-        from .FirehoseJob import FirehoseJob
-        neo4j_creds = None
-        with open('../neo4jcreds.json') as json_file:
-            neo4j_creds = json.load(json_file)
-        fh = FirehoseJob(neo4j_creds=neo4j_creds, PARQUET_SAMPLE_RATE_TIME_S=30, save_to_neo=False, writers={})
-        dfs = []
-        for df in fh.search_time_range(
-                Search=Search,
-                Since=Since,
-                Until=Until,
-                job_name=job_name,
-                Limit=Limit):
-            dfs.append(df)
-        df = pd.concat(dfs)
-        return df
+
 
     def _get_user_info(self, username):
         self.config.User_full = True
