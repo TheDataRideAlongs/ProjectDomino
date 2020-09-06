@@ -700,24 +700,23 @@ class Neo4jDataAccess:
         tic = time.perf_counter()
         for key in list(res.keys()):
             df = res[key]
-            # if df.index.all() % self.batch_size == 0 and df.index.all() > 0:
-            try:
-                if key == 'mentions':
-                    with graph.session() as session:
-                        session.run(self.mentions, mentions=df.to_dict(orient='records'), timeout=self.timeout)
-                elif key == 'urls':
-                    self.save_enrichment_df_to_graph(self.NodeLabel.Url, df, job_name, job_id)
-                elif key == 'params':
-                    self.save_enrichment_df_to_graph(self.NodeLabel.Tweet, df, job_name, job_id)
-                elif key == 'accts':
-                    self.save_enrichment_df_to_graph(self.NodeLabel.Tweet, df, job_name, job_id)
-                toc = time.perf_counter()
-                logging.info(f'Neo4j Periodic Save Complete in  {toc - tic:0.4f} seconds')
-                tic = time.perf_counter()
-            except Exception as inst:
-                logging.error(type(inst))  # the exception instance
-                logging.error(inst.args)  # arguments stored in .args
-                # __str__ allows args to be printed directly,
-                logging.error(inst)
-                raise inst
-
+            if df.index.all() % self.batch_size == 0 and df.index.all() > 0:
+                try:
+                    if key == 'mentions':
+                        with graph.session() as session:
+                            session.run(self.mentions, mentions=df.to_dict(orient='records'), timeout=self.timeout)
+                    elif key == 'urls':
+                        self.save_enrichment_df_to_graph(self.NodeLabel.Url, df, job_name, job_id)
+                    elif key == 'params':
+                        self.save_enrichment_df_to_graph(self.NodeLabel.Tweet, df, job_name, job_id)
+                    elif key == 'accts':
+                        self.save_enrichment_df_to_graph(self.NodeLabel.Tweet, df, job_name, job_id)
+                    toc = time.perf_counter()
+                    logging.info(f'Neo4j Periodic Save Complete in  {toc - tic:0.4f} seconds')
+                    tic = time.perf_counter()
+                except Exception as inst:
+                    logging.error(type(inst))  # the exception instance
+                    logging.error(inst.args)  # arguments stored in .args
+                    # __str__ allows args to be printed directly,
+                    logging.error(inst)
+                    raise inst
