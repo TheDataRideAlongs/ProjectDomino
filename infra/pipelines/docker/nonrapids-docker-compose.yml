@@ -7,7 +7,7 @@
 #
 ########
 
-version: '2'
+version: '3.4'
 
 services:
 ##############################################################################
@@ -24,7 +24,6 @@ services:
       context: ../../../
       dockerfile: ./infra/pipelines/docker/nonrapids-Dockerfile
     container_name: prefect-agent
-    scale: 5
     network_mode: 'bridge'
     restart: unless-stopped
     environment:
