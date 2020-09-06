@@ -720,7 +720,7 @@ class FirehoseJob:
                 chkd = tp.check_hydrate(df)
                 res = Neo4jDataAccess(self.neo4j_creds).save_twintdf_to_neo(chkd, job_name, job_id)
                 # df3 = Neo4jDataAccess(self.debug, self.neo4j_creds).save_df_to_graph(df2, job_name)
-                logger.debug('wrote to neo4j, # ', len(df2))
+                logger.debug('wrote to neo4j, # ', len(res))
                 yield res
             else:
                 yield df
