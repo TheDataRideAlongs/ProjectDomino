@@ -7,7 +7,7 @@
 #
 ########
 
-version: '2'
+version: '3'
 
 services:
 ##############################################################################
@@ -26,6 +26,9 @@ services:
     container_name: prefect-agent
     network_mode: 'bridge'
     restart: unless-stopped
+    deploy:
+      replicas: 3
+      mode: replicated
     environment:
       PREFECT__SERVER__HOST: ${PREFECT__SERVER__HOST:-http://host.docker.internal}
       PREFECT__SERVER__PORT: ${PREFECT__SERVER__PORT:-4200}
