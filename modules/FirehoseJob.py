@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
-import simplejson as json #nan serialization
+import simplejson as json  # nan serialization
 from twarc import Twarc
 
 from .Timer import Timer
@@ -16,6 +16,7 @@ from .StatusArrow import KNOWN_FIELDS
 from .TwintPool import TwintPool
 
 import logging
+
 logger = logging.getLogger('fh')
 
 try:
@@ -27,7 +28,7 @@ except:
 
 ###################
 
-object_dtype = pd.Series([ [1,2], ['3', '4'] ]).dtype
+object_dtype = pd.Series([[1, 2], ['3', '4']]).dtype
 string_dtype = 'object'
 id_type = np.int64
 
@@ -35,7 +36,7 @@ id_type = np.int64
 EXPECTED_COLS = [
     ('contributors', 'object', []),
     ('coordinates', 'object', None),
-    ('created_at', 'object', None), #FIXME datetime[s]
+    ('created_at', 'object', None),  # FIXME datetime[s]
     ('display_text_range', 'object', None),
     ('extended_entities', 'object', None),
     ('entities', 'object', None),
@@ -64,24 +65,24 @@ EXPECTED_COLS = [
     ('retweet_count', np.int64, 0),
     ('retweeted', np.bool, None),
     ('retweeted_status', string_dtype, None),
-    ('scopes','object', None),
+    ('scopes', 'object', None),
     ('source', string_dtype, None),
     ('truncated', np.bool, None),
     ('user', string_dtype, None),
     ('withheld_in_countries', object_dtype, [])
 ]
 
-DROP_COLS = [ 'withheld_in_countries' ]
+DROP_COLS = ['withheld_in_countries']
 
 
 #### PARQUET WRITER BARFS
-#sizes_t = pa.struct({
+# sizes_t = pa.struct({
 #                'h': pa.int64(),
 #                'resize': pa.string(),
 #                'w': pa.int64()
 #            })
 #
-#extended_entities_t = pa.struct({
+# extended_entities_t = pa.struct({
 #    'media': pa.list_(pa.struct({
 #        'display_url': pa.string(),
 #        'expanded_url': pa.string(),
@@ -110,7 +111,6 @@ DROP_COLS = [ 'withheld_in_countries' ]
 
 
 class FirehoseJob:
-
     ###################
 
     MACHINE_IDS = (375, 382, 361, 372, 364, 381, 376, 365, 363, 362, 350, 325, 335, 333, 342, 326, 327, 336, 347, 332)
@@ -120,8 +120,8 @@ class FirehoseJob:
     KNOWN_FIELDS = KNOWN_FIELDS
     DROP_COLS = DROP_COLS
 
-
-    def __init__(self, creds = [], neo4j_creds = None, TWEETS_PER_PROCESS=100, TWEETS_PER_ROWGROUP=5000, save_to_neo=False, PARQUET_SAMPLE_RATE_TIME_S=None, debug=False, BATCH_LEN=100, writers = {'snappy': None}):
+    def __init__(self, creds=[], neo4j_creds=None, TWEETS_PER_PROCESS=100, TWEETS_PER_ROWGROUP=5000, save_to_neo=False,
+                 PARQUET_SAMPLE_RATE_TIME_S=None, debug=False, BATCH_LEN=100, writers={'snappy': None}):
         self.queue = deque()
         self.writers = writers
         self.last_write_epoch = ''
@@ -138,8 +138,8 @@ class FirehoseJob:
             for o in creds
         ])
         self.save_to_neo = save_to_neo
-        self.TWEETS_PER_PROCESS = TWEETS_PER_PROCESS #100
-        self.TWEETS_PER_ROWGROUP = TWEETS_PER_ROWGROUP #100 1KB x 1000 = 1MB uncompressed parquet
+        self.TWEETS_PER_PROCESS = TWEETS_PER_PROCESS  # 100
+        self.TWEETS_PER_ROWGROUP = TWEETS_PER_ROWGROUP  # 100 1KB x 1000 = 1MB uncompressed parquet
         self.PARQUET_SAMPLE_RATE_TIME_S = PARQUET_SAMPLE_RATE_TIME_S
         self.last_df = None
         self.last_arr = None
@@ -157,14 +157,13 @@ class FirehoseJob:
     def __del__(self):
 
         logger.debug('__del__')
-        self.destroy()        
-        
+        self.destroy()
 
     def destroy(self, job_name='generic_job'):
         logger.debug('flush before destroying..')
         self.flush(job_name)
 
-        logger.debug('destroy', str(self.writers.keys()))
+        logger.debug('destroy: %s', self.writers.keys())
 
         for k in self.writers.keys():
             if not (self.writers[k] is None):
@@ -180,7 +179,6 @@ class FirehoseJob:
             else:
 
                 logger.debug('Nothing to close for writer %s' % k)
-                
 
     ###################
 
@@ -193,7 +191,6 @@ class FirehoseJob:
     def sequence_id(self, id):
         return id & 0b111111111111
 
-
     ###################
 
     valid_file_name_chars = frozenset("-_%s%s" % (string.ascii_letters, string.digits))
@@ -201,7 +198,7 @@ class FirehoseJob:
     def clean_file_name(self, filename):
         return ''.join(c for c in filename if c in FirehoseJob.valid_file_name_chars)
 
-    #clean series before reaches arrow
+    # clean series before reaches arrow
     def clean_series(self, series):
         try:
             identity = lambda x: x
@@ -234,7 +231,7 @@ class FirehoseJob:
             logger.error(exn)
             return series
 
-    #clean df before reaches arrow
+    # clean df before reaches arrow
     def clean_df(self, raw_df):
         self.timer.tic('clean', 1000)
         try:
@@ -253,15 +250,13 @@ class FirehoseJob:
         finally:
             self.timer.toc('clean')
 
-
     def folder_last(self):
         return self.__folder_last
 
     def files(self):
         return self.__file_names.copy()
 
-
-    #TODO <topic>/<year>/<mo>/<day>/<24hour_utc>_<nth>.parquet (don't clobber..)
+    # TODO <topic>/<year>/<mo>/<day>/<24hour_utc>_<nth>.parquet (don't clobber..)
     def pq_writer(self, table, job_name='generic_job'):
         try:
             self.timer.tic('write', 1000)
@@ -279,10 +274,10 @@ class FirehoseJob:
             run = 0
             file_prefix = ""
             while (file_prefix == "") \
-                or os.path.exists(file_prefix + vanilla_file_suffix) \
-                or os.path.exists(file_prefix + snappy_file_suffix):
+                    or os.path.exists(file_prefix + vanilla_file_suffix) \
+                    or os.path.exists(file_prefix + snappy_file_suffix):
                 run = run + 1
-                file_prefix = "%s/%s_b%s." % ( folder, time_prefix, run )
+                file_prefix = "%s/%s_b%s." % (folder, time_prefix, run)
             if run > 1:
                 logger.debug('Starting new batch for existing hour')
             vanilla_file_name = file_prefix + vanilla_file_suffix
@@ -290,26 +285,27 @@ class FirehoseJob:
 
             #########################################################
 
-
             #########################################################
-            if ('vanilla' in self.writers) and ( (self.writers['vanilla'] is None) or self.last_write_epoch != file_prefix ):
+            if ('vanilla' in self.writers) and (
+                    (self.writers['vanilla'] is None) or self.last_write_epoch != file_prefix):
                 logger.debug('Creating vanilla writer: %s', vanilla_file_name)
                 try:
-                    #first write
-                    #os.remove(vanilla_file_name)
+                    # first write
+                    # os.remove(vanilla_file_name)
                     1
                 except Exception as exn:
                     logger.debug(('Could not rm vanilla parquet', exn))
                 self.writers['vanilla'] = pq.ParquetWriter(
                     vanilla_file_name,
                     schema=table.schema,
-                compression='NONE')
+                    compression='NONE')
                 self.__file_names.append(vanilla_file_name)
 
-            if ('snappy' in self.writers) and ( (self.writers['snappy'] is None) or self.last_write_epoch != file_prefix ):
+            if ('snappy' in self.writers) and (
+                    (self.writers['snappy'] is None) or self.last_write_epoch != file_prefix):
                 logger.debug('Creating snappy writer: %s', snappy_file_name)
                 try:
-                    #os.remove(snappy_file_name)
+                    # os.remove(snappy_file_name)
                     1
                 except Exception as exn:
                     logger.error(('Could not rm snappy parquet', exn))
@@ -365,7 +361,8 @@ class FirehoseJob:
             try:
                 if self.save_to_neo:
                     logger.debug('Writing to Neo4j')
-                    Neo4jDataAccess(self.debug, self.neo4j_creds).save_parquet_df_to_graph(self.current_table.to_pandas(), job_name)
+                    Neo4jDataAccess(self.debug, self.neo4j_creds).save_parquet_df_to_graph(
+                        self.current_table.to_pandas(), job_name)
                 else:
                     logger.debug('Skipping Neo4j write')
             except Exception as e:
@@ -396,20 +393,20 @@ class FirehoseJob:
             self.timer.tic('df_with_schema_to_arrow', 1000)
             table = None
             try:
-                #if len(df['followers'].dropna()) > 0:
+                # if len(df['followers'].dropna()) > 0:
                 #    print('followers!')
                 #    print(df['followers'].dropna())
                 #    raise Exception('ok')
                 table = pa.Table.from_pandas(df, schema)
                 if len(df.columns) != len(schema):
                     logger.debug('=========================')
-                    logger.debug('DATA LOSS WARNING: df has cols not in schema, dropping') #reverse is an exn
+                    logger.debug('DATA LOSS WARNING: df has cols not in schema, dropping')  # reverse is an exn
                     for col_name in df.columns:
-                        hits = [field for field in schema if field.name==col_name]
+                        hits = [field for field in schema if field.name == col_name]
                         if len(hits) == 0:
                             logger.debug('-------')
                             logger.debug('arrow schema missing col %s ' % col_name)
-                            logger.debug('df dtype',df[col_name].dtype)
+                            logger.debug('df dtype', df[col_name].dtype)
                             logger.debug(df[col_name].dropna())
                             logger.debug('-------')
             except Exception as exn:
@@ -434,7 +431,8 @@ class FirehoseJob:
                         try:
                             logger.error(self.current_table.to_pandas()[:3])
                             logger.error('----')
-                            logger.error([self.current_table.schema[k] for k in range(0, self.current_table.num_columns)])
+                            logger.error(
+                                [self.current_table.schema[k] for k in range(0, self.current_table.num_columns)])
                         except Exception as exn2:
                             logger.error(('cannot to_pandas print..', exn2))
                 except:
@@ -456,11 +454,10 @@ class FirehoseJob:
         finally:
             self.timer.toc('df_with_schema_to_arrow')
 
-
     def concat_tables(self, table_old, table_new):
         try:
             self.timer.tic('concat_tables', 1000)
-            return pa.concat_tables([table_old, table_new]) #promote..
+            return pa.concat_tables([table_old, table_new])  # promote..
         except Exception as exn:
             logger.error('=========================')
             logger.error('Error combining arrow tables, likely new table mismatches old')
@@ -470,7 +467,7 @@ class FirehoseJob:
                     logger.error('new table does not have enough columns to handle %i' % i)
                 elif table_old.schema[i].name != table_new.schema[i].name:
                     logger.error(('ith col name mismatch', i,
-                          'old', (table_old.schema[i]), 'vs new', table_new.schema[i]))
+                                  'old', (table_old.schema[i]), 'vs new', table_new.schema[i]))
             logger.error('------- exn')
             logger.error(exn)
             logger.error('-------')
@@ -478,14 +475,12 @@ class FirehoseJob:
         finally:
             self.timer.toc('concat_tables')
 
-
     def process_tweets_notify_hydrating(self):
         if not (self.current_table is None):
             self.timer.toc('tweet', self.current_table.num_rows)
         self.timer.tic('tweet', 40, 40)
 
         self.timer.tic('hydrate', 40, 40)
-
 
     # Call process_tweets_notify_hydrating() before
     def process_tweets(self, tweets, job_name='generic_job'):
@@ -501,7 +496,7 @@ class FirehoseJob:
         try:
             table = self.df_with_schema_to_arrow(df, self.schema)
         except Exception as e:
-            #logger.error('conversion failed, skipping batch...')
+            # logger.error('conversion failed, skipping batch...')
             self.timer.toc('overall_compute')
             raise e
 
@@ -512,16 +507,16 @@ class FirehoseJob:
         else:
             self.current_table = self.concat_tables(self.current_table, table)
 
-        out = self.current_table #or just table (without intermediate concats since last flush?)
+        out = self.current_table  # or just table (without intermediate concats since last flush?)
 
         if not (self.current_table is None) \
-            and ((self.current_table.num_rows > self.TWEETS_PER_ROWGROUP) or self.needs_to_flush) \
-            and self.current_table.num_rows > 0:
+                and ((self.current_table.num_rows > self.TWEETS_PER_ROWGROUP) or self.needs_to_flush) \
+                and self.current_table.num_rows > 0:
             self.flush(job_name)
             self.needs_to_flush = False
         else:
             1
-            #print('skipping, has table ? %s, num rows %s' % (
+            # print('skipping, has table ? %s, num rows %s' % (
             #    not (self.current_table is None),
             #    0 if self.current_table is None else self.current_table.num_rows))
 
@@ -536,7 +531,7 @@ class FirehoseJob:
                 self.needs_to_flush = True
                 return self.process_tweets(tweets_batch, job_name)
             except Exception as e:
-                #logger.debug('failed processing batch, continuing...')
+                # logger.debug('failed processing batch, continuing...')
                 raise e
 
         tweets_batch = []
@@ -557,7 +552,7 @@ class FirehoseJob:
                     try:
                         yield flusher(tweets_batch)
                     except Exception as e:
-                        #logger.debug('Write fail, continuing..')
+                        # logger.debug('Write fail, continuing..')
                         raise e
                     finally:
                         tweets_batch = []
@@ -571,7 +566,6 @@ class FirehoseJob:
             logger.debug('explicit GC...')
             logger.debug('Safely exited!')
 
-
     ################################################################################
 
     def process_ids(self, ids_to_process, job_name=None):
@@ -582,20 +576,20 @@ class FirehoseJob:
             job_name = "process_ids_%s" % (ids_to_process[0] if len(ids_to_process) > 0 else "none")
 
         for i in range(0, len(ids_to_process), self.BATCH_LEN):
-            ids_to_process_batch = ids_to_process[i : (i + self.BATCH_LEN)]
+            ids_to_process_batch = ids_to_process[i: (i + self.BATCH_LEN)]
 
             logger.info('Starting batch offset %s ( + %s) of %s', i, self.BATCH_LEN, len(ids_to_process))
 
-            hydration_statuses_df = Neo4jDataAccess(self.debug, self.neo4j_creds)\
+            hydration_statuses_df = Neo4jDataAccess(self.debug, self.neo4j_creds) \
                 .get_tweet_hydrated_status_by_id(pd.DataFrame({'id': ids_to_process_batch}))
-            missing_ids = hydration_statuses_df[ hydration_statuses_df['hydrated'] != 'FULL' ]['id'].tolist()
+            missing_ids = hydration_statuses_df[hydration_statuses_df['hydrated'] != 'FULL']['id'].tolist()
 
             logger.debug('Skipping cached %s, fetching %s, of requested %s' % (
                 len(ids_to_process_batch) - len(missing_ids),
                 len(missing_ids),
                 len(ids_to_process_batch)))
 
-            tweets = ( tweet for tweet in self.twarc_pool.next_twarc().hydrate(missing_ids) )
+            tweets = (tweet for tweet in self.twarc_pool.next_twarc().hydrate(missing_ids))
 
             for arr in self.process_tweets_generator(tweets, job_name):
                 yield arr
@@ -618,8 +612,7 @@ class FirehoseJob:
         for arr in self.process_ids(lst, job_name):
             yield arr
 
-
-    def search(self,input="", job_name=None):
+    def search(self, input="", job_name=None):
 
         self.process_tweets_notify_hydrating()
 
@@ -630,8 +623,7 @@ class FirehoseJob:
 
         self.process_tweets_generator(tweets, job_name)
 
-
-    def search_stream_by_keyword(self,input="", job_name=None):
+    def search_stream_by_keyword(self, input="", job_name=None):
 
         self.process_tweets_notify_hydrating()
 
@@ -642,8 +634,7 @@ class FirehoseJob:
 
         self.process_tweets(tweets, job_name)
 
-
-    def search_by_location(self,input="", job_name=None):
+    def search_by_location(self, input="", job_name=None):
 
         self.process_tweets_notify_hydrating()
 
@@ -654,22 +645,21 @@ class FirehoseJob:
 
         self.process_tweets(tweets, job_name)
 
-
     #
-    def user_timeline(self,input=[""], job_name=None, **kwargs):
+    def user_timeline(self, input=[""], job_name=None, **kwargs):
         if not (type(input) == list):
-            input = [ input ]
+            input = [input]
         try:
             self.process_tweets_notify_hydrating()
 
             if job_name is None:
-                job_name = "user_timeline_%s_%s" % ( len(input), '_'.join(input) )
+                job_name = "user_timeline_%s_%s" % (len(input), '_'.join(input))
 
             for user in input:
                 logger.debug('starting user %s' % user)
                 tweet_count = 0
                 for tweet in self.twarc_pool.next_twarc().timeline(screen_name=user, **kwargs):
-                    #logger.debug('got user', user, 'tweet', str(tweet)[:50])
+                    # logger.debug('got user', user, 'tweet', str(tweet)[:50])
                     self.process_tweets([tweet], job_name)
                     tweet_count = tweet_count + 1
                 logger.debug('    ... %s tweets' % tweet_count)
@@ -681,7 +671,6 @@ class FirehoseJob:
             logger.debug('Explicit GC')
             gc.collect()
             logger.debug('Safely exited!')
-
 
     def ingest_range(self, begin, end, job_name=None):  # This method is where the magic happens
 
@@ -699,8 +688,6 @@ class FirehoseJob:
                         for i in range(0, self.TWEETS_PER_PROCESS):
                             ids_to_process.append(self.queue.popleft())
                         self.process_ids(ids_to_process, job_name)
-                        
-    ###############################
 
     ###############################
 
@@ -717,8 +704,8 @@ class FirehoseJob:
             logger.debug('hits %s to %s: %s', t0, t1, len(df))
             if self.save_to_neo:
                 logger.debug('writing to neo4j')
-                chkd = tp.check_hydrate(df)
-                res = Neo4jDataAccess(self.neo4j_creds).save_twintdf_to_neo(chkd, job_name, job_id)
+                chkd = TwintPool().check_hydrate(df)
+                res = Neo4jDataAccess(self.neo4j_creds).save_twintdf_to_neo(chkd, job_name, job_id=None)
                 # df3 = Neo4jDataAccess(self.debug, self.neo4j_creds).save_df_to_graph(df2, job_name)
                 logger.debug('wrote to neo4j, # ', len(res))
                 yield res
