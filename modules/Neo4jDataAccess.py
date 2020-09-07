@@ -339,7 +339,7 @@ class Neo4jDataAccess:
             raise Exception(
                 'Parameter df must be a DataFrame with a column named "id" ')
 
-    # This saves the User and Tweet data right now
+    ## This saves the User and Tweet data right now
     def __save_df_to_graph(self, df, job_name, job_id=None):
         graph = self.__get_neo4j_graph('writer')
         global_tic = time.perf_counter()
