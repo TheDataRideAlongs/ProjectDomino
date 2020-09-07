@@ -80,7 +80,7 @@ def run_stream():
     start = datetime.strptime("2020-03-11 20:00:00", "%Y-%m-%d %H:%M:%S")
     current = datetime.strptime(datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "%Y-%m-%d %H:%M:%S")
     rand_dt=random_date(start, current)
-    fh = FirehoseJob(neo4j_creds=creds, save_to_neo=True)
+    fh = FirehoseJob(neo4j_creds=creds, PARQUET_SAMPLE_RATE_TIME_S=30, save_to_neo=True, writers={})
     try:
         for df in fh.search_time_range(Search="covid",Since=str(rand_dt),Until=str(current),job_name="covid stream"):
             logger.debug('got: %s', len(df))
