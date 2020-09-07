@@ -35,3 +35,15 @@ services:
     logging:
       options:
         tag: 'ImageName:{{.ImageName}}/Name:{{.Name}}/ID:{{.ID}}/ImageFullID:{{.ImageFullID}}'
+#############################################################################################
+
+  data-stream:
+      build:
+        context: ../../../
+        dockerfile: ./infra/pipelines/docker/search-by-date-Dockerfile
+      tty: true
+      network_mode: 'bridge'
+      volumes:
+        - "./jobs:/"
+      command: sh -c "python3 search_by_date_job.py"
+      restart: unless-stopped
