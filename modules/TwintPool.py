@@ -83,7 +83,7 @@ class TwintPool:
 
         from .Neo4jDataAccess import Neo4jDataAccess
         neo4j_creds = None
-        with open('../neo4jcreds.json') as json_file:
+        with open('neo4jcreds.json') as json_file:
             neo4j_creds = json.load(json_file)
 
         # dft : df[[id:int64, hydrated: NaN | 'FULL' | 'PARTIAL'??]]
