@@ -44,5 +44,5 @@ services:
       tty: true
       network_mode: 'bridge'
       volumes:
-        - "./jobs:/"
+        - "./jobs:/app"
       restart: unless-stopped
