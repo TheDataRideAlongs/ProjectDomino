@@ -12,7 +12,7 @@
 
 import logging
 logger = logging.getLogger()
-logger.setLevel(logging.INFO) #DEBUG, INFO, WARNING, ERROR, CRITICAL
+logger.setLevel(logging.DEBUG) #DEBUG, INFO, WARNING, ERROR, CRITICAL
 
 #!pip install --user -q nest_asyncio
 import nest_asyncio
@@ -51,7 +51,7 @@ S3_BUCKET = "wzy-project-domino"
 # In[31]:
 
 
-pd.set_option('display.max_colwidth', -1)
+pd.set_option('display.max_colwidth', None)
 pd.set_option('display.max_rows', 500)
 pd.set_option('display.max_columns', 500)
 pd.set_option('display.width', 1000)

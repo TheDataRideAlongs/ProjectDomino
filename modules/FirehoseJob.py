@@ -164,7 +164,7 @@ class FirehoseJob:
         logger.debug('flush before destroying..')
         self.flush(job_name)
 
-        logger.debug('destroy', self.writers.keys())        
+        logger.debug('destroy', str(self.writers.keys()))
 
         for k in self.writers.keys():
             if not (self.writers[k] is None):
