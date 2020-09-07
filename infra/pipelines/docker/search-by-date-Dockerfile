@@ -6,5 +6,5 @@ RUN apt-get update \
 COPY . .
 RUN pip install prefect==0.10.1 simplejson twarc neo4j boto3==1.12.39 \
     pandas nest_asyncio git+https://github.com/twintproject/twint.git@origin/master#egg=twint \
-    git://github.com/TheDataRideAlongs/ProjectDomino#webcoderz-twint-patch-1
+    git+https://github.com/TheDataRideAlongs/ProjectDomino#webcoderz-twint-patch-1
 
