@@ -45,5 +45,4 @@ services:
       network_mode: 'bridge'
       volumes:
         - "./jobs:/"
-      command: sh -c "python3 search_by_date_job.py"
       restart: unless-stopped
