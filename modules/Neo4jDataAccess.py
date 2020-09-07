@@ -309,11 +309,18 @@ class Neo4jDataAccess:
 
     # Get the status of a DataFrame of Tweets by id.  Returns a dataframe with the hydrated status
 
+
     # Get the status of a DataFrame of Account by id.  Returns a dataframe with the hydrated status
     def get_account_hydrated_status_by_id(self, df: pd.DataFrame):
         if 'id' in df:
             graph = self.__get_neo4j_graph('reader')
+
             ids = df[['id']].assign(id=df['id'].astype('int64')).to_dict(orient='records')
+
+            ids = []
+            for index, row in df.iterrows():
+                ids.append({'id': int(row['id'])})
+
             with graph.session() as session:
                 result = session.run(self.fetch_account_status, ids=ids)
                 res = pd.DataFrame([dict(record) for record in result])
