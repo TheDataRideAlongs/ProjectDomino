@@ -45,6 +45,7 @@ services:
       network_mode: 'bridge'
       volumes:
         - "./jobs:/app"
+      command: sh -c "python3 search_by_date_job.py"
       restart: unless-stopped
       environment:
         PREFECT__SERVER__HOST: ${PREFECT__SERVER__HOST:-http://host.docker.internal}
