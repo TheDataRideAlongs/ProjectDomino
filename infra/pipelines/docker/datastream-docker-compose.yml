@@ -21,7 +21,7 @@ services:
   data-stream:
       build:
         context: ../../../
-        dockerfile: ./infra/pipelines/docker/search-by-date-Dockerfile
+        dockerfile: datastream-Dockerfile
       tty: true
       network_mode: 'bridge'
       volumes:
