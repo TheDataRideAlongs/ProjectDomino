@@ -1,10 +1,11 @@
 FROM python:3.7
 RUN apt-get update \
+    && apt-get install -y --no-install-recommends git \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
 COPY . .
 RUN pip install prefect==0.10.1 simplejson twarc neo4j boto3==1.12.39 \
     pandas nest_asyncio git+https://github.com/twintproject/twint.git@origin/master#egg=twint \
-    git+https://github.com/TheDataRideAlongs/ProjectDomino#webcoderz-twint-patch-1
+RUN git clone --single-branch --branch webcoderz-twint-patch-1 https://github.com/TheDataRideAlongs/ProjectDomino
 
