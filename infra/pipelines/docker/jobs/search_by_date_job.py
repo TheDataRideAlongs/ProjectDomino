@@ -70,7 +70,7 @@ def random_date(start, end):
 
 def get_creds():
     neo4j_creds = None
-    with open('../neo4jcreds.json') as json_file:
+    with open('neo4jcreds.json') as json_file:
         neo4j_creds = json.load(json_file)
     return neo4j_creds
 
