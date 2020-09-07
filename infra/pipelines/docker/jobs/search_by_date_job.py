@@ -14,9 +14,7 @@ import logging
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG) #DEBUG, INFO, WARNING, ERROR, CRITICAL
 
-#!pip install --user -q nest_asyncio
-import nest_asyncio
-nest_asyncio.apply()
+
 
 
 # In[28]:
@@ -45,7 +43,7 @@ import random
 # In[30]:
 
 
-S3_BUCKET = "wzy-project-domino"    
+S3_BUCKET = "wzy-project-domino"
 
 
 # In[31]:
@@ -86,7 +84,7 @@ def run_stream():
             logger.debug('got: %s', len(df))
     except:
         logger.debug("job finished")
-        
+
 
 
 # In[ ]:
