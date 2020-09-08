@@ -718,7 +718,7 @@ class Neo4jDataAccess:
                     self.save_enrichment_df_to_graph(self.NodeLabel.Url, df, job_name, job_id)
                 elif key == 'params':
                     params_df=pd.concat([df,res["accts"]],axis=1, ignore_index=False, sort=False)
-                    self.save_enrichment_df_to_graph(self.NodeLabel.Tweet, df, job_name, job_id)
+                    self.save_enrichment_df_to_graph(self.NodeLabel.Tweet, params_df, job_name, job_id)
                     with self.graph.session() as session:
                         session.run(self.tweeted_rel, tweets=params_df.to_dict(orient='records'),
                                     timeout=self.timeout)
