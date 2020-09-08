@@ -717,7 +717,7 @@ class Neo4jDataAccess:
                 elif key == 'params':
                     self.save_enrichment_df_to_graph(self.NodeLabel.Tweet, df, job_name, job_id)
                     with self.graph.session() as session:
-                        session.run(self.tweeted_rel, tweets=df.to_dict(orient='records')
+                        session.run(self.tweeted_rel, tweets=df.to_dict(orient='records'),
                                     timeout=self.timeout)
                 elif key == 'accts':
                     self.save_enrichment_df_to_graph(self.NodeLabel.Tweet, df, job_name, job_id)
