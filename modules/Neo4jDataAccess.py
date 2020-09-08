@@ -279,7 +279,7 @@ class Neo4jDataAccess:
 
     def save_parquet_df_to_graph(self, df: pd.DataFrame, job_name: str, job_id=None):
         pdf = DfHelper().normalize_parquet_dataframe(df)
-        logging.info('Saving to Neo4j')
+        logger.debug('Saving Parquet Df to Neo4j')
         self.__save_df_to_graph(pdf, job_name)
 
     # Get the status of a DataFrame of Tweets by id.  Returns a dataframe with the hydrated status
@@ -407,7 +407,7 @@ class Neo4jDataAccess:
             if index % self.batch_size == 0 and index > 0:
                 self.__write_to_neo(params, url_params, mention_params)
                 toc = time.perf_counter()
-                logging.info(
+                logger.debug(
                     f'Neo4j Periodic Save Complete in  {toc - tic:0.4f} seconds')
                 params = []
                 mention_params = []
@@ -416,7 +416,7 @@ class Neo4jDataAccess:
 
         self.__write_to_neo(params, url_params, mention_params)
         toc = time.perf_counter()
-        logging.info(
+        logger.debug(
             f"Neo4j Import Complete in  {toc - global_tic:0.4f} seconds")
 
     def __write_to_neo(self, params, url_params, mention_params):
@@ -719,7 +719,7 @@ class Neo4jDataAccess:
                 elif key == 'accts':
                     self.save_enrichment_df_to_graph(self.NodeLabel.Tweet, df, job_name, job_id)
                 toc = time.perf_counter()
-                logging.info(f'Neo4j Periodic Save Complete in  {toc - tic:0.4f} seconds')
+                logger.debug(f'Neo4j Periodic Save Complete in  {toc - tic:0.4f} seconds')
                 tic = time.perf_counter()
             except Exception as inst:
                 logging.error(type(inst))  # the exception instance
