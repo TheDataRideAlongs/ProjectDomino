@@ -474,12 +474,14 @@ class Neo4jDataAccess:
         return url_params
 
     def __enrich_usr_info(self, df):
-        df=df.drop_duplicates(subset=["id"])
+        #df=df.drop_duplicates(subset=["id"])
         lst = [TwintPool()._get_user_info(username=user) for user in df["user_name"].to_list()]
         dfs = pd.concat(lst).drop_duplicates(subset=["id"])
         return dfs
 
     def save_twintdf_to_neo(self, df, job_name, job_id=None):
+        if 'id' in df:
+            ids = df[['id']].assign(id=df['id'].astype('int64')).to_dict(orient='records')
         df = TwintPool().twint_df_to_neo4j_df(df)
         df.drop(df.columns[df.columns.str.contains('unnamed', case=False)], axis=1, inplace=True)
         # df=df.stack().droplevel(level=0)
@@ -592,7 +594,7 @@ class Neo4jDataAccess:
             self.__enrich_usr_info(pd.concat(params, ignore_index=True, sort=False)), job_name)
         mention_df = self.__parse_mentions_twint(df, job_name, job_id)
         res = {"mentions": mention_df, "urls": url_df, "params": params_df, "accts": acct_df}
-        # self.__write_twint_enriched_tweetdf_to_neo(res, job_name, job_id)
+        self.write_twint_enriched_tweetdf_to_neo(res, job_name, job_id)
         return res
 
     def __normalize_hashtags(self, value):
