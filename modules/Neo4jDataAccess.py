@@ -594,7 +594,7 @@ class Neo4jDataAccess:
             self.__enrich_usr_info(pd.concat(params, ignore_index=True, sort=False)), job_name)
         mention_df = self.__parse_mentions_twint(df, job_name, job_id)
         res = {"mentions": mention_df, "urls": url_df, "params": params_df, "accts": acct_df}
-        self.write_twint_enriched_tweetdf_to_neo(res, job_name, job_id)
+        # self.write_twint_enriched_tweetdf_to_neo(res, job_name, job_id)
         return res
 
     def __normalize_hashtags(self, value):
@@ -716,8 +716,12 @@ class Neo4jDataAccess:
                         session.run(self.mentions, mentions=df.to_dict(orient='records'), timeout=self.timeout)
                 elif key == 'urls':
                     self.save_enrichment_df_to_graph(self.NodeLabel.Url, df, job_name, job_id)
-                elif key == 'accts':
+                elif key == 'params':
+                    params_df=pd.concat([df,res["accts"]],axis=1, ignore_index=False, sort=False)
                     self.save_enrichment_df_to_graph(self.NodeLabel.Tweet, df, job_name, job_id)
+                    with self.graph.session() as session:
+                        session.run(self.tweeted_rel, tweets=params_df.to_dict(orient='records'),
+                                    timeout=self.timeout)
                 toc = time.perf_counter()
                 logger.debug(f'Neo4j Periodic Save Complete in  {toc - tic:0.4f} seconds')
                 tic = time.perf_counter()
@@ -727,4 +731,3 @@ class Neo4jDataAccess:
                 # __str__ allows args to be printed directly,
                 logging.error(inst)
                 raise inst
-
