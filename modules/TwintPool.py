@@ -1,5 +1,5 @@
 import pyarrow as pa
-import twint
+from Twint import twint
 from urlextract import URLExtract
 from datetime import datetime, timedelta
 import pandas as pd
@@ -68,8 +68,6 @@ class TwintPool:
         tweets_df = twint.storage.panda.Tweets_df
         return tweets_df
 
-
-
     def _get_user_info(self, username):
         self.config.User_full = True
         self.config.Username = username
@@ -83,7 +81,7 @@ class TwintPool:
 
         from .Neo4jDataAccess import Neo4jDataAccess
         neo4j_creds = None
-        with open('neo4jcreds.json') as json_file:
+        with open('../neo4jcreds.json') as json_file:
             neo4j_creds = json.load(json_file)
 
         # dft : df[[id:int64, hydrated: NaN | 'FULL' | 'PARTIAL'??]]
@@ -156,3 +154,4 @@ class TwintPool:
 
 
 
+Z

@@ -279,7 +279,7 @@ class Neo4jDataAccess:
 
     def save_parquet_df_to_graph(self, df: pd.DataFrame, job_name: str, job_id=None):
         pdf = DfHelper().normalize_parquet_dataframe(df)
-        logger.debug('Saving Parquet Df to Neo4j')
+        logging.info('Saving to Neo4j')
         self.__save_df_to_graph(pdf, job_name)
 
     # Get the status of a DataFrame of Tweets by id.  Returns a dataframe with the hydrated status
@@ -309,18 +309,11 @@ class Neo4jDataAccess:
 
     # Get the status of a DataFrame of Tweets by id.  Returns a dataframe with the hydrated status
 
-
     # Get the status of a DataFrame of Account by id.  Returns a dataframe with the hydrated status
     def get_account_hydrated_status_by_id(self, df: pd.DataFrame):
         if 'id' in df:
             graph = self.__get_neo4j_graph('reader')
-
             ids = df[['id']].assign(id=df['id'].astype('int64')).to_dict(orient='records')
-
-            ids = []
-            for index, row in df.iterrows():
-                ids.append({'id': int(row['id'])})
-
             with graph.session() as session:
                 result = session.run(self.fetch_account_status, ids=ids)
                 res = pd.DataFrame([dict(record) for record in result])
@@ -339,7 +332,7 @@ class Neo4jDataAccess:
             raise Exception(
                 'Parameter df must be a DataFrame with a column named "id" ')
 
-    ## This saves the User and Tweet data right now
+    # This saves the User and Tweet data right now
     def __save_df_to_graph(self, df, job_name, job_id=None):
         graph = self.__get_neo4j_graph('writer')
         global_tic = time.perf_counter()
@@ -407,7 +400,7 @@ class Neo4jDataAccess:
             if index % self.batch_size == 0 and index > 0:
                 self.__write_to_neo(params, url_params, mention_params)
                 toc = time.perf_counter()
-                logger.debug(
+                logging.info(
                     f'Neo4j Periodic Save Complete in  {toc - tic:0.4f} seconds')
                 params = []
                 mention_params = []
@@ -416,7 +409,7 @@ class Neo4jDataAccess:
 
         self.__write_to_neo(params, url_params, mention_params)
         toc = time.perf_counter()
-        logger.debug(
+        logging.info(
             f"Neo4j Import Complete in  {toc - global_tic:0.4f} seconds")
 
     def __write_to_neo(self, params, url_params, mention_params):
@@ -474,14 +467,12 @@ class Neo4jDataAccess:
         return url_params
 
     def __enrich_usr_info(self, df):
-        #df=df.drop_duplicates(subset=["id"])
+        # df=df.drop_duplicates(subset=["id"])
         lst = [TwintPool()._get_user_info(username=user) for user in df["user_name"].to_list()]
         dfs = pd.concat(lst).drop_duplicates(subset=["id"])
         return dfs
 
     def save_twintdf_to_neo(self, df, job_name, job_id=None):
-        if 'id' in df:
-            ids = df[['id']].assign(id=df['id'].astype('int64')).to_dict(orient='records')
         df = TwintPool().twint_df_to_neo4j_df(df)
         df.drop(df.columns[df.columns.str.contains('unnamed', case=False)], axis=1, inplace=True)
         # df=df.stack().droplevel(level=0)
@@ -594,7 +585,7 @@ class Neo4jDataAccess:
             self.__enrich_usr_info(pd.concat(params, ignore_index=True, sort=False)), job_name)
         mention_df = self.__parse_mentions_twint(df, job_name, job_id)
         res = {"mentions": mention_df, "urls": url_df, "params": params_df, "accts": acct_df}
-        # self.write_twint_enriched_tweetdf_to_neo(res, job_name, job_id)
+        # self.__write_twint_enriched_tweetdf_to_neo(res, job_name, job_id)
         return res
 
     def __normalize_hashtags(self, value):
@@ -716,8 +707,11 @@ class Neo4jDataAccess:
                         session.run(self.mentions, mentions=df.to_dict(orient='records'), timeout=self.timeout)
                 elif key == 'urls':
                     self.save_enrichment_df_to_graph(self.NodeLabel.Url, df, job_name, job_id)
+                # elif key == 'accts':
+                # self.save_enrichment_df_to_graph(self.NodeLabel.Tweet, df, job_name, job_id)
                 elif key == 'params':
-                    params_df=pd.concat([df,res["accts"]],axis=1, ignore_index=False, sort=False)
+                    params_df = pd.concat([df, res["accts"]], axis=1, ignore_index=False, sort=False)
+                    self.save_enrichment_df_to_graph(self.NodeLabel.Tweet, params_df, job_name, job_id)
                     self.save_enrichment_df_to_graph(self.NodeLabel.Tweet, params_df, job_name, job_id)
                     with self.graph.session() as session:
                         session.run(self.tweeted_rel, tweets=params_df.to_dict(orient='records'),
@@ -731,3 +725,5 @@ class Neo4jDataAccess:
                 # __str__ allows args to be printed directly,
                 logging.error(inst)
                 raise inst
+
+
