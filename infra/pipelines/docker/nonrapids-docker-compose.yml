@@ -16,6 +16,7 @@ services:
       context: ../../../
       dockerfile: ./infra/pipelines/docker/tor-Dockerfile
     network_mode: 'bridge'
+    container_name: prefect-agent
     restart: always
     ports:
       - 9050:9050
