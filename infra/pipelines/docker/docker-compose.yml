@@ -14,7 +14,7 @@ services:
     image:  prefect-agent:0.0.5
     build:
       context: ../../../
-      dockerfile: ./infra/pipelines/docker/nonrapids-Dockerfile
+      dockerfile: ./infra/pipelines/docker/Dockerfile
     container_name: prefect-agent
     network_mode: 'bridge'
     restart: unless-stopped
