@@ -1,5 +1,5 @@
 import pyarrow as pa
-from Twint import twint
+import twint
 from urlextract import URLExtract
 from datetime import datetime, timedelta
 import pandas as pd
