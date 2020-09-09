@@ -10,6 +10,16 @@
 version: '3'
 
 services:
+################################################################
+  tor:
+    build:
+      context: ../../../
+      dockerfile: ./infra/pipelines/docker/tor-Dockerfile
+    network_mode: 'bridge'
+    restart: always
+    ports:
+      - 9050:9050
+#################################################################
   data-stream:
       build:
         context: ../../../
