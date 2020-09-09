@@ -1,0 +1,22 @@
+########
+#
+# Run from git root's parent: with .env in local folder and ProjectDomino/ inside
+#
+# $ touch .env
+# $ sudo docker-compose -f ./ProjectDomino/infra/pipelines/docker/docker-compose.yml up -d prefect-agent
+#
+########
+
+version: '3'
+
+services:
+################################################################
+  tor:
+    build:
+      context: ../../../
+      dockerfile: ./infra/pipelines/docker/tor-Dockerfile
+    container_name: tor
+    network_mode: 'bridge'
+    restart: always
+    ports:
+      - 9050:9050
