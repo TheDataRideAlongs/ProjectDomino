@@ -15,6 +15,7 @@ services:
     build:
       context: ../../../
       dockerfile: ./infra/pipelines/docker/tor-Dockerfile
+    container_name: tor
     network_mode: 'bridge'
     restart: always
     ports:
