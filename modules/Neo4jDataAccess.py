@@ -700,7 +700,8 @@ class Neo4jDataAccess:
                             timeout=self.timeout)
                 session.run(self.mentions, mentions=res["mentions"].to_dict(orient='records'),
                             timeout=self.timeout)
-                session.run(self.urls, urls=res["urls"].to_dict(orient='records'), timeout=self.timeout)
+                #session.run(self.urls, urls=res["urls"].to_dict(orient='records'), timeout=self.timeout)
+            self.save_enrichment_df_to_graph(self.NodeLabel.Url, res["urls"], job_name, job_id)
         except Exception as inst:
             logging.error('Neo4j Transaction error')
             logging.error(type(inst))  # the exception instance
