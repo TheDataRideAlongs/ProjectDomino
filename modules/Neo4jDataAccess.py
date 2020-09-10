@@ -699,20 +699,24 @@ class Neo4jDataAccess:
         global_tic = time.perf_counter()
         tic = time.perf_counter()
         try:
-            params_df = pd.concat([res["params"], res["accts"]], axis=1, ignore_index=False, sort=False)
-            with self.graph.session() as session:
-                logger.debug('writing tweets and accounts')
-                session.run(self.tweetsandaccounts,
-                            tweets=params_df.to_dict(orient='records'), timeout=self.timeout)
-                logger.debug('writing tweet relationships')
-                session.run(self.tweeted_rel, tweets=params_df.to_dict(orient='records'),
-                            timeout=self.timeout)
-                logger.debug('writing mentions')
-                session.run(self.mentions, mentions=res["mentions"].to_dict(orient='records'),
-                            timeout=self.timeout)
-            logger.debug('writing URLS')
-                # session.run(self.urls, urls=res["urls"].to_dict(orient='records'), timeout=self.timeout)
-            self.save_enrichment_df_to_graph(self.NodeLabel.Url, res["urls"], job_name, job_id)
+            for key in list(res.keys()):
+                df = res[key]
+                if key == 'mentions':
+                    logger.info("writing mentions")
+                    with graph.session() as session:
+                        session.run(self.mentions, mentions=df.to_dict(orient='records'), timeout=self.timeout)
+                elif key == 'urls':
+                    logger.info("writing URL Nodes and Properties")
+                    self.save_enrichment_df_to_graph(self.NodeLabel.Url, df, job_name, job_id)
+                elif key == 'params':
+                    logger.info("writing tweets and accts")
+                    params_df = pd.concat([res["params"], res["accts"]], axis=1, ignore_index=False, sort=False)
+                    with self.graph.session() as session:
+                        logger.debug('writing tweets and accounts')
+                        session.run(self.tweetsandaccounts, tweets=params_df.to_dict(orient='records'),
+                                    timeout=self.timeout)
+                        logger.debug('writing tweet relationships')
+                        session.run(self.tweeted_rel, tweets=params_df.to_dict(orient='records'), timeout=self.timeout)
             toc = time.perf_counter()
             logger.info(f'Neo4j Periodic Save Complete in  {toc - tic:0.4f} seconds')
             tic = time.perf_counter()
@@ -723,3 +727,8 @@ class Neo4jDataAccess:
             # __str__ allows args to be printed directly,
             logging.error(inst)
             raise inst
+
+
+
+
+
