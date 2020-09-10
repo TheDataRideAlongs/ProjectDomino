@@ -701,12 +701,16 @@ class Neo4jDataAccess:
         try:
             params_df = pd.concat([res["params"], res["accts"]], axis=1, ignore_index=False, sort=False)
             with self.graph.session() as session:
+                logger.debug('writing tweets and accounts')
                 session.run(self.tweetsandaccounts,
                             tweets=params_df.to_dict(orient='records'), timeout=self.timeout)
+                logger.debug('writing tweet relationships')
                 session.run(self.tweeted_rel, tweets=params_df.to_dict(orient='records'),
                             timeout=self.timeout)
+                logger.debug('writing mentions')
                 session.run(self.mentions, mentions=res["mentions"].to_dict(orient='records'),
                             timeout=self.timeout)
+            logger.debug('writing URLS')
                 # session.run(self.urls, urls=res["urls"].to_dict(orient='records'), timeout=self.timeout)
             self.save_enrichment_df_to_graph(self.NodeLabel.Url, res["urls"], job_name, job_id)
             toc = time.perf_counter()
