@@ -678,7 +678,7 @@ class Neo4jDataAccess:
     def __tweetdf_to_neodf(self, df):
         neotweetdf = df[['id', 'text', 'created_at', 'favorite_count', 'retweet_count',
                          'job_name', 'hashtags', 'type', 'conversation_id']]
-        #neotweetdf['hydrated'] = 'PARTIAL'
+        neotweetdf['hydrated'] = 'FULL'
         neotweetdf['record_created_at'] = str(datetime.now())
         return neotweetdf
 
@@ -691,7 +691,7 @@ class Neo4jDataAccess:
         acctdf['friends_count'] = df["following"]
         acctdf['followers_count'] = df["followers"]
         #acctdf['job_name'] = str(job_name)
-        acctdf['hydrated'] = 'FULL'
+        acctdf['hydrated'] = PARTIAL
         return acctdf
 
     def write_twint_enriched_tweetdf_to_neo(self, res, job_name, job_id):
