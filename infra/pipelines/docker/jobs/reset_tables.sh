@@ -19,3 +19,9 @@ iptables -X
 echo 'current rules are: '
 
 iptables -S
+
+echo 'restarting docker daemon'
+
+systemctl restart docker
+
+echo '*DONE'
