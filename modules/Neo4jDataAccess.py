@@ -155,7 +155,7 @@ class Neo4jDataAccess:
         """
 
         self.urls = """UNWIND $urls AS t 
-                    MATCH (tweet:Tweet {id:t.tweet_id}) 
+                    MATCH (tweet:Tweet {id:t.tweet_id})
                     MERGE (url:Url {full_url:t.url})
                         ON CREATE SET
                             url.full_url = t.url,
@@ -675,6 +675,13 @@ class Neo4jDataAccess:
         neourldf['record_created_at'] = str(datetime.now())
         return neourldf
 
+    def __tweetdf_to_neodf(self, df):
+        neotweetdf = df[['tweet_id', 'text', 'created_at', 'favorite_count', 'retweet_count',
+                         'job_name', 'hashtags', 'type', 'conversation_id', "user_id"]]
+        # neotweetdf['hydrated'] = 'PARTIAL'
+        neotweetdf['record_created_at'] = str(datetime.now())
+        return neotweetdf
+
     def __tweetdf_to_neo_account_df(self, df, job_name):
         acctdf = df[["location", "name"]]
         acctdf['record_created_at'] = str(datetime.now())
@@ -694,16 +701,13 @@ class Neo4jDataAccess:
         try:
             params_df = pd.concat([res["params"], res["accts"]], axis=1, ignore_index=False, sort=False)
             with self.graph.session() as session:
-                logger.debug("writing tweets and acct nodes")
                 session.run(self.tweetsandaccounts,
                             tweets=params_df.to_dict(orient='records'), timeout=self.timeout)
-                logger.debug("writing tweeted relationships")
                 session.run(self.tweeted_rel, tweets=params_df.to_dict(orient='records'),
                             timeout=self.timeout)
-                logger.debug("writing mentions")
                 session.run(self.mentions, mentions=res["mentions"].to_dict(orient='records'),
                             timeout=self.timeout)
-            logger.debug("writing URLs")
+                # session.run(self.urls, urls=res["urls"].to_dict(orient='records'), timeout=self.timeout)
             self.save_enrichment_df_to_graph(self.NodeLabel.Url, res["urls"], job_name, job_id)
             toc = time.perf_counter()
             logger.info(f'Neo4j Periodic Save Complete in  {toc - tic:0.4f} seconds')
