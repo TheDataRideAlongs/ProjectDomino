@@ -709,16 +709,13 @@ class Neo4jDataAccess:
                 elif key == 'urls':
                     logger.info("writing URL Nodes")
                     self.save_enrichment_df_to_graph(self.NodeLabel.Url, df, job_name, job_id)
-                # elif key == 'accts':
-                # self.save_enrichment_df_to_graph(self.NodeLabel.Tweet, df, job_name, job_id)
                 elif key == 'params':
                     logger.info("writing tweets and accts")
                     params_df = pd.concat([df, res["accts"]], axis=1, ignore_index=False, sort=False)
                     self.save_enrichment_df_to_graph(self.NodeLabel.Tweet, params_df, job_name, job_id)
                     with self.graph.session() as session:
                         logger.info("writing relationships")
-                        session.run(self.tweeted_rel, tweets=params_df.to_dict(orient='records'),
-                                    timeout=self.timeout)
+                        session.run(self.tweeted_rel, tweets=params_df.to_dict(orient='records'),timeout=self.timeout)
                 toc = time.perf_counter()
                 logger.info(f'Neo4j Periodic Save Complete in  {toc - tic:0.4f} seconds')
                 tic = time.perf_counter()
