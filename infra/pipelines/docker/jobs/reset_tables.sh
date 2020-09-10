@@ -5,9 +5,7 @@ if [ "$EUID" -ne 0 ]; then
     return 1
 fi
 
-echo 'current rules are: '
 
-iptables -S
 
 echo 'flushing... '
 iptables -P INPUT ACCEPT
