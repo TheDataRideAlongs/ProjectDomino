@@ -476,7 +476,6 @@ class Neo4jDataAccess:
         df = TwintPool().twint_df_to_neo4j_df(df)
         df.drop(df.columns[df.columns.str.contains('unnamed', case=False)], axis=1, inplace=True)
         # df=df.stack().droplevel(level=0)
-        graph = self.__get_neo4j_graph('writer')
         global_tic = time.perf_counter()
         params = []
         tic = time.perf_counter()
@@ -543,6 +542,8 @@ class Neo4jDataAccess:
                 self.__enrich_usr_info(pd.concat(params[i:i + 1], ignore_index=True, sort=False)), job_name)
             res = {"mentions": mention_df2, "urls": url_df2, "params": params_df2, "accts": acct_df2}
             try:
+                toc = time.perf_counter()
+                logger.debug(f'finished data enrichments in:  {toc - tic:0.4f} seconds')
                 self.write_twint_enriched_tweetdf_to_neo(res, job_name, job_id)
             except Exception as e:
                 e_id = str(uuid.uuid1())
@@ -558,6 +559,8 @@ class Neo4jDataAccess:
                     acct_df3 = self.__tweetdf_to_neo_account_df(
                         self.__enrich_usr_info(pd.concat(params[i:i + 1], ignore_index=True, sort=False)), job_name)
                     res = {"mentions": mention_df3, "urls": url_df3, "params": params_df3, "accts": acct_df3}
+                    toc = time.perf_counter()
+                    logger.debug(f'finished data enrichments in:  {toc - tic:0.4f} seconds')
                     self.write_twint_enriched_tweetdf_to_neo(res, job_name, job_id)
                     logger.error('wat it worked???')
                 except Exception as e:
@@ -583,6 +586,8 @@ class Neo4jDataAccess:
             self.__enrich_usr_info(pd.concat(params, ignore_index=True, sort=False)), job_name)
         mention_df = self.__parse_mentions_twint(df, job_name, job_id)
         res = {"mentions": mention_df, "urls": url_df, "params": params_df, "accts": acct_df}
+        #toc = time.perf_counter()
+        #logger.debug(f'finished data enrichments in:  {toc - tic:0.4f} seconds')
         # self.__write_twint_enriched_tweetdf_to_neo(res, job_name, job_id)
         return res
 
@@ -708,7 +713,6 @@ class Neo4jDataAccess:
                         session.run(self.tweeted_rel, tweets=params_df.to_dict(orient='records'), timeout=self.timeout)
             toc = time.perf_counter()
             logger.info(f'Neo4j Periodic Save Complete in  {toc - tic:0.4f} seconds')
-            tic = time.perf_counter()
         except Exception as inst:
             logging.error('Neo4j Transaction error')
             logging.error(type(inst))  # the exception instance

@@ -43,3 +43,6 @@ done
 # allow only Tor output
 iptables -A OUTPUT -m owner --uid-owner $_tor_uid -j ACCEPT
 iptables -A OUTPUT -j REJECT
+
+
+
