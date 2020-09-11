@@ -479,8 +479,6 @@ class Neo4jDataAccess:
         graph = self.__get_neo4j_graph('writer')
         global_tic = time.perf_counter()
         params = []
-        mention_params = []
-        url_params = []
         tic = time.perf_counter()
         logger.debug('df columns %s', df.columns)
 
@@ -679,12 +677,9 @@ class Neo4jDataAccess:
         acctdf = df[["location", "name"]]
         acctdf['record_created_at'] = str(datetime.now())
         acctdf['screen_name'] = df['username']
-        # acctdf['name']=df["user_screen_name"]
-        # acctdf["created_at"]=df["user_created_at"]
         acctdf['friends_count'] = df["following"]
         acctdf['followers_count'] = df["followers"]
         acctdf['job_name'] = str(job_name)
-        # acctdf['hydrated'] = 'FULL'
         return acctdf
 
     def write_twint_enriched_tweetdf_to_neo(self, res, job_name, job_id):
