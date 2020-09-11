@@ -675,12 +675,6 @@ class Neo4jDataAccess:
         neourldf['record_created_at'] = str(datetime.now())
         return neourldf
 
-    def __tweetdf_to_neodf(self, df):
-        neotweetdf = df[['tweet_id', 'text', 'created_at', 'favorite_count', 'retweet_count',
-                         'job_name', 'hashtags', 'type', 'conversation_id', "user_id"]]
-        # neotweetdf['hydrated'] = 'PARTIAL'
-        neotweetdf['record_created_at'] = str(datetime.now())
-        return neotweetdf
 
     def __tweetdf_to_neo_account_df(self, df, job_name):
         acctdf = df[["location", "name"]]
