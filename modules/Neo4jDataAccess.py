@@ -701,6 +701,7 @@ class Neo4jDataAccess:
         try:
             for key in list(res.keys()):
                 df = res[key]
+                # if df.index.all() % self.batch_size == 0 and df.index.all() > 0:
                 if key == 'mentions':
                     logger.info("writing mentions")
                     with graph.session() as session:
@@ -727,6 +728,8 @@ class Neo4jDataAccess:
             # __str__ allows args to be printed directly,
             logging.error(inst)
             raise inst
+
+
 
 
 
