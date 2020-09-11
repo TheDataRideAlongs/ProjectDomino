@@ -675,7 +675,6 @@ class Neo4jDataAccess:
         neourldf['record_created_at'] = str(datetime.now())
         return neourldf
 
-
     def __tweetdf_to_neo_account_df(self, df, job_name):
         acctdf = df[["location", "name"]]
         acctdf['record_created_at'] = str(datetime.now())
