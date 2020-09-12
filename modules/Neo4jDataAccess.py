@@ -482,7 +482,7 @@ class Neo4jDataAccess:
         logger.debug('df columns %s', df.columns)
 
         logger.error('HERE I AM!')
-
+        itertic = time.perf_counter()
         for index, row in df.iterrows():
             # determine the type of tweet
             tweet_type = 'TWEET'
@@ -530,62 +530,34 @@ class Neo4jDataAccess:
                 logger.error('params.append exn', e)
                 logger.error('row', row)
                 raise e
-        '''
-        import uuid
+        itertoc = time.perf_counter()
+        logger.debug(f'finished iterating twint df and determing tweet type  {itertoc - itertic:0.4f} seconds')
 
-        for i in range(len(df)):
-            df2 = df[i:i + 1]
-            params_df2 = pd.concat(params[i:i + 1], ignore_index=True, sort=False)
-            url_df2 = self.__urldf_to_neodf(self.__parse_urls_twint(df2, job_name, job_id))
-            mention_df2 = self.__parse_mentions_twint(df2, job_name, job_id)
-            acct_df2 = self.__tweetdf_to_neo_account_df(
-                self.__enrich_usr_info(pd.concat(params[i:i + 1], ignore_index=True, sort=False)), job_name)
-            res = {"mentions": mention_df2, "urls": url_df2, "params": params_df2, "accts": acct_df2}
-            try:
-                toc = time.perf_counter()
-                logger.debug(f'finished data enrichments in:  {toc - tic:0.4f} seconds')
-                self.write_twint_enriched_tweetdf_to_neo(res, job_name, job_id)
-            except Exception as e:
-                e_id = str(uuid.uuid1())
-                logger.error('error on row %s: id %s,', i, e_id, exc_info=True)
-                df2.to_csv('./twint_errors/single_' + str(i) + '_' + e_id + '.csv')
-                df2.to_pickle('./twint_errors/single_' + str(i) + '_' + e_id + '.pki')
-                logger.error('retrying single from pickle')
-                try:
-                    df3 = pd.read_pickle('./twint_errors/single_' + str(i) + '_' + e_id + '.pki')
-                    params_df3 = pd.concat(params[i:i + 1], ignore_index=True, sort=False)
-                    url_df3 = self.__urldf_to_neodf(self.__parse_urls_twint(df3, job_name, job_id))
-                    mention_df3 = self.__parse_mentions_twint(df3, job_name, job_id)
-                    acct_df3 = self.__tweetdf_to_neo_account_df(
-                        self.__enrich_usr_info(pd.concat(params[i:i + 1], ignore_index=True, sort=False)), job_name)
-                    res = {"mentions": mention_df3, "urls": url_df3, "params": params_df3, "accts": acct_df3}
-                    toc = time.perf_counter()
-                    logger.debug(f'finished data enrichments in:  {toc - tic:0.4f} seconds')
-                    self.write_twint_enriched_tweetdf_to_neo(res, job_name, job_id)
-                    logger.error('wat it worked???')
-                except Exception as e:
-                    logger.error('It indeed re-failed!', exc_info=True)
-            
-        try:
-            params_df = pd.concat(params, ignore_index=True, sort=False)
-            url_df = self.__urldf_to_neodf(self.__parse_urls_twint(df, job_name, job_id))
-            acct_df = self.__tweetdf_to_neo_account_df(
-                self.__enrich_usr_info(pd.concat(params, ignore_index=True, sort=False)), job_name)
-            mention_df = self.__parse_mentions_twint(df, job_name, job_id)
-            res = {"mentions": mention_df, "urls": url_df, "params": params_df, "accts": acct_df}
-        except Exception as e:
-            e_id = str(uuid.uuid1())
-            logger.error('error on combined rows (%s)', len(df), exc_info=True)
-            df.to_csv('./twint_errors/multi_' + str(i) + '_' + e_id + '.csv')
-            df.to_pickle('./twint_errors/multi_' + str(i) + '_' + e_id + '.pki')
-            raise e
-        '''
-        params_df = pd.concat(params, ignore_index=True, sort=False)
+
+        urltic = time.perf_counter()
         url_df = self.__urldf_to_neodf(self.__parse_urls_twint(df, job_name, job_id))
+        urltoc = time.perf_counter()
+        logger.debug(f'finished parsing urls in:  {urltoc - urltic:0.4f} seconds')
+
+
+        accttic = time.perf_counter()
         acct_df = self.__tweetdf_to_neo_account_df(
             self.__enrich_usr_info(pd.concat(params, ignore_index=True, sort=False)), job_name)
+        accttoc = time.perf_counter()
+        logger.debug(f'finished user enrichment in:  {accttoc - accttic:0.4f} seconds')
+
+
+        menttic = time.perf_counter()
         mention_df = self.__parse_mentions_twint(df, job_name, job_id)
+        menttoc = time.perf_counter()
+        logger.debug(f'finished parsing mentions in:  {menttoc - menttic:0.4f} seconds')
+
+        paramstic = time.perf_counter()
+        params_df = pd.concat(params, ignore_index=True, sort=False)
         params_df = pd.concat([params_df,acct_df], axis=1, ignore_index=False, sort=False)
+        paramstoc = time.perf_counter()
+        logger.debug(f'finished correlating account info to tweets in:  {paramstoc - paramstic:0.4f} seconds')
+
         # if df.index.all() % self.batch_size == 0 and df.index.all() > 0:
         res = {"mentions": mention_df, "urls": url_df, "params": params_df}
         toc = time.perf_counter()
@@ -721,7 +693,6 @@ class Neo4jDataAccess:
             # __str__ allows args to be printed directly,
             logging.error(inst)
             raise inst
-
 
 
 
