@@ -6,7 +6,7 @@ RUN apt-get update \
 
 
 COPY . /app
-RUN pip install prefect==0.10.1 simplejson twarc neo4j boto3==1.12.39 \
+RUN pip install prefect==0.10.1 aiohttp_socks==0.4.1 simplejson twarc neo4j boto3==1.12.39 \
     pandas  pyarrow urlextract git+https://github.com/twintproject/twint.git@origin/master#egg=twint
 
 WORKDIR /app
