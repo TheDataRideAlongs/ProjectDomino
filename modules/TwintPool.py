@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 import pandas as pd
 import json
 import logging
+import time
 
 logger = logging.getLogger()
 
@@ -92,6 +93,7 @@ class TwintPool:
         return needs_hydrate_df
 
     def twint_df_to_neo4j_df(self, df):
+        tic = time.perf_counter()
         # df=self.__check_hydrate(df)
         neo4j_df = df.rename(columns={
             'id': 'status_id',
@@ -145,6 +147,8 @@ class TwintPool:
         neo4j_df['in_reply_to_status_id'] = False
         neo4j_df['urls'] = df.apply(row_tweet_to_urls, axis=1)
         neo4j_df['user_id'] = df['user_id']
+        toc = time.perf_counter()
+        logger.debug(f'finished twint to neo prep in:  {toc - tic:0.4f} seconds')
         return neo4j_df
 
     def to_arrow(self, tweets_df):
