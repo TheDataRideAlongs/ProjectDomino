@@ -14,7 +14,7 @@ class TwintPool:
     def __init__(self, fh_job=None, job_name='noname'):
         self.fh = fh_job
         self.config = twint.Config()
-        self.config.Limit = 100
+        self.config.Limit = 10000
         self.config.Pandas = True
         self.config.Hide_output = True
         self.config.Verified = None
