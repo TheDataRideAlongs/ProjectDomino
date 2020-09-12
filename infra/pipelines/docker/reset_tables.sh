@@ -24,4 +24,6 @@ echo 'restarting docker daemon'
 
 systemctl restart docker
 
+echo 'restarting networking'
+/etc/init.d/networking restart
 echo '*DONE'
