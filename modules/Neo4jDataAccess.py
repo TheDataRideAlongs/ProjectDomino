@@ -530,7 +530,7 @@ class Neo4jDataAccess:
                 logger.error('params.append exn', e)
                 logger.error('row', row)
                 raise e
-
+        '''
         import uuid
 
         for i in range(len(df)):
@@ -565,7 +565,7 @@ class Neo4jDataAccess:
                     logger.error('wat it worked???')
                 except Exception as e:
                     logger.error('It indeed re-failed!', exc_info=True)
-
+            
         try:
             params_df = pd.concat(params, ignore_index=True, sort=False)
             url_df = self.__urldf_to_neodf(self.__parse_urls_twint(df, job_name, job_id))
@@ -579,17 +579,19 @@ class Neo4jDataAccess:
             df.to_csv('./twint_errors/multi_' + str(i) + '_' + e_id + '.csv')
             df.to_pickle('./twint_errors/multi_' + str(i) + '_' + e_id + '.pki')
             raise e
-
+        '''
         params_df = pd.concat(params, ignore_index=True, sort=False)
         url_df = self.__urldf_to_neodf(self.__parse_urls_twint(df, job_name, job_id))
         acct_df = self.__tweetdf_to_neo_account_df(
             self.__enrich_usr_info(pd.concat(params, ignore_index=True, sort=False)), job_name)
         mention_df = self.__parse_mentions_twint(df, job_name, job_id)
-        res = {"mentions": mention_df, "urls": url_df, "params": params_df, "accts": acct_df}
-        #toc = time.perf_counter()
-        #logger.debug(f'finished data enrichments in:  {toc - tic:0.4f} seconds')
-        # self.__write_twint_enriched_tweetdf_to_neo(res, job_name, job_id)
-        return res
+        params_df = pd.concat([params_df,acct_df], axis=1, ignore_index=False, sort=False)
+        # if df.index.all() % self.batch_size == 0 and df.index.all() > 0:
+        res = {"mentions": mention_df, "urls": url_df, "params": params_df}
+        toc = time.perf_counter()
+        logger.debug(f'finished data enrichments in:  {toc - tic:0.4f} seconds')
+        self.write_twint_enriched_tweetdf_to_neo(res, job_name, job_id)
+        #return res
 
     def __normalize_hashtags(self, value):
         if value:
@@ -704,13 +706,12 @@ class Neo4jDataAccess:
                     self.save_enrichment_df_to_graph(self.NodeLabel.Url, df, job_name, job_id)
                 elif key == 'params':
                     logger.info("writing tweets and accts")
-                    params_df = pd.concat([res["params"], res["accts"]], axis=1, ignore_index=False, sort=False)
                     with self.graph.session() as session:
                         logger.debug('writing tweets and accounts')
-                        session.run(self.tweetsandaccounts, tweets=params_df.to_dict(orient='records'),
+                        session.run(self.tweetsandaccounts, tweets=df.to_dict(orient='records'),
                                     timeout=self.timeout)
                         logger.debug('writing tweet relationships')
-                        session.run(self.tweeted_rel, tweets=params_df.to_dict(orient='records'), timeout=self.timeout)
+                        session.run(self.tweeted_rel, tweets=df.to_dict(orient='records'), timeout=self.timeout)
             toc = time.perf_counter()
             logger.info(f'Neo4j Periodic Save Complete in  {toc - tic:0.4f} seconds')
         except Exception as inst:
