@@ -473,7 +473,11 @@ class Neo4jDataAccess:
         return dfs
 
     def save_twintdf_to_neo(self, df, job_name, job_id=None):
+        twintdftic = time.perf_counter()
         df = TwintPool().twint_df_to_neo4j_df(df)
+        twintdftoc = time.perf_counter()
+        logger.debug(f'finished twint dataframe to neo4j conversion stage 1 {twintdftoc - twintdftic:0.4f} seconds')
+
         df.drop(df.columns[df.columns.str.contains('unnamed', case=False)], axis=1, inplace=True)
         # df=df.stack().droplevel(level=0)
         global_tic = time.perf_counter()
@@ -531,7 +535,7 @@ class Neo4jDataAccess:
                 logger.error('row', row)
                 raise e
         itertoc = time.perf_counter()
-        logger.debug(f'finished iterating twint df and determing tweet type  {itertoc - itertic:0.4f} seconds')
+        logger.debug(f'finished iterating twint df and determining tweet type  {itertoc - itertic:0.4f} seconds')
 
 
         urltic = time.perf_counter()
@@ -561,7 +565,7 @@ class Neo4jDataAccess:
         # if df.index.all() % self.batch_size == 0 and df.index.all() > 0:
         res = {"mentions": mention_df, "urls": url_df, "params": params_df}
         toc = time.perf_counter()
-        logger.debug(f'finished data enrichments in:  {toc - tic:0.4f} seconds')
+        logger.debug(f'finished data enrichments in:  {toc - tic:0.4f} seconds writing to neo4j now..')
         self.write_twint_enriched_tweetdf_to_neo(res, job_name, job_id)
         #return res
 
