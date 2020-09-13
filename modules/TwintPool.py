@@ -52,6 +52,7 @@ class TwintPool:
 
     def _get_term(self, Search="IngSoc", Since="1984-04-20 13:00:00", Until="1984-04-20 13:30:00", stride_sec=600,
                   **kwargs):
+        tic = time.perf_counter()
         self.config.Search = Search
         self.config.Retweets = True
         for k, v in kwargs.items():
@@ -60,6 +61,8 @@ class TwintPool:
         logger.debug('Search seq: %s-%s of %s', Search, Since, Until)
         for df, t0, t1 in self.twint_loop(Since, Until, stride_sec, self.config.Limit):
             yield (df, t0, t1)
+        toc = time.perf_counter()
+        logger.info(f'finished searching for tweets in:  {toc - tic:0.4f} seconds')
 
     def _get_timeline(self, username, limit):
         self.config.Retweets = True
