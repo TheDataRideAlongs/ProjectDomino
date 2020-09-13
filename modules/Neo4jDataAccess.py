@@ -544,11 +544,11 @@ class Neo4jDataAccess:
         logger.debug(f'finished parsing urls in:  {urltoc - urltic:0.4f} seconds')
 
 
-        accttic = time.perf_counter()
-        acct_df = self.__tweetdf_to_neo_account_df(
-            self.__enrich_usr_info(pd.concat(params, ignore_index=True, sort=False)), job_name)
-        accttoc = time.perf_counter()
-        logger.debug(f'finished user enrichment in:  {accttoc - accttic:0.4f} seconds')
+        #accttic = time.perf_counter()
+        #acct_df = self.__tweetdf_to_neo_account_df(
+            #self.__enrich_usr_info(pd.concat(params, ignore_index=True, sort=False)), job_name)
+        #accttoc = time.perf_counter()
+        #logger.debug(f'finished user enrichment in:  {accttoc - accttic:0.4f} seconds')
 
 
         menttic = time.perf_counter()
@@ -556,11 +556,11 @@ class Neo4jDataAccess:
         menttoc = time.perf_counter()
         logger.debug(f'finished parsing mentions in:  {menttoc - menttic:0.4f} seconds')
 
-        paramstic = time.perf_counter()
+        #paramstic = time.perf_counter()
         params_df = pd.concat(params, ignore_index=True, sort=False)
-        params_df = pd.concat([params_df,acct_df], axis=1, ignore_index=False, sort=False)
-        paramstoc = time.perf_counter()
-        logger.debug(f'finished correlating account info to tweets in:  {paramstoc - paramstic:0.4f} seconds')
+        #params_df = pd.concat([params_df,acct_df], axis=1, ignore_index=False, sort=False)
+        #paramstoc = time.perf_counter()
+        #logger.debug(f'finished correlating account info to tweets in:  {paramstoc - paramstic:0.4f} seconds')
 
         # if df.index.all() % self.batch_size == 0 and df.index.all() > 0:
         res = {"mentions": mention_df, "urls": url_df, "params": params_df}
