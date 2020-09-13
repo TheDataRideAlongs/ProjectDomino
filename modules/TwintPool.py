@@ -148,7 +148,7 @@ class TwintPool:
         neo4j_df['urls'] = df.apply(row_tweet_to_urls, axis=1)
         neo4j_df['user_id'] = df['user_id']
         toc = time.perf_counter()
-        logger.debug(f'finished twint to neo prep in:  {toc - tic:0.4f} seconds')
+        #logger.debug(f'finished twint to neo prep in:  {toc - tic:0.4f} seconds')
         return neo4j_df
 
     def to_arrow(self, tweets_df):
