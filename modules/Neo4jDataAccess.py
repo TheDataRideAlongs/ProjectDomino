@@ -476,7 +476,7 @@ class Neo4jDataAccess:
         twintdftic = time.perf_counter()
         df = TwintPool().twint_df_to_neo4j_df(df)
         twintdftoc = time.perf_counter()
-        logger.debug(f'finished twint dataframe to neo4j conversion stage 1 {twintdftoc - twintdftic:0.4f} seconds')
+        logger.info(f'finished twint dataframe to neo4j conversion stage 1 {twintdftoc - twintdftic:0.4f} seconds')
 
         df.drop(df.columns[df.columns.str.contains('unnamed', case=False)], axis=1, inplace=True)
         # df=df.stack().droplevel(level=0)
@@ -535,13 +535,13 @@ class Neo4jDataAccess:
                 logger.error('row', row)
                 raise e
         itertoc = time.perf_counter()
-        logger.debug(f'finished iterating twint df and determining tweet type  {itertoc - itertic:0.4f} seconds')
+        logger.info(f'finished iterating twint df and determining tweet type  {itertoc - itertic:0.4f} seconds')
 
 
         urltic = time.perf_counter()
         url_df = self.__urldf_to_neodf(self.__parse_urls_twint(df, job_name, job_id))
         urltoc = time.perf_counter()
-        logger.debug(f'finished parsing urls in:  {urltoc - urltic:0.4f} seconds')
+        logger.info(f'finished parsing urls in:  {urltoc - urltic:0.4f} seconds')
 
 
         #accttic = time.perf_counter()
@@ -554,7 +554,7 @@ class Neo4jDataAccess:
         menttic = time.perf_counter()
         mention_df = self.__parse_mentions_twint(df, job_name, job_id)
         menttoc = time.perf_counter()
-        logger.debug(f'finished parsing mentions in:  {menttoc - menttic:0.4f} seconds')
+        logger.info(f'finished parsing mentions in:  {menttoc - menttic:0.4f} seconds')
 
         #paramstic = time.perf_counter()
         params_df = pd.concat(params, ignore_index=True, sort=False)
@@ -565,7 +565,7 @@ class Neo4jDataAccess:
         # if df.index.all() % self.batch_size == 0 and df.index.all() > 0:
         res = {"mentions": mention_df, "urls": url_df, "params": params_df}
         toc = time.perf_counter()
-        logger.debug(f'finished data enrichments in:  {toc - tic:0.4f} seconds writing to neo4j now..')
+        logger.info(f'finished data enrichments in:  {toc - tic:0.4f} seconds writing to neo4j now..')
         self.write_twint_enriched_tweetdf_to_neo(res, job_name, job_id)
         #return res
 
