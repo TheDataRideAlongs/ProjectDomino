@@ -697,6 +697,7 @@ class FirehoseJob:
                           Until="2020-01-01 21:00:00",
                           job_name=None,
                           **kwargs):
+        tic = time.perf_counter()
         if job_name is None:
             job_name = "search_%s" % Search
         tp = TwintPool()
@@ -711,6 +712,8 @@ class FirehoseJob:
 
                 res = Neo4jDataAccess(self.neo4j_creds).save_twintdf_to_neo(chkd, job_name, job_id=None)
                 # df3 = Neo4jDataAccess(self.debug, self.neo4j_creds).save_df_to_graph(df2, job_name)
+                toc = time.perf_counter()
+                logger.debug(f'finished twint loop in:  {toc - tic:0.4f} seconds')
 
                 logger.info('wrote to neo4j, # %s' % len(res))
 
@@ -718,5 +721,4 @@ class FirehoseJob:
             else:
                 yield df
         logger.debug('done')
-
 
