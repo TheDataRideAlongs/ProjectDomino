@@ -558,6 +558,7 @@ class Neo4jDataAccess:
 
         #paramstic = time.perf_counter()
         params_df = pd.concat(params, ignore_index=True, sort=False)
+        params_df["hydrated"] = "PARTIAL"
         #params_df = pd.concat([params_df,acct_df], axis=1, ignore_index=False, sort=False)
         #paramstoc = time.perf_counter()
         #logger.debug(f'finished correlating account info to tweets in:  {paramstoc - paramstic:0.4f} seconds')
