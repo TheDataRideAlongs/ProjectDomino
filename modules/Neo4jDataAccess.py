@@ -683,7 +683,7 @@ class Neo4jDataAccess:
                     self.save_enrichment_df_to_graph(self.NodeLabel.Url, df, job_name, job_id)
                 elif key == 'params':
                     logger.info("writing tweets and accts")
-                    with self.graph.session() as session:
+                    with graph.session() as session:
                         logger.info('writing tweets and accounts')
                         session.run(self.tweetsandaccounts, tweets=df.to_dict(orient='records'),
                                     timeout=self.timeout)
