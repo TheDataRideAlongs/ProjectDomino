@@ -75,13 +75,13 @@ def get_creds():
 @task(log_stdout=True, skip_on_upstream_skip=True)
 def run_stream():
     creds = get_creds()
-    start = datetime.strptime("2020-04-01 20:00:00", "%Y-%m-%d %H:%M:%S")
+    start = datetime.strptime("2020-04-25 20:00:00", "%Y-%m-%d %H:%M:%S")
     current = datetime.strptime(datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "%Y-%m-%d %H:%M:%S")
     rand_dt=random_date(start, current)
     tp = TwintPool(is_tor=True)
     fh = FirehoseJob(neo4j_creds=creds, PARQUET_SAMPLE_RATE_TIME_S=30, save_to_neo=True, writers={})
     try:
-        for df in fh.search_time_range(tp=tp, Search="covid",Since=str(rand_dt),Until=str(current),job_name="covid stream",Limit= randrange(350)):
+        for df in fh.search_time_range(tp=tp, Search="covid",Since=str(rand_dt),Until=str(current),job_name="covid stream",Limit=350):
             logger.debug('got: %s', len(df))
     except:
         logger.debug("job finished")
