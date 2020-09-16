@@ -197,7 +197,7 @@ class Neo4jDataAccess:
         if not (self.creds is None):
             creds = self.creds
         else:
-            with open('neo4jcreds.json') as json_file:
+            with open('/secrets/neo4jcreds.json') as json_file:
                 creds = json.load(json_file)
         res = list(filter(lambda c: c["type"] == role_type, creds))
         if len(res):
