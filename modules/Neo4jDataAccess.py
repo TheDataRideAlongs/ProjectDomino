@@ -684,10 +684,10 @@ class Neo4jDataAccess:
                 elif key == 'params':
                     logger.info("writing tweets and accts")
                     with self.graph.session() as session:
-                        logger.debug('writing tweets and accounts')
+                        logger.info('writing tweets and accounts')
                         session.run(self.tweetsandaccounts, tweets=df.to_dict(orient='records'),
                                     timeout=self.timeout)
-                        logger.debug('writing tweet relationships')
+                        logger.info('writing tweet relationships')
                         session.run(self.tweeted_rel, tweets=df.to_dict(orient='records'), timeout=self.timeout)
             toc = time.perf_counter()
             logger.info(f'Neo4j Periodic Save Complete in  {toc - tic:0.4f} seconds')
