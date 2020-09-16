@@ -13,12 +13,12 @@ services:
   data-stream:
       build:
         context: ../../../
-        dockerfile: datastream-Dockerfile
+        dockerfile: infra/pipelines/docker/datastream-Dockerfile
       tty: true
       network_mode: 'bridge'
+      command: sh -c "pwd && ls && service tor start && python3 /app/search_by_date_job.py"
       volumes:
-        - "./jobs:/app"
-      command: sh -c "python3 search_by_date_job.py"
+        - /home/codywebb/ProjectDomino/infra/pipelines/docker/jobs/neo4jcreds.json:/secrets/neo4jcreds.json:ro
       environment:
         PREFECT__SERVER__HOST: ${PREFECT__SERVER__HOST:-http://host.docker.internal}
         PREFECT__SERVER__PORT: ${PREFECT__SERVER__PORT:-4200}

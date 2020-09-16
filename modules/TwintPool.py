@@ -12,8 +12,7 @@ logger = logging.getLogger()
 
 class TwintPool:
 
-    def __init__(self, fh_job=None, job_name='noname'):
-        self.fh = fh_job
+    def __init__(self, is_tor=False):
         self.config = twint.Config()
         self.config.Limit = 1000
         self.config.Pandas = True
@@ -21,9 +20,14 @@ class TwintPool:
         self.config.Verified = None
         self.config.Username = None
         self.config.User_full = None
-        self.config.Proxy_host = None  # "tor"
-        self.config.Proxy_port = None  # "9050"
-        self.config.Proxy_type = None  # "socks5"
+        if is_tor:
+            self.config.Proxy_host = 'localhost'
+            self.config.Proxy_port = "9050"
+            self.config.Proxy_type = "socks5"
+        else:
+            self.config.Proxy_host = None  # "tor"
+            self.config.Proxy_port = None  # "9050"
+            self.config.Proxy_type = None  # "socks5"
 
     def twint_loop(self, since, until, stride_sec=600, limit=None):
         def get_unix_time(time_str):

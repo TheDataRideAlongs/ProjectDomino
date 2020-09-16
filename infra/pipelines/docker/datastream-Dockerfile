@@ -1,12 +1,21 @@
 FROM python:3.7
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends git vim
+    && apt-get install -y --no-install-recommends git vim tor \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
 
-COPY . /app
-RUN pip install prefect==0.10.1 aiohttp_socks==0.4.1 simplejson twarc neo4j boto3==1.12.39 \
-    pandas  pyarrow urlextract git+https://github.com/twintproject/twint.git@origin/master#egg=twint
+
+RUN pip install prefect==0.10.1 simplejson twarc neo4j boto3==1.12.39 \
+    pandas  pyarrow urlextract git+https://github.com/lmeyerov/twint.git@patch-1#egg=twint
+
+#FIXME this should be part of entrypoint / service config?
+RUN service tor start 
+
+COPY ./modules /app/ProjectDomino
+COPY ./infra/pipelines/docker/jobs /app
+
+HEALTHCHECK --interval=60s --timeout=15s --start-period=20s \
+    CMD curl -sf --socks5-hostname localhost:9050 https://check.torproject.org | grep Congrat
 
 WORKDIR /app

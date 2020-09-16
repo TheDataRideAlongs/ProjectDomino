@@ -21,9 +21,9 @@ logger.setLevel(logging.DEBUG) #DEBUG, INFO, WARNING, ERROR, CRITICAL
 
 
 import json, pandas as pd
-from ProjectDomino.modules.Neo4jDataAccess import Neo4jDataAccess
-from ProjectDomino.modules.FirehoseJob import FirehoseJob
-from ProjectDomino.modules.TwintPool import TwintPool
+from ProjectDomino.Neo4jDataAccess import Neo4jDataAccess
+from ProjectDomino.FirehoseJob import FirehoseJob
+from ProjectDomino.TwintPool import TwintPool
 from prefect.environments.storage import S3
 from prefect import Flow,task
 from prefect.schedules import IntervalSchedule
@@ -68,7 +68,7 @@ def random_date(start, end):
 
 def get_creds():
     neo4j_creds = None
-    with open('neo4jcreds.json') as json_file:
+    with open('/secrets/neo4jcreds.json') as json_file:
         neo4j_creds = json.load(json_file)
     return neo4j_creds
 
@@ -78,9 +78,10 @@ def run_stream():
     start = datetime.strptime("2020-03-11 20:00:00", "%Y-%m-%d %H:%M:%S")
     current = datetime.strptime(datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "%Y-%m-%d %H:%M:%S")
     rand_dt=random_date(start, current)
+    tp = TwintPool(is_tor=True)
     fh = FirehoseJob(neo4j_creds=creds, PARQUET_SAMPLE_RATE_TIME_S=30, save_to_neo=True, writers={})
     try:
-        for df in fh.search_time_range(Search="covid",Since=str(rand_dt),Until=str(current),job_name="covid stream"):
+        for df in fh.search_time_range(tp=tp, Search="covid",Since=str(rand_dt),Until=str(current),job_name="covid stream"):
             logger.debug('got: %s', len(df))
     except:
         logger.debug("job finished")

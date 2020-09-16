@@ -696,11 +696,13 @@ class FirehoseJob:
                           Since="2020-01-01 20:00:00",
                           Until="2020-01-01 21:00:00",
                           job_name=None,
+                          tp=None,
                           **kwargs):
         tic = time.perf_counter()
         if job_name is None:
             job_name = "search_%s" % Search
-        tp = TwintPool()
+        if tp is None:
+            tp = TwintPool()
         for df, t0, t1 in tp._get_term(Search=Search, Since=Since, Until=Until, **kwargs):
             logger.debug('hits %s to %s: %s', t0, t1, len(df))
             if self.save_to_neo:
