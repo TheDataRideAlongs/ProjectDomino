@@ -93,7 +93,7 @@ def run_stream():
 
 schedule = IntervalSchedule(
     start_date=datetime(2020, 9, 5),
-    interval=timedelta(seconds=randrange(10)),
+    interval=timedelta(seconds=randrange(15)),
 )
 storage = S3(bucket=S3_BUCKET)
 
