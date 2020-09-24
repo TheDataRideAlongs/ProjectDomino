@@ -7,7 +7,8 @@ RUN apt-get update \
 
 
 RUN pip install prefect==0.10.1 simplejson twarc neo4j boto3==1.12.39 \
-    pandas  pyarrow urlextract git+https://github.com/lmeyerov/twint.git@patch-1#egg=twint
+    pandas  pyarrow urlextract git+https://github.com/lmeyerov/twint.git@patch-1#egg=twint \
+    git+https://github.com/lapp0/twitterscraper.git
 
 #FIXME this should be part of entrypoint / service config?
 RUN service tor start 
