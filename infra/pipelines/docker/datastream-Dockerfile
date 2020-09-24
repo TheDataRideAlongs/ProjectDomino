@@ -1,12 +1,6 @@
-
-FROM python:3.7-alpine
-
-# Firefox browser
-RUN apt-get install -y firefox
-
 FROM python:3.7
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends git vim tor \
+    && apt-get install -y --no-install-recommends git vim tor firefox \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
