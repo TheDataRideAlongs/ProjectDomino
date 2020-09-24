@@ -16,7 +16,7 @@ services:
         dockerfile: infra/pipelines/docker/datastream-Dockerfile
       tty: true
       network_mode: 'bridge'
-      command: sh -c "pwd && ls && service tor start && python3 /app/search_by_date_job.py"
+      #command: sh -c "pwd && ls && service tor start && python3 /app/search_by_date_job.py"
       volumes:
         - /home/codywebb/ProjectDomino/infra/pipelines/docker/jobs/neo4jcreds.json:/secrets/neo4jcreds.json:ro
       environment:
