@@ -1,4 +1,4 @@
-FROM python:3.7
+FROM python:3.7-alpine
 RUN apt-get update \
     && apt-get install -y --no-install-recommends git vim tor firefox \
     && apt-get clean \
@@ -22,7 +22,7 @@ RUN pip install prefect==0.10.1 simplejson twarc neo4j boto3==1.12.39 \
     git+https://github.com/lapp0/twitterscraper.git
 
 #FIXME this should be part of entrypoint / service config?
-RUN service tor start 
+RUN service tor start
 
 COPY ./modules /app/ProjectDomino
 COPY ./infra/pipelines/docker/jobs /app
