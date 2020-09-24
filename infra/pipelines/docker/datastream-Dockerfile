@@ -1,5 +1,5 @@
 
-FROM python:3.7
+FROM ubuntu:bionic-20200807
 #=========
 # Firefox
 #=========
