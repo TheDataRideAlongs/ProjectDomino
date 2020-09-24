@@ -37,7 +37,7 @@ RUN GK_VERSION=$(if [ ${GECKODRIVER_VERSION:-latest} = "latest" ]; then echo "0.
 
 RUN pip install prefect==0.10.1 simplejson twarc neo4j boto3==1.12.39 \
     pandas  pyarrow urlextract git+https://github.com/lmeyerov/twint.git@patch-1#egg=twint \
-    git+https://github.com/lapp0/twitterscraper.git
+    git+https://github.com/lapp0/twitterscraper.git@selenium
 
 #FIXME this should be part of entrypoint / service config?
 #RUN service tor start
