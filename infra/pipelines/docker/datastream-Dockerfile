@@ -1,8 +1,5 @@
-FROM selenium/node-base:4.0.0-alpha-7-prerelease-20200921
-LABEL authors=SeleniumHQ
 
-USER root
-
+FROM python:3.7
 #=========
 # Firefox
 #=========
@@ -35,10 +32,8 @@ RUN GK_VERSION=$(if [ ${GECKODRIVER_VERSION:-latest} = "latest" ]; then echo "0.
 
 
 
-
-FROM python:3.7
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends git vim tor \
+    && apt-get install -y --no-install-recommends git vim tor firefox \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
