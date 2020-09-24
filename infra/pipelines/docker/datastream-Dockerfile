@@ -32,7 +32,7 @@ RUN GK_VERSION=$(if [ ${GECKODRIVER_VERSION:-latest} = "latest" ]; then echo "0.
   && rm /tmp/geckodriver.tar.gz \
   && mv /opt/geckodriver /opt/geckodriver-$GK_VERSION \
   && chmod 755 /opt/geckodriver-$GK_VERSION \
-  && ln -fs /opt/geckodriver-$GK_VERSION /usr/bin/geckodriver
+  && ln -fs /opt/geckodriver-$GK_VERSION /usr/bin/wires
 
 
 RUN pip install prefect==0.10.1 simplejson twarc neo4j boto3==1.12.39 \
