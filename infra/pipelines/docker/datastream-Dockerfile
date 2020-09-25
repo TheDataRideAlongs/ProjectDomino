@@ -39,7 +39,6 @@ RUN GK_VERSION=$(if [ ${GECKODRIVER_VERSION:-latest} = "latest" ]; then echo "0.
   && ln -fs /opt/geckodriver-$GK_VERSION /usr/bin/wires
 
 
-ENV PATH="${PATH}:/opt/geckodriver-0.27.0"
 
 
 RUN pip install prefect==0.10.1 simplejson twarc neo4j boto3==1.12.39 \
