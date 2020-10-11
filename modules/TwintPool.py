@@ -88,6 +88,11 @@ class TwintPool:
 
         df = df.assign(id=df['id'].astype('int64'))
 
+        df2 = df.drop_duplicates(subset=['id'])
+        if len(df2) < len(df):
+            logger.warning('Deduplicating input tweet df had duplicates, %s -> %s', len(df), len(df2))
+        df = df2
+
         from .Neo4jDataAccess import Neo4jDataAccess
         neo4j_creds = None
         with open('neo4jcreds.json') as json_file:
@@ -117,7 +122,7 @@ class TwintPool:
         def row_to_tweet_type(row):
             if row['quote_url'] is None or row['quote_url'] == '':
                 return "QUOTE_RETWEET"
-            elif row['retweet']:
+            elif ('retweet' in row) and row['retweet']:
                 return "RETWEET"
             elif row['id'] == row['conversation_id']:
                 return "TWEET"
@@ -136,7 +141,7 @@ class TwintPool:
             return list(extractor.gen_urls(row['tweet']))
 
         neo4j_df['user_location'] = None
-        neo4j_df['tweet_type_twint'] = df.apply(row_to_tweet_type, axis=1)
+        neo4j_df['tweet_type_twint'] = df.apply(row_to_tweet_type, axis=1, result_type='reduce') #handle empty df
         neo4j_df['hashtags'] = df['hashtags'].apply(lambda x: [{'text': ht} for ht in x])
         neo4j_df['user_followers_count'] = None
         neo4j_df['user_friends_count'] = None
