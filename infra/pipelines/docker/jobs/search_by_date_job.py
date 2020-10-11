@@ -89,8 +89,9 @@ def run_stream():
         for df in fh.search_time_range(tp=tp, Search=search, Since=str(start), Until=str(current), job_name=job_name, Limit=10000000, stride_sec=30):
             logger.info('got: %s', len(df) if not (df is None) else 'None')
             logger.info('proceed to next df')
-    except:
+    except Exception as e:
         logger.error("job exception", exc_info=True)
+        raise e
     logger.info("job finished")
 
 # In[ ]:
