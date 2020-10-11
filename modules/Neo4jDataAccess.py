@@ -8,7 +8,7 @@ import enum
 from datetime import datetime
 import pandas as pd
 from neo4j import GraphDatabase, basic_auth
-from urllib.parse import urlparse
+from yurl import URL
 import logging
 from .DfHelper import DfHelper
 from .TwintPool import TwintPool
@@ -442,21 +442,21 @@ class Neo4jDataAccess:
     def __parse_urls(self, row, url_params, job_name, job_id=None):
         for u in row['urls']:
             try:
-                parsed = urlparse(u['expanded_url'])
+                parsed = URL(u['expanded_url'])
                 url_params.append({
                     'tweet_id': row['status_id'],
                     'url': u['expanded_url'],
                     'job_id': job_id,
                     'job_name': job_name,
                     'schema': parsed.scheme,
-                    'netloc': parsed.netloc,
+                    'netloc': parsed.authority,
                     'path': parsed.path,
-                    'params': parsed.params,
+                    'params': '',#parsed.params,
                     'query': parsed.query,
                     'fragment': parsed.fragment,
                     'username': parsed.username,
-                    'password': parsed.password,
-                    'hostname': parsed.hostname,
+                    'password': parsed.authorization,
+                    'hostname': parsed.host,
                     'port': parsed.port,
                 })
             except Exception as inst:
@@ -586,21 +586,21 @@ class Neo4jDataAccess:
             for index, row in df.iterrows():
                 if row["urls"]:
                     urls = [url for url in row["urls"]]
-                    parsed = urlparse(urls[counter])
+                    parsed = URL(urls[counter])
                     url_params_lst.append(pd.DataFrame([{
                         'tweet_id': int(row["status_id"]),
                         'full_url': urls[counter],
                         'job_id': job_id,
                         'job_name': job_name,
                         'schema': parsed.scheme,
-                        'netloc': parsed.netloc,
+                        'netloc': parsed.authority,
                         'path': parsed.path,
-                        'params': parsed.params,
+                        'params': '',#parsed.params,
                         'query': parsed.query,
                         'fragment': parsed.fragment,
                         'username': parsed.username,
-                        'password': parsed.password,
-                        'hostname': parsed.hostname,
+                        'password': parsed.authorization,
+                        'hostname': parsed.host,
                         'port': parsed.port}]))
         except Exception as e:
             logging.error('params.append exn', e)

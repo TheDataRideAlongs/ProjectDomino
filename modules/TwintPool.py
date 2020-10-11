@@ -9,6 +9,7 @@ import time
 
 logger = logging.getLogger()
 
+extractor = URLExtract()
 
 class TwintPool:
 
@@ -132,7 +133,6 @@ class TwintPool:
         # return None
 
         def row_tweet_to_urls(row):
-            extractor = URLExtract()
             return list(extractor.gen_urls(row['tweet']))
 
         neo4j_df['user_location'] = None
