@@ -12,7 +12,7 @@
 
 import logging
 logger = logging.getLogger()
-logger.setLevel(logging.DEBUG) #DEBUG, INFO, WARNING, ERROR, CRITICAL
+logger.setLevel(logging.INFO) #DEBUG, INFO, WARNING, ERROR, CRITICAL
 
 
 
@@ -77,16 +77,21 @@ def run_stream():
     creds = get_creds()
     start = datetime.strptime("2020-03-11 20:00:00", "%Y-%m-%d %H:%M:%S")
     current = datetime.strptime(datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "%Y-%m-%d %H:%M:%S")
-    rand_dt=random_date(start, current)
+    #rand_dt=random_date(start, current)
+    #2020-10-10 16:07:30
+    #2020-10-11 06:29:00 to 2020-10-11 06:29:30: 
     tp = TwintPool(is_tor=True)
     fh = FirehoseJob(neo4j_creds=creds, PARQUET_SAMPLE_RATE_TIME_S=30, save_to_neo=True, writers={})
     try:
-        for df in fh.search_time_range(tp=tp, Search="covid",Since=str(rand_dt),Until=str(current),job_name="covid stream"):
-            logger.debug('got: %s', len(df))
+        search = "covid OR corona OR virus OR pandemic"
+        job_name = "covid multi test"
+        limit = 10000000
+        for df in fh.search_time_range(tp=tp, Search=search, Since=str(start), Until=str(current), job_name=job_name, Limit=10000000, stride_sec=30):
+            logger.info('got: %s', len(df) if not (df is None) else 'None')
+            logger.info('proceed to next df')
     except:
-        logger.debug("job finished")
-
-
+        logger.error("job exception", exc_info=True)
+    logger.info("job finished")
 
 # In[ ]:
 
@@ -97,7 +102,8 @@ schedule = IntervalSchedule(
 )
 storage = S3(bucket=S3_BUCKET)
 
-with Flow("covid stream", storage=storage, schedule=schedule) as flow:
+#with Flow("covid-19 stream", storage=storage, schedule=schedule) as flow:
+with Flow("covid-19 stream-single") as flow:
     run_stream()
 flow.run()
 
