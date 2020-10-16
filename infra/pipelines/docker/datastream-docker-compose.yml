@@ -20,6 +20,7 @@ services:
       volumes:
         - /home/codywebb/ProjectDomino/infra/pipelines/docker/jobs/neo4jcreds.json:/secrets/neo4jcreds.json:ro
       environment:
+        JOB_FILE: search_by_date_job.py
         PREFECT__SERVER__HOST: ${PREFECT__SERVER__HOST:-http://host.docker.internal}
         PREFECT__SERVER__PORT: ${PREFECT__SERVER__PORT:-4200}
         PREFECT__SERVER__UI__HOST: ${PREFECT__SERVER__UI__HOST:-http://host.docker.internal}

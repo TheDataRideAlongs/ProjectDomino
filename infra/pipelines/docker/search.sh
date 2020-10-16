@@ -1,3 +1,11 @@
 #!/bin/bash
+set -ex
 
-docker-compose -f datastream-docker-compose.yml build && docker-compose -f datastream-docker-compose.yml up -d && docker-compose -f datastream-docker-compose.yml logs -f -t --tail=1
+FILE=${JOB_FILE:-search_by_date_job.py}
+PROJECT=${PROJECT_NAME:-docker}
+
+
+docker-compose -f datastream-docker-compose.yml build
+JOB_FILE="search_by_date_job.py" docker-compose -f datastream-docker-compose.yml -p ${PROJECT} up -d data-stream 
+sleep 5
+docker-compose -f datastream-docker-compose.yml -p ${PROJECT} logs -f -t --tail=100

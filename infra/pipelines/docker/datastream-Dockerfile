@@ -18,6 +18,9 @@ RUN echo "ok6" && pip install git+https://github.com/TheDataRideAlongs/twint.git
 
 COPY ./modules /app/ProjectDomino
 COPY ./infra/pipelines/docker/jobs /app
+COPY ./infra/pipelines/docker/datastream-entrypoint.sh /entrypoint.sh
+
+ENTRYPOINT ["/entrypoint.sh"]
 
 HEALTHCHECK --interval=60s --timeout=15s --start-period=20s \
     CMD curl -sf --socks5-hostname localhost:9050 https://check.torproject.org | grep Congrat

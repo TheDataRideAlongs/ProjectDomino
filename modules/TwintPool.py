@@ -32,6 +32,8 @@ class TwintPool:
 
     def twint_loop(self, since, until, stride_sec=600, limit=None):
         def get_unix_time(time_str):
+            if isinstance(time_str, datetime):
+                return time_str
             return datetime.strptime(time_str, '%Y-%m-%d %H:%M:%S')
 
         since = get_unix_time(since)
