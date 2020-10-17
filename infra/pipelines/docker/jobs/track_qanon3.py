@@ -48,11 +48,69 @@ def run_stream():
     #2020-10-11 18:45:00 to 2020-10-11 18:45:30:
     #2020-10-05 17:00:30-2020-10-05 17:01:00
     # 2020-10-06 22:10:00 to 2020-10-06 22:10:30:
+    terms = [ 
+            "17anon",
+            "adrenochromeharvesting",
+            "agenda21",
+            "C0vid-19",
+            "cannibalclub",
+            "exposepedogate",
+            "fake virus",
+            "great awakening",
+            "HisNameWasSethRich",
+            "outofshadows",
+            "Patriot Defender",
+            "pedovore",
+            "pedowood",
+            "qanon",
+            "qanonmap",
+            "qanons",
+            "qanonymous",
+            "qanontruth",
+            "qanon2020",
+            "qdrop",
+            "qanondrops",
+            "qanonposts",
+            "qanonpub",
+            "qsentme",
+            "QANONWORLDWIDE",
+            "QANON_WORLDWIDE",
+            "QAnonUS",
+            "QAnonUSA",
+            "QAnonUK",
+            "QAnonCanada",
+            "greatawakening",
+            "thegreateawakening",
+            "qmap_pub",
+            "Rothshilds", 
+            "save the children",
+            "saveourchildren",
+            "savethechildren",
+            "saveourplanet",
+            "sheepnomore",
+            "silentnomore",
+            "taketheoath",
+            "digitalsoldiers",
+            "trumprussiamatrix",
+            "trusttheplan",
+            "weareq",
+            "weareallq",
+            "WWG1WGA",
+            "wwg",
+            "wga",
+            "wgaworldwide",
+            "wwg1wgaworldwide",
+            "wwg1wga_worldwide"
+    ]
+
+    search_term = " OR ".join(['"' + t + '"' for t in terms[40:]])
+    logger.info('Using 40:: %s', search_term)
+
     tp = TwintPool(is_tor=True)
     fh = FirehoseJob(neo4j_creds=creds, PARQUET_SAMPLE_RATE_TIME_S=30, save_to_neo=True, writers={})
     try:
-        search = "covid OR corona OR virus OR pandemic"
-        job_name = "covid multi test"
+        search = search_term
+        job_name = "qanon"
         limit = 10000000
         for df in fh.search_time_range(tp=tp, Search=search, Since=datetime.strftime(start, "%Y-%m-%d %H:%M:%S"), Until=datetime.strftime(current, "%Y-%m-%d %H:%M:%S"), job_name=job_name, Limit=10000000, stride_sec=30):
             logger.info('got: %s', len(df) if not (df is None) else 'None')
@@ -69,7 +127,7 @@ storage = S3(bucket=S3_BUCKET)
 
 #with Flow("covid-19 stream-single") as flow:
 #with Flow("covid-19 stream", storage=storage, schedule=schedule) as flow:
-with Flow("covid-19 stream", schedule=schedule) as flow:
+with Flow("qanon stream", schedule=schedule) as flow:
     run_stream()
 flow.run()
 
