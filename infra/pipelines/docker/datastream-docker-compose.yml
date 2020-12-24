@@ -18,9 +18,10 @@ services:
       network_mode: 'bridge'
       volumes:
         - /home/lmeyerov2/neo4jcreds.json:/secrets/neo4jcreds.json:ro
-        - ./jobs:/app:ro
+        - ./../../../jobs:/app:ro
       environment:
         JOB_FILE: ${JOB_FILE:-search_by_date_job.py}
+        TOPIC: ${TOPIC:-covid}
         PREFECT__SERVER__HOST: ${PREFECT__SERVER__HOST:-http://host.docker.internal}
         PREFECT__SERVER__PORT: ${PREFECT__SERVER__PORT:-4200}
         PREFECT__SERVER__UI__HOST: ${PREFECT__SERVER__UI__HOST:-http://host.docker.internal}
@@ -30,3 +31,5 @@ services:
       logging:
         options:
           tag: 'ImageName:{{.ImageName}}/Name:{{.Name}}/ID:{{.ID}}/ImageFullID:{{.ImageFullID}}'
+          max-size: "20M"
+          max-file: "10"
