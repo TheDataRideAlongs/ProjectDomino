@@ -157,7 +157,7 @@ class TwintPool:
         # neo4j_df['retweet_id'] is suspiciously empty (always)
         neo4j_df['retweeted_status'] = None
         neo4j_df['conversation_id'] = df['conversation_id']  # FIXME no-op?
-        neo4j_df['created_at'] = (neo4j_df['created_at'] / 1000).apply(lambda n: datetime.fromtimestamp(n))
+        neo4j_df['created_at'] = (df['created_at'] / 1000).apply(lambda n: datetime.fromtimestamp(n))
 
         # neo4j_df['quoted_status_id'] = df.apply(row_to_quoted_status_id, axis=1)
         # neo4j_df['is_quote_status'] = neo4j_df['quoted_status_id'] != None
