@@ -587,21 +587,21 @@ class Neo4jDataAccess:
             for index, row in df.iterrows():
                 if row["urls"]:
                     urls = [url for url in row["urls"]]
-                    parsed = urlparse(urls[counter])
+                    parsed = URL(urls[counter])
                     url_params_lst.append(pd.DataFrame([{
                         'tweet_id': int(row["status_id"]),
                         'full_url': urls[counter],
                         'job_id': job_id,
                         'job_name': job_name,
                         'schema': parsed.scheme,
-                        'netloc': parsed.netloc,
+                        'netloc': parsed.authority,
                         'path': parsed.path,
-                        'params': parsed.params,
+                        'params': '',#parsed.params,
                         'query': parsed.query,
                         'fragment': parsed.fragment,
                         'username': parsed.username,
-                        'password': parsed.password,
-                        'hostname': parsed.hostname,
+                        'password': parsed.authorization,
+                        'hostname': parsed.host,
                         'port': parsed.port}]))
         except Exception as e:
             logging.error('params.append exn', e)
@@ -667,6 +667,7 @@ class Neo4jDataAccess:
         acctdf['created_at'] = df['created_at']
         acctdf['job_name'] = str(job_name)
         return acctdf
+
     def write_twint_enriched_tweetdf_to_neo(self, res, job_name, job_id):
         graph = self.__get_neo4j_graph('writer')
         global_tic = time.perf_counter()
