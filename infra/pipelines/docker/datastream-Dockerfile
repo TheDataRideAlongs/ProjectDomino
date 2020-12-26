@@ -1,0 +1,25 @@
+FROM python:3.7
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends git vim tor \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN pip install prefect==0.10.1 simplejson twarc neo4j boto3==1.12.39 \
+    pandas  pyarrow urlextract git+https://github.com/homm/yurl.git@1943161973aeb3b3cf2e1e9de6671673b8356161
+
+RUN echo "ok6" && pip install git+https://github.com/TheDataRideAlongs/twint.git
+#RUN pip install git+https://github.com/twintproject/twint.git
+#git+https://github.com/lmeyerov/twint.git@patch-1#egg=twint
+
+COPY ./modules /modules/ProjectDomino
+COPY ./infra/pipelines/docker/datastream-entrypoint.sh /entrypoint.sh
+
+ENV JOB_FILE=search_by_date_job.py
+
+ENTRYPOINT ["/entrypoint.sh"]
+#ENTRYPOINT ["/bin/bash", "-c", 'echo "ok"']
+
+HEALTHCHECK --interval=60s --timeout=15s --start-period=20s \
+    CMD curl -sf --socks5-hostname localhost:9050 https://check.torproject.org | grep Congrat
+
+WORKDIR /app
