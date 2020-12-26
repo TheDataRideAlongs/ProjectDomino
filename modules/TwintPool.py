@@ -156,7 +156,7 @@ class TwintPool:
             return list(extractor.gen_urls(row['tweet']))
 
         neo4j_df['user_location'] = None
-        neo4j_df['tweet_type_twint'] = df.apply(row_to_tweet_type, axis=1)
+        neo4j_df['tweet_type_twint'] = df.apply(row_to_tweet_type, axis=1, result_type='reduce') #handle empty df
         neo4j_df['hashtags'] = df['hashtags'].apply(lambda x: [{'text': ht} for ht in x])
         neo4j_df['user_followers_count'] = None
         neo4j_df['user_friends_count'] = None
