@@ -197,7 +197,7 @@ class Neo4jDataAccess:
         if not (self.creds is None):
             creds = self.creds
         else:
-            with open('neo4jcreds.json') as json_file:
+            with open('/secrets/neo4jcreds.json') as json_file:
                 creds = json.load(json_file)
         res = list(filter(lambda c: c["type"] == role_type, creds))
         if len(res):
@@ -480,6 +480,7 @@ class Neo4jDataAccess:
         twintdftic = time.perf_counter()
         df = TwintPool().twint_df_to_neo4j_df(df)
         twintdftoc = time.perf_counter()
+        logger.info('twintdf->neo4jdf: %s', len(df) if not (df is None) else 'None')
         logger.info(f'finished twint dataframe to neo4j conversion stage 1 {twintdftoc - twintdftic:0.4f} seconds')
 
         df.drop(df.columns[df.columns.str.contains('unnamed', case=False)], axis=1, inplace=True)
@@ -489,7 +490,6 @@ class Neo4jDataAccess:
         tic = time.perf_counter()
         logger.debug('df columns %s', df.columns)
 
-        logger.error('HERE I AM!')
         itertic = time.perf_counter()
         for index, row in df.iterrows():
             # determine the type of tweet
@@ -566,6 +566,7 @@ class Neo4jDataAccess:
         #params_df = pd.concat([params_df,acct_df], axis=1, ignore_index=False, sort=False)
         #paramstoc = time.perf_counter()
         #logger.debug(f'finished correlating account info to tweets in:  {paramstoc - paramstic:0.4f} seconds')
+        logger.info('split tweets (%s) into mentions (%s), urls (%s), and tweets (%s)', len(df), len(mention_df), len(url_df), len(params_df))
 
         # if df.index.all() % self.batch_size == 0 and df.index.all() > 0:
         res = {"mentions": mention_df, "urls": url_df, "params": params_df}
@@ -674,33 +675,49 @@ class Neo4jDataAccess:
         graph = self.__get_neo4j_graph('writer')
         global_tic = time.perf_counter()
         tic = time.perf_counter()
+        key = None
+        df = None
         try:
             for key in list(res.keys()):
                 df = res[key]
                 # if df.index.all() % self.batch_size == 0 and df.index.all() > 0:
                 if key == 'mentions':
-                    logger.info("writing mentions")
+                    logger.info("writing mentions (%s)", len(df))
                     with graph.session() as session:
-                        session.run(self.mentions, mentions=df.to_dict(orient='records'), timeout=self.timeout)
+                        df_with_mentions = df[ df['user_screen_name'].apply(len) > 0 ]
+                        session.run(self.mentions, mentions=df_with_mentions.to_dict(orient='records'), timeout=self.timeout)
                 elif key == 'urls':
-                    logger.info("writing URL Nodes and Properties")
+                    logger.info("writing URL Nodes and Properties (%s)", len(df))
                     self.save_enrichment_df_to_graph(self.NodeLabel.Url, df, job_name, job_id)
                 elif key == 'params':
-                    logger.info("writing tweets and accts")
+                    logger.info("writing tweets and accts (%s)", len(df))
                     with self.graph.session() as session:
-                        logger.debug('writing tweets and accounts')
+                        logger.info('writing tweets and accounts')
                         session.run(self.tweetsandaccounts, tweets=df.to_dict(orient='records'),
                                     timeout=self.timeout)
-                        logger.debug('writing tweet relationships')
+                        logger.info('writing tweet relationships')
                         session.run(self.tweeted_rel, tweets=df.to_dict(orient='records'), timeout=self.timeout)
             toc = time.perf_counter()
             logger.info(f'Neo4j Periodic Save Complete in  {toc - tic:0.4f} seconds')
         except Exception as inst:
-            logging.error('Neo4j Transaction error')
+            logging.error('//////////////')
+            logging.error('Neo4j Transaction error', exc_info=True)
             logging.error(type(inst))  # the exception instance
             logging.error(inst.args)  # arguments stored in .args
             # __str__ allows args to be printed directly,
             logging.error(inst)
+            logging.error('--------------')
+            logging.error('KEY: %s', key)
+            if key == 'mentions':
+                logger.error('MENTIONS: %s', self.mentions)
+                logger.error('df_with_mentions: %s', df_with_mentions)
+            elif key == 'urls':
+                logger.error('URL: %s', self.NodeLabel.Url)
+            elif key == 'params':
+                logger.error('tweetsandaccounts: %s', self.tweetsandaccounts)
+                logger.error('tweeted_rel: %s', self.tweeted_rel)
+            logging.error('df: %s', df)
+            logging.error('//////////////')
             raise inst
 
 

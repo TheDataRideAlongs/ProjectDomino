@@ -41,21 +41,22 @@ class TwintPool:
         t = since
         tweets_returned = 0
 
+        logger.info('Start twint_loop', extra={'since': since, 'until': until, 'stride_sec': stride_sec, 'limit': limit})
         while t < until and (not tweets_returned or tweets_returned < limit):
             t0 = t
             t1 = t + timedelta(seconds=stride_sec)
             self.config.Since = str(t0)
             self.config.Until = str(t1)
-            logger.debug('Search step: %s-%s', t0, t1)
+            logger.info('Search step: %s-%s', t0, t1)
             twint.run.Search(self.config)
             tweets_returned += len(twint.storage.panda.Tweets_df)
             if len(twint.storage.panda.Tweets_df) > 0:
-                logger.debug('Search hit, len %s', len(twint.storage.panda.Tweets_df))
+                logger.info('Search hit, len %s', len(twint.storage.panda.Tweets_df))
                 yield (twint.storage.panda.Tweets_df, t0, t1)
             else:
                 logger.debug('not hits on %s - %s, continuing', t0, t1)
             t = t1
-        logger.debug('twint_loop done, hits: %s', tweets_returned)
+        logger.info('twint_loop done, hits: %s', tweets_returned)
 
     def _get_term(self, Search="IngSoc", Since="1984-04-20 13:00:00", Until="1984-04-20 13:30:00", stride_sec=600,
                   **kwargs):
@@ -65,11 +66,11 @@ class TwintPool:
         for k, v in kwargs.items():
             setattr(self.config, k, v)
         # self.config.Search = term
-        logger.debug('Search seq: %s-%s of %s', Search, Since, Until)
+        logger.info('Start get_term: %s-%s of %s', Search, Since, Until)
         for df, t0, t1 in self.twint_loop(Since, Until, stride_sec, self.config.Limit):
             yield (df, t0, t1)
         toc = time.perf_counter()
-        logger.info(f'finished searching for tweets in:  {toc - tic:0.4f} seconds')
+        logger.info(f'finished get_term searching for tweets in:  {toc - tic:0.4f} seconds')
 
     def _get_timeline(self, username, limit):
         self.config.Retweets = True
@@ -97,17 +98,23 @@ class TwintPool:
 
         from .Neo4jDataAccess import Neo4jDataAccess
         neo4j_creds = None
-        with open('neo4jcreds.json') as json_file:
+        with open('/secrets/neo4jcreds.json') as json_file:
             neo4j_creds = json.load(json_file)
 
         # dft : df[[id:int64, hydrated: NaN | 'FULL' | 'PARTIAL'??]]
         dft = Neo4jDataAccess(neo4j_creds=neo4j_creds).get_tweet_hydrated_status_by_id(df)
+        logger.debug('hydrate status res sample')
+        logger.debug(dft[:3])
         needs_hydrate_ids = dft[dft['hydrated'] != 'FULL'][['id']]
         needs_hydrate_df = df.merge(needs_hydrate_ids, how='inner', on='id')
+        logger.info('Hydrate check: df:%s -> dft:%s -> ids:%s => merged:%s', len(df), len(dft), len(needs_hydrate_ids), len(needs_hydrate_df))
+        logger.info('First ids: %s', dft['id'][:3])
+        #TODO does this include those not in db?
 
         return needs_hydrate_df
 
     def twint_df_to_neo4j_df(self, df):
+        logger.info('twint_df->neo4j df input: %s', len(df) if not (df is None) else 'None')
         tic = time.perf_counter()
         # df=self.__check_hydrate(df)
         neo4j_df = df.rename(columns={
@@ -122,6 +129,7 @@ class TwintPool:
         })
 
         def row_to_tweet_type(row):
+            #logger.debug('type row: %s', row)
             if row['quote_url'] is None or row['quote_url'] == '':
                 return "QUOTE_RETWEET"
             elif ('retweet' in row) and row['retweet']:
@@ -141,6 +149,11 @@ class TwintPool:
 
         def row_tweet_to_urls(row):
             return list(extractor.gen_urls(row['tweet']))
+
+        logger.debug('df shape: %s', df.shape)
+        logger.debug('cols: %s', df.columns)
+        logger.debug('head[3]')
+        logger.debug(df[:3])
 
         neo4j_df['user_location'] = None
         neo4j_df['tweet_type_twint'] = df.apply(row_to_tweet_type, axis=1, result_type='reduce') #handle empty df
@@ -163,7 +176,9 @@ class TwintPool:
         neo4j_df['user_id'] = df['user_id']
         toc = time.perf_counter()
         #logger.debug(f'finished twint to neo prep in:  {toc - tic:0.4f} seconds')
+        logger.info('twintdf -> neo4j df output: %s -> %s', len(df), len(neo4j_df) if not (neo4j_df is None) else 'None')
         return neo4j_df
+
 
     def to_arrow(self, tweets_df):
         pass
