@@ -68,13 +68,16 @@ class TwintPool:
         toc = time.perf_counter()
         logger.info(f'finished searching for tweets in:  {toc - tic:0.4f} seconds')
 
-    def _get_timeline(self, username, limit):
-        self.config.Retweets = True
-        self.config.Search = "from:" + username
-        self.config.Limit = limit
-        twint.run.Search(self.config)
-        tweets_df = twint.storage.panda.Tweets_df
-        return tweets_df
+    def _get_user_timeline(self,username, limit):
+        config = twint.Config()
+        # config.User_full = True
+        config.Profile_full = True
+        config.Retweets = True
+        config.Limit = limit
+        config.Username = username
+        config.Pandas = True
+        twint.run.Profile(config)
+        return twint.storage.panda.Tweets_df
 
     def _get_user_info(self, username):
         self.config.User_full = True
