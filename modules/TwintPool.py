@@ -87,10 +87,11 @@ class TwintPool:
         twint.run.Profile(self.config)
         return twint.storage.panda.Tweets_df
 
-    def _get_user_info(self, username):
+    def _get_user_info(self,username):
         self.config.User_full = True
         self.config.Username = username
         self.config.Pandas = True
+        self.config.Hide_output=True
         twint.run.Lookup(self.config)
         return twint.storage.panda.User_df
 
