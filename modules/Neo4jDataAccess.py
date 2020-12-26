@@ -473,10 +473,6 @@ class Neo4jDataAccess:
         return dfs
 
     def save_twintdf_to_neo(self, df, job_name, job_id=None):
-        if (df is None) or (len(df) == 0):
-            logger.info('Empty df for neo conversion, skip')
-            return None
-
         twintdftic = time.perf_counter()
         df = TwintPool().twint_df_to_neo4j_df(df)
         twintdftoc = time.perf_counter()
@@ -506,6 +502,7 @@ class Neo4jDataAccess:
                 params.append(pd.DataFrame([{'tweet_id': int(row['status_id']),
                                              'text': row['full_text'],
                                              'created_at': str(pd.to_datetime(row['created_at'])),
+                                             'date': str(pd.to_datetime(row['date'])),
                                              'favorite_count': row['favorite_count'],
                                              'retweet_count': row['retweet_count'],
                                              'type': tweet_type,
@@ -590,21 +587,21 @@ class Neo4jDataAccess:
             for index, row in df.iterrows():
                 if row["urls"]:
                     urls = [url for url in row["urls"]]
-                    parsed = URL(urls[counter])
+                    parsed = urlparse(urls[counter])
                     url_params_lst.append(pd.DataFrame([{
                         'tweet_id': int(row["status_id"]),
                         'full_url': urls[counter],
                         'job_id': job_id,
                         'job_name': job_name,
                         'schema': parsed.scheme,
-                        'netloc': parsed.authority,
+                        'netloc': parsed.netloc,
                         'path': parsed.path,
-                        'params': '',#parsed.params,
+                        'params': parsed.params,
                         'query': parsed.query,
                         'fragment': parsed.fragment,
                         'username': parsed.username,
-                        'password': parsed.authorization,
-                        'hostname': parsed.host,
+                        'password': parsed.password,
+                        'hostname': parsed.hostname,
                         'port': parsed.port}]))
         except Exception as e:
             logging.error('params.append exn', e)
@@ -667,9 +664,9 @@ class Neo4jDataAccess:
         acctdf['screen_name'] = df['username']
         acctdf['friends_count'] = df["following"]
         acctdf['followers_count'] = df["followers"]
+        acctdf['created_at'] = df['created_at']
         acctdf['job_name'] = str(job_name)
         return acctdf
-
     def write_twint_enriched_tweetdf_to_neo(self, res, job_name, job_id):
         graph = self.__get_neo4j_graph('writer')
         global_tic = time.perf_counter()

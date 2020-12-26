@@ -71,18 +71,30 @@ class TwintPool:
         toc = time.perf_counter()
         logger.info(f'finished searching for tweets in:  {toc - tic:0.4f} seconds')
 
-    def _get_timeline(self, username, limit):
+    def _get_Replies_to_user(self,username, limit):
         self.config.Retweets = True
-        self.config.Search = "from:" + username
+        self.config.Search =  username
         self.config.Limit = limit
+        self.config.Pandas = True
+        self.config.Hide_output = True
         twint.run.Search(self.config)
-        tweets_df = twint.storage.panda.Tweets_df
-        return tweets_df
+        return twint.storage.panda.Tweets_df
 
-    def _get_user_info(self, username):
+    def _get_user_timeline(self,username,limit):
+        self.config.Profile_full = True
+        self.config.Retweets = True
+        self.config.Limit = limit
+        self.config.Username = username
+        self.config.Pandas = True
+        self.config.Hide_output = True
+        twint.run.Profile(self.config)
+        return twint.storage.panda.Tweets_df
+
+    def _get_user_info(self,username):
         self.config.User_full = True
         self.config.Username = username
         self.config.Pandas = True
+        self.config.Hide_output=True
         twint.run.Lookup(self.config)
         return twint.storage.panda.User_df
 
@@ -90,14 +102,9 @@ class TwintPool:
 
         df = df.assign(id=df['id'].astype('int64'))
 
-        df2 = df.drop_duplicates(subset=['id'])
-        if len(df2) < len(df):
-            logger.warning('Deduplicating input tweet df had duplicates, %s -> %s', len(df), len(df2))
-        df = df2
-
         from .Neo4jDataAccess import Neo4jDataAccess
         neo4j_creds = None
-        with open('neo4jcreds.json') as json_file:
+        with open('/secrets/neo4jcreds.json') as json_file:
             neo4j_creds = json.load(json_file)
 
         # dft : df[[id:int64, hydrated: NaN | 'FULL' | 'PARTIAL'??]]
@@ -124,7 +131,7 @@ class TwintPool:
         def row_to_tweet_type(row):
             if row['quote_url'] is None or row['quote_url'] == '':
                 return "QUOTE_RETWEET"
-            elif ('retweet' in row) and row['retweet']:
+            elif row['retweet']:
                 return "RETWEET"
             elif row['id'] == row['conversation_id']:
                 return "TWEET"
@@ -140,13 +147,15 @@ class TwintPool:
         # return None
 
         def row_tweet_to_urls(row):
+            extractor = URLExtract()
             return list(extractor.gen_urls(row['tweet']))
 
         neo4j_df['user_location'] = None
-        neo4j_df['tweet_type_twint'] = df.apply(row_to_tweet_type, axis=1, result_type='reduce') #handle empty df
+        neo4j_df['tweet_type_twint'] = df.apply(row_to_tweet_type, axis=1)
         neo4j_df['hashtags'] = df['hashtags'].apply(lambda x: [{'text': ht} for ht in x])
         neo4j_df['user_followers_count'] = None
         neo4j_df['user_friends_count'] = None
+        neo4j_df['date'] = df['date']
         # neo4j_df['user_created_at'] = None
         neo4j_df['user_profile_image_url'] = None
         neo4j_df['reply_tweet_id'] = None
@@ -154,7 +163,7 @@ class TwintPool:
         # neo4j_df['retweet_id'] is suspiciously empty (always)
         neo4j_df['retweeted_status'] = None
         neo4j_df['conversation_id'] = df['conversation_id']  # FIXME no-op?
-        neo4j_df['created_at'] = (neo4j_df['created_at'] / 1000).apply(lambda n: datetime.fromtimestamp(n))
+        neo4j_df['created_at'] = (df['created_at'] / 1000).apply(lambda n: datetime.fromtimestamp(n))
 
         # neo4j_df['quoted_status_id'] = df.apply(row_to_quoted_status_id, axis=1)
         # neo4j_df['is_quote_status'] = neo4j_df['quoted_status_id'] != None
@@ -167,8 +176,3 @@ class TwintPool:
 
     def to_arrow(self, tweets_df):
         pass
-
-
-
-
-
