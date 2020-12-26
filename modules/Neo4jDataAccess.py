@@ -473,6 +473,10 @@ class Neo4jDataAccess:
         return dfs
 
     def save_twintdf_to_neo(self, df, job_name, job_id=None):
+        if (df is None) or (len(df) == 0):
+            logger.info('Empty df for neo conversion, skip')
+            return None
+
         twintdftic = time.perf_counter()
         df = TwintPool().twint_df_to_neo4j_df(df)
         twintdftoc = time.perf_counter()
