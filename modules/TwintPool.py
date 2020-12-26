@@ -71,6 +71,7 @@ class TwintPool:
         toc = time.perf_counter()
         logger.info(f'finished searching for tweets in:  {toc - tic:0.4f} seconds')
 
+
     def _get_Replies_to_user(self,username, limit):
         self.config.Retweets = True
         self.config.Search =  username
@@ -102,9 +103,14 @@ class TwintPool:
 
         df = df.assign(id=df['id'].astype('int64'))
 
+        df2 = df.drop_duplicates(subset=['id'])
+        if len(df2) < len(df):
+            logger.warning('Deduplicating input tweet df had duplicates, %s -> %s', len(df), len(df2))
+        df = df2
+
         from .Neo4jDataAccess import Neo4jDataAccess
         neo4j_creds = None
-        with open('/secrets/neo4jcreds.json') as json_file:
+        with open('neo4jcreds.json') as json_file:
             neo4j_creds = json.load(json_file)
 
         # dft : df[[id:int64, hydrated: NaN | 'FULL' | 'PARTIAL'??]]
@@ -131,7 +137,7 @@ class TwintPool:
         def row_to_tweet_type(row):
             if row['quote_url'] is None or row['quote_url'] == '':
                 return "QUOTE_RETWEET"
-            elif row['retweet']:
+            elif ('retweet' in row) and row['retweet']:
                 return "RETWEET"
             elif row['id'] == row['conversation_id']:
                 return "TWEET"
@@ -147,7 +153,6 @@ class TwintPool:
         # return None
 
         def row_tweet_to_urls(row):
-            extractor = URLExtract()
             return list(extractor.gen_urls(row['tweet']))
 
         neo4j_df['user_location'] = None
@@ -176,3 +181,8 @@ class TwintPool:
 
     def to_arrow(self, tweets_df):
         pass
+
+
+
+
+
