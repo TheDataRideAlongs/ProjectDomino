@@ -73,6 +73,7 @@ class TwintPool:
         self.config.Search =  username
         self.config.Limit = limit
         self.config.Pandas = True
+        config.Hide_output = True
         twint.run.Search(self.config)
         return twint.storage.panda.Tweets_df
 
@@ -82,6 +83,7 @@ class TwintPool:
         self.config.Limit = limit
         self.config.Username = username
         self.config.Pandas = True
+        config.Hide_output = True
         twint.run.Profile(self.config)
         return twint.storage.panda.Tweets_df
 
