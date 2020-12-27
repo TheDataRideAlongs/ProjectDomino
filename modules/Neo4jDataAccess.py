@@ -506,7 +506,7 @@ class Neo4jDataAccess:
                 params.append(pd.DataFrame([{'tweet_id': int(row['status_id']),
                                              'text': row['full_text'],
                                              'created_at': str(pd.to_datetime(row['created_at'])),
-                                             'date': str(pd.to_datetime(row['date'])),
+                                             #'date': str(pd.to_datetime(row['date'])),
                                              'favorite_count': row['favorite_count'],
                                              'retweet_count': row['retweet_count'],
                                              'type': tweet_type,
@@ -522,7 +522,7 @@ class Neo4jDataAccess:
                                              'user_friends_count': row[
                                                  'user_friends_count'] if 'user_friends_count' in row else None,
                                              'user_created_at': pd.to_datetime(
-                                                 df['user_created_at']) if 'user_created_at' in row else None,
+                                                 df['join_datetime']) if 'join_datetime' in row else None,
                                              'user_profile_image_url': row[
                                                  'user_profile_image_url'] if 'user_profile_image_url' in row else None,
                                              'reply_tweet_id': row[

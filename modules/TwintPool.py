@@ -160,8 +160,8 @@ class TwintPool:
         neo4j_df['hashtags'] = df['hashtags'].apply(lambda x: [{'text': ht} for ht in x])
         neo4j_df['user_followers_count'] = None
         neo4j_df['user_friends_count'] = None
-        neo4j_df['date'] = df['date']
-        # neo4j_df['user_created_at'] = None
+        #neo4j_df['date'] = df['date']
+        neo4j_df['user_created_at'] = None
         neo4j_df['user_profile_image_url'] = None
         neo4j_df['reply_tweet_id'] = None
         neo4j_df['user_mentions'] = df['tweet'].str.findall('@[\w]+')
