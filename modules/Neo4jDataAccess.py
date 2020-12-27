@@ -669,7 +669,7 @@ class Neo4jDataAccess:
         acctdf['friends_count'] = df["following"]
         acctdf['followers_count'] = df["followers"]
         acctdf['created_at'] = df['created_at']
-        acctdf['join_datetime']=df['join_datetime']
+        acctdf['user_created_at']=df['user_created_at']
         acctdf['job_name'] = str(job_name)
         return acctdf
 
