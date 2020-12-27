@@ -522,7 +522,7 @@ class Neo4jDataAccess:
                                              'user_friends_count': row[
                                                  'user_friends_count'] if 'user_friends_count' in row else None,
                                              'user_created_at': pd.to_datetime(
-                                                 df['join_datetime']) if 'join_datetime' in row else None,
+                                                 row['join_datetime']) if 'join_datetime' in row else None,
                                              'user_profile_image_url': row[
                                                  'user_profile_image_url'] if 'user_profile_image_url' in row else None,
                                              'reply_tweet_id': row[
@@ -669,6 +669,7 @@ class Neo4jDataAccess:
         acctdf['friends_count'] = df["following"]
         acctdf['followers_count'] = df["followers"]
         acctdf['created_at'] = df['created_at']
+        acctdf['join_datetime']=df['join_datetime']
         acctdf['job_name'] = str(job_name)
         return acctdf
 
