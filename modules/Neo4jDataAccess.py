@@ -527,7 +527,6 @@ class Neo4jDataAccess:
                 params.append(pd.DataFrame([{'tweet_id': int(row['status_id']),
                                              'text': row['full_text'],
                                              'created_at': str(pd.to_datetime(row['created_at'])),
-                                             #'date': str(pd.to_datetime(row['date'])),
                                              'favorite_count': row['favorite_count'],
                                              'retweet_count': row['retweet_count'],
                                              'type': tweet_type,
@@ -687,7 +686,7 @@ class Neo4jDataAccess:
         acctdf['screen_name'] = df['username']
         acctdf['friends_count'] = df["following"]
         acctdf['followers_count'] = df["followers"]
-        acctdf['user_created_at'].apply(lambda n: pd.to_datetime(n))
+        acctdf['user_created_at'].apply(lambda n: str(pd.to_datetime(n)))
         acctdf['job_name'] = str(job_name)
         return acctdf
 
