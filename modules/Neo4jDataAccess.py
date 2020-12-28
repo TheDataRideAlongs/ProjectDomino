@@ -526,7 +526,7 @@ class Neo4jDataAccess:
             try:
                 params.append(pd.DataFrame([{'tweet_id': int(row['status_id']),
                                              'text': row['full_text'],
-                                             'created_at': str(pd.to_datetime(row['created_at'])),
+                                             'created_at': pd.Timestamp(row['created_at'], unit='s').to_pydatetime(),
                                              'favorite_count': row['favorite_count'],
                                              'retweet_count': row['retweet_count'],
                                              'type': tweet_type,
