@@ -473,7 +473,7 @@ class Neo4jDataAccess:
         return dfs
 
     def enrich_user_tl_and_info(self,username, job_name,job_id, limit, include_profile_fetch=False):
-        if include_profile_fetch=True:
+        if include_profile_fetch:
             tic = time.perf_counter()
             chk = TwintPool().twint_df_to_neo4j_df(TwintPool()._get_user_timeline(username=username, limit=limit))
             usr_df = self.__tweetdf_to_neo_account_df(TwintPool()._get_user_info(username=username), job_name=job_name)
