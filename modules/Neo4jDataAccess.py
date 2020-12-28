@@ -472,14 +472,19 @@ class Neo4jDataAccess:
         dfs = pd.concat(lst).drop_duplicates(subset=["id"])
         return dfs
 
-    def enrich_user_tl_and_info(self,username, job_name, limit):
+    def enrich_user_tl_and_info(self,username, job_name,job_id, limit):
+        tic = time.perf_counter()
         chk = TwintPool().twint_df_to_neo4j_df(TwintPool()._get_user_timeline(username=username, limit=limit))
         usr_df = self.__tweetdf_to_neo_account_df(TwintPool()._get_user_info(username=username), job_name=job_name)
         chk['tmp'] = 1
         usr_df['tmp'] = 1
         df = pd.merge(chk, usr_df, on=['tmp'])
         df = df.drop('tmp', axis=1)
-        return df
+        res = {"params": df}
+        toc = time.perf_counter()
+        logger.info(f'finished account and data enrichments in:  {toc - tic:0.4f} seconds writing to neo4j now..')
+        self.write_twint_enriched_tweetdf_to_neo(res, job_name, job_id)
+
 
     def save_twintdf_to_neo(self, df, job_name, job_id=None):
         if (df is None) or (len(df) == 0):
