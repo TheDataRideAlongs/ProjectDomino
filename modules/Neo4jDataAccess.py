@@ -686,7 +686,8 @@ class Neo4jDataAccess:
         acctdf['screen_name'] = df['username']
         acctdf['friends_count'] = df["following"]
         acctdf['followers_count'] = df["followers"]
-        acctdf['user_created_at'].apply(lambda n: str(pd.to_datetime(n)))
+        #acctdf['user_created_at'].apply(lambda n: str(pd.to_datetime(n)))
+        acctdf['user_created_at'].apply(lambda n: pd.Timestamp(n, unit='s').to_pydatetime())
         acctdf['job_name'] = str(job_name)
         return acctdf
 
