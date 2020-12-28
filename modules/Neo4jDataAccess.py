@@ -472,6 +472,15 @@ class Neo4jDataAccess:
         dfs = pd.concat(lst).drop_duplicates(subset=["id"])
         return dfs
 
+    def enrich_user_tl_and_info(self,username, job_name, limit):
+        chk = TwintPool().twint_df_to_neo4j_df(TwintPool()._get_user_timeline(username=username, limit=limit))
+        usr_df = self.__tweetdf_to_neo_account_df(TwintPool()._get_user_info(username=username), job_name=job_name)
+        chk['tmp'] = 1
+        usr_df['tmp'] = 1
+        df = pd.merge(chk, usr_df, on=['tmp'])
+        df = df.drop('tmp', axis=1)
+        return df
+
     def save_twintdf_to_neo(self, df, job_name, job_id=None):
         if (df is None) or (len(df) == 0):
             logger.info('Empty df for neo conversion, skip')
