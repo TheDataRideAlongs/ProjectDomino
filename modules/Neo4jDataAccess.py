@@ -472,22 +472,42 @@ class Neo4jDataAccess:
         dfs = pd.concat(lst).drop_duplicates(subset=["id"])
         return dfs
 
-    def enrich_user_tl_and_info(self,username, job_name,job_id, limit, include_profile_fetch=False):
+    def enrich_user_tl_and_info(self, username, job_name, job_id, limit, include_profile_fetch=False):
         if include_profile_fetch:
             tic = time.perf_counter()
             chk = TwintPool().twint_df_to_neo4j_df(TwintPool()._get_user_timeline(username=username, limit=limit))
+            chk["tweet_id"] = chk["status_id"]
+
+            # acct info and merge
             usr_df = self.__tweetdf_to_neo_account_df(TwintPool()._get_user_info(username=username), job_name=job_name)
-            chk["tweet_id"]=chk["status_id"]
             chk['tmp'] = 1
             usr_df['tmp'] = 1
             df = pd.merge(chk, usr_df, on=['tmp'])
             df = df.drop('tmp', axis=1)
-            res = {"params": df}
+
+            # url parser
+            urltic = time.perf_counter()
+            url_df = self.__urldf_to_neodf(self.__parse_urls_twint(df, job_name, job_id))
+            urltoc = time.perf_counter()
+            logger.info(f'finished parsing urls in:  {urltoc - urltic:0.4f} seconds')
+
+            # mention parser
+            menttic = time.perf_counter()
+            mention_df = self.__parse_mentions_twint(df, job_name, job_id)
+            menttoc = time.perf_counter()
+            logger.info(f'finished parsing mentions in:  {menttoc - menttic:0.4f} seconds')
+
+            # neo write
+            df["hydrated"] = "FULL"
+            res = {"mentions": mention_df, "urls": url_df, "params": df}
             toc = time.perf_counter()
-            logger.info(f'finished account and data enrichments in:  {toc - tic:0.4f} seconds writing to neo4j now..')
+            logger.info(f'finished data enrichments in:  {toc - tic:0.4f} seconds writing to neo4j now..')
             self.write_twint_enriched_tweetdf_to_neo(res, job_name, job_id)
+
         else:
-            self.save_twintdf_to_neo(TwintPool()._get_user_timeline(username=username, limit=limit),job_name=job_name, job_id=job_id)
+
+            self.save_twintdf_to_neo(TwintPool()._get_user_timeline(username=username, limit=limit), job_name=job_name,
+                                     job_id=job_id)
 
     def save_twintdf_to_neo(self, df, job_name, job_id=None):
         if (df is None) or (len(df) == 0):
