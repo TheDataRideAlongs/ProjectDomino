@@ -487,13 +487,7 @@ class Neo4jDataAccess:
             logger.info(f'finished account and data enrichments in:  {toc - tic:0.4f} seconds writing to neo4j now..')
             self.write_twint_enriched_tweetdf_to_neo(res, job_name, job_id)
         else:
-            tic = time.perf_counter()
-            chk = TwintPool().twint_df_to_neo4j_df(TwintPool()._get_user_timeline(username=username, limit=limit))
-            chk["tweet_id"]=chk["status_id"]
-            res = {"params": chk}
-            toc = time.perf_counter()
-            logger.info(f'finished account and data enrichments in:  {toc - tic:0.4f} seconds writing to neo4j now..')
-            self.write_twint_enriched_tweetdf_to_neo(res, job_name, job_id)
+            self.save_twintdf_to_neo(TwintPool()._get_user_timeline(username=username, limit=limit),job_name=job_name, job_id=job_id)
 
     def save_twintdf_to_neo(self, df, job_name, job_id=None):
         if (df is None) or (len(df) == 0):
