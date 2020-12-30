@@ -477,6 +477,7 @@ class Neo4jDataAccess:
             tic = time.perf_counter()
             chk = TwintPool().twint_df_to_neo4j_df(TwintPool()._get_user_timeline(username=username, limit=limit))
             usr_df = self.__tweetdf_to_neo_account_df(TwintPool()._get_user_info(username=username), job_name=job_name)
+            chk["tweet_id"]=chk["status_id"]
             chk['tmp'] = 1
             usr_df['tmp'] = 1
             df = pd.merge(chk, usr_df, on=['tmp'])
@@ -488,6 +489,7 @@ class Neo4jDataAccess:
         else:
             tic = time.perf_counter()
             chk = TwintPool().twint_df_to_neo4j_df(TwintPool()._get_user_timeline(username=username, limit=limit))
+            chk["tweet_id"]=chk["status_id"]
             res = {"params": chk}
             toc = time.perf_counter()
             logger.info(f'finished account and data enrichments in:  {toc - tic:0.4f} seconds writing to neo4j now..')
@@ -686,8 +688,9 @@ class Neo4jDataAccess:
         acctdf['screen_name'] = df['username']
         acctdf['friends_count'] = df["following"]
         acctdf['followers_count'] = df["followers"]
-        #acctdf['user_created_at'].apply(lambda n: str(pd.to_datetime(n)))
-        acctdf['user_created_at'].apply(lambda n: pd.Timestamp(n, unit='s').to_pydatetime())
+        acctdf['user_created_at'] = df["join_datetime"].apply(lambda n: str(pd.to_datetime(n)))
+
+        #acctdf['user_created_at'].apply(lambda n: datetime.fromtimestamp(n))
         acctdf['job_name'] = str(job_name)
         return acctdf
 
