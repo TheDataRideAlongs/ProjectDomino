@@ -474,16 +474,77 @@ class Neo4jDataAccess:
 
     def enrich_user_tl_and_info(self, username, job_name, job_id, limit, include_profile_fetch=False):
         if include_profile_fetch:
+            twintdftic = time.perf_counter()
+            df = TwintPool().twint_df_to_neo4j_df(TwintPool()._get_user_timeline(username=username, limit=limit))
+
+            df.drop(df.columns[df.columns.str.contains('unnamed', case=False)], axis=1, inplace=True)
+            # df=df.stack().droplevel(level=0)
+            global_tic = time.perf_counter()
+            params = []
             tic = time.perf_counter()
-            chk = TwintPool().twint_df_to_neo4j_df(TwintPool()._get_user_timeline(username=username, limit=limit))
-            chk["tweet_id"] = chk["status_id"]
+            logger.debug('df columns %s', df.columns)
+
+            logger.error('HERE I AM!')
+            itertic = time.perf_counter()
+            for index, row in df.iterrows():
+                # determine the type of tweet
+                tweet_type = 'TWEET'
+                if row['tweet_type_twint']:
+                    tweet_type = row['tweet_type_twint']
+                elif row["in_reply_to_status_id"] is not None and row["in_reply_to_status_id"] > 0:
+                    tweet_type = "REPLY"
+                elif "quoted_status_id" in row and row["quoted_status_id"] is not None and row["quoted_status_id"] > 0:
+                    tweet_type = "QUOTE_RETWEET"
+                elif "retweet_id" in row and row["retweet_id"] is not None and row["retweet_id"] > 0:
+                    tweet_type = "RETWEET"
+                try:
+                    params.append(pd.DataFrame([{'tweet_id': int(row['status_id']),
+                                                 'text': row['full_text'],
+                                                 'created_at': str(pd.to_datetime(row['created_at'])),
+                                                 'favorite_count': row['favorite_count'],
+                                                 'retweet_count': row['retweet_count'],
+                                                 'type': tweet_type,
+                                                 'job_id': job_id,
+                                                 'job_name': job_name,
+                                                 'hashtags': self.__normalize_hashtags(row['hashtags']),
+                                                 'user_id': row['user_id'],
+                                                 'user_name': row['user_name'],
+                                                 'user_location': row[
+                                                     'user_location'] if 'user_location' in row else None,
+                                                 'user_screen_name': row['user_screen_name'],
+                                                 'user_followers_count': row[
+                                                     'user_followers_count'] if 'user_followers_count' in row else None,
+                                                 'user_friends_count': row[
+                                                     'user_friends_count'] if 'user_friends_count' in row else None,
+                                                 'user_profile_image_url': row[
+                                                     'user_profile_image_url'] if 'user_profile_image_url' in row else None,
+                                                 'reply_tweet_id': row[
+                                                     'in_reply_to_status_id'] if 'in_reply_to_status_id' in row else None,
+                                                 'conversation_id': row[
+                                                     'conversation_id'] if 'conversation_id' in row else None,
+                                                 'quoted_status_id': row[
+                                                     'quoted_status_id'] if 'quoted_status_id' in row else None,
+                                                 'retweet_id': row['retweet_id'] if 'retweet_id' in row else None,
+                                                 'geo': row['geo'] if 'geo' in row else None,
+                                                 }]))
+
+                except Exception as e:
+                    logger.error('params.append exn', e)
+                    logger.error('row', row)
+                    raise e
+            itertoc = time.perf_counter()
+            logger.info(f'finished iterating twint df and determining tweet type  {itertoc - itertic:0.4f} seconds')
+            params_df = pd.concat(params, ignore_index=True, sort=False)
 
             # acct info and merge
             usr_df = self.__tweetdf_to_neo_account_df(TwintPool()._get_user_info(username=username), job_name=job_name)
-            chk['tmp'] = 1
+            params_df['tmp'] = 1
             usr_df['tmp'] = 1
-            df = pd.merge(chk, usr_df, on=['tmp'])
-            df = df.drop('tmp', axis=1)
+
+            params_df = pd.merge(params_df, usr_df, on=['tmp'])
+            params_df = params_df.drop('tmp', axis=1)
+            twintdftoc = time.perf_counter()
+            logger.info(f'finished twint dataframe to neo4j conversion stage 1 {twintdftoc - twintdftic:0.4f} seconds')
 
             # url parser
             urltic = time.perf_counter()
@@ -499,7 +560,7 @@ class Neo4jDataAccess:
 
             # neo write
             df["hydrated"] = "FULL"
-            res = {"mentions": mention_df, "urls": url_df, "params": df}
+            res = {"mentions": mention_df, "urls": url_df, "params": params_df}
             toc = time.perf_counter()
             logger.info(f'finished data enrichments in:  {toc - tic:0.4f} seconds writing to neo4j now..')
             self.write_twint_enriched_tweetdf_to_neo(res, job_name, job_id)
