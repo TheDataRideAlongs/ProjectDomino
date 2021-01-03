@@ -793,14 +793,27 @@ class Neo4jDataAccess:
                                     timeout=self.timeout)
                         logger.debug('writing tweet relationships')
                         session.run(self.tweeted_rel, tweets=df.to_dict(orient='records'), timeout=self.timeout)
-            toc = time.perf_counter()
-            logger.info(f'Neo4j Periodic Save Complete in  {toc - tic:0.4f} seconds')
-        except Exception as inst:
-            logging.error('Neo4j Transaction error')
+                toc = time.perf_counter()
+                logger.info(f'Neo4j Periodic Save Complete in  {toc - tic:0.4f} seconds')
+            except Exception as inst:
+            logging.error('//////////////')
+            logging.error('Neo4j Transaction error', exc_info=True)
             logging.error(type(inst))  # the exception instance
             logging.error(inst.args)  # arguments stored in .args
             # __str__ allows args to be printed directly,
             logging.error(inst)
+            logging.error('--------------')
+            logging.error('KEY: %s', key)
+            if key == 'mentions':
+                logger.error('MENTIONS: %s', self.mentions)
+                logger.error('df_with_mentions: %s', df_with_mentions)
+            elif key == 'urls':
+                logger.error('URL: %s', self.NodeLabel.Url)
+            elif key == 'params':
+                logger.error('tweetsandaccounts: %s', self.tweetsandaccounts)
+                logger.error('tweeted_rel: %s', self.tweeted_rel)
+            logging.error('df: %s', df)
+            logging.error('//////////////')
             raise inst
 
 
