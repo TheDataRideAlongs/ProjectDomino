@@ -21,6 +21,7 @@ class TwintPool:
         self.config.Verified = None
         self.config.Username = None
         self.config.User_full = None
+        self.config.Retweets = True
         if is_tor:
             self.config.Proxy_host = 'localhost'
             self.config.Proxy_port = "9050"
