@@ -4,10 +4,6 @@
 
 * [Community Slack channel: #COVID](https://thedataridealongs.slack.com/) via an [open invite link](https://join.slack.com/t/thedataridealongs/shared_invite/zt-d06nq64h-P1_3sENXG4Gg0MjWh1jPEw)
 
-* [Meetings: Google calendar](https://calendar.google.com/calendar?cid=Z3JhcGhpc3RyeS5jb21fdTQ3bmQ3YTdiZzB0aTJtaW9kYTJybGx2cTBAZ3JvdXAuY2FsZW5kYXIuZ29vZ2xlLmNvbQ)
-
-* Project Tackers: [Core](https://github.com/TheDataRideAlongs/ProjectDomino/projects/1), [Interventions](https://github.com/TheDataRideAlongs/ProjectDomino/projects/2), and [Issues](https://github.com/TheDataRideAlongs/ProjectDomino/issues)
-
 * Tutorials: [available Jupyter-based notebook analyses](tutorials.md)
 
 * Infra - ask for account access in Slack
@@ -56,22 +52,21 @@ We are working with ethics groups to identify safe interventions along the follo
 
 ## The technologies
 
-* Twitter firehose monitor
+* Twitter firehose monitor: 100K+ topical tweets/day
 * Data integration pipeline for sources of known scams, fraud, lies, bots, propaganda, extremism, and other misinformation sources
-* Misinformation knowledge graph connecting accounts, posts, reports, and models
-* Automated GPU / graph / machine learning pipeline: general classification (bot, community, ...) and targeted (clinical disinformation, ...)
-* Automated alerting & reporting pipeline
-* Interactive visual analytics environment for data scientists and analysts: GPU, graph, notebooks, ML, ...
-* Intervention bots
+* Misinformation knowledge graph connecting accounts, posts, reports, and models (1B+ nodes/edges)
+* Automated GPU / graph / machine learning pipeline: general classification (bot, community, ...) and targeted (clinical disinformation, ...): Nvidia RAPIDS, BERT, ...
+* Automated alerting & reporting pipeline: Prefect, Streamlit
+* Interactive visual analytics environment for data scientists and analysts: GPU, graph, Jupyter, Streamlit, ML, ...
 
 ## How to help
 
 We are actively seeking several forms of support:
 
-* **Volunteers**: Most immediate priority is on data engineering and advisors on marketing/public health
+* **Volunteers**: Most immediate priority is on data engineering, data science,  and advisors on marketing/funding/public health
   * **Data engineers: Orchestration (Airflow, Prefect.io, Nifi, ...), streaming (Kafka, ...),  graph (Neo4j, cuGraph), GPU (RAPIDS), ML (NLP libs), and databases**
   * **Analysts: OSINT, threat intel, campaign tracking, ...**
-  * **Data scientists: especially around graph, misinformation, neural networks, NLP, with backgrounds such as security, fraud,  misinformation, marketing**
+  * **Data scientists: especially around graph, misinformation, neural networks, GNNs, NLP, with backgrounds such as security, fraud,  misinformation, marketing**
   * Developers & designers: intelligence integrations, website for search & reports, automations, intervention bots, API
   * Marketing: Strategy & implementation
   * Public health and communications: Especially around safe and effective intervention design
@@ -99,6 +94,8 @@ We are actively seeking several forms of support:
   * For each, we can work together to setup Ubuntu with remote SSH admin, Nvidia drivers, & (Nvidia-enabled) Docker
 
 * **Sponsors**: Near-term funding until the project finds a more sustainable path is welcome!
+  * Federal and private grants
+  * Mission-aligned contracts: We are happy to help organizations tackle challenges around social intelligence, such as disaster analytics & anti-misinformation
 
 * **Subprojects**: We are focusing near-term on core data pipeline and simple analyses while building up to the discourse-graph-level ones
 
@@ -115,9 +112,8 @@ We are actively seeking several forms of support:
      * **Priority**: Untrialed drug misinformation - modeling, detection, analysis, report, & alert
      * Scams: Check URLs & blockchain addresses for known badness
      * Mapping bots & misinformers
-  * Automation: Prototypes of
+  * UI tools & automation: Prototypes of
      * Alert feed + scoring API: Misinfo intel for trust & safety teams that is powered by Neo4j and/or Prefect.io/Airflow
-     * Anti-misinfo chatbot: Upon a misinfo detection, respond to a Twitter thread with a misinfo report URL + WHO safety guide
      * Community leader tools: Personalized alerting for community leaders to detect & respond to misinfo in their close social networks
   
 
