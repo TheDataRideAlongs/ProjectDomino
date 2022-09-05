@@ -796,6 +796,41 @@ class FirehoseJob:
         else:
             raise ValueError(f'unknown write_to_disk format: {write_to_disk}')
 
+
+    _enriched_users = set()
+    def search_user_info_by_name(self, df, tp = None) -> Optional[pd.DataFrame]:
+        """
+        Where df has col 'user_name' or 'username' (return by search_time_range)
+        """
+        if df is None or len(df) == 0:
+            logger.debug('skipping search_user_info_by_name, df is empty')
+            return None
+        
+        col = None
+        for col in ['user_name', 'username']:
+            if col in df.columns:
+                break
+        if col is None:
+            logger.debug('skipping search_user_info_by_name, df has no user_name column: %s', df.columns)
+            return None
+        tp = tp or self.tp or TwintPool(is_tor=True)
+        user_names = df[[col]].drop_duplicates()[col].to_list()
+        unseen_user_names = [ user_name for user_name in user_names if user_name not in self._enriched_users ]
+        
+        lst = [tp._get_user_info(username=user) for user in unseen_user_names]
+        dfs = pd.concat(lst).drop_duplicates(subset=["id"])
+
+        seen_user_names = dfs['username'].to_list()
+        for user in seen_user_names:
+            self._enriched_users.add(user)
+
+        print('search_user_info_by_name cache hit rate (%s / %s) and twint hydration rate (%s / %s)' % (
+            len(user_names) - len(seen_user_names), len(user_names),
+            len(seen_user_names), len(unseen_user_names)
+        ))
+
+        return dfs
+
     def search_time_range(self,
                           Search="COVID",
                           Since="2020-01-01 20:00:00",
@@ -803,6 +838,7 @@ class FirehoseJob:
                           job_name=None,
                           tp=None,
                           write_to_disk: Optional[Literal['csv', 'json']] = None,
+                          fetch_profiles: bool = False,
                           **kwargs):
         tic = time.perf_counter()
         if job_name is None:
@@ -826,16 +862,31 @@ class FirehoseJob:
                 logger.info('wrote to neo4j, # %s' % (len(res) if not (res is None) else 0))
             else:
                 res = df
+
             self._maybe_write_batch(
                 res,
                 write_to_disk,
-                f'{job_name}/{t0}_{t1}',
+                f'{job_name}/tweets/{t0}_{t1}',
                 write_opts=kwargs.get('write_opts', self.write_opts)
             )
             t_iter = time.perf_counter()
             logger.info(f'finished tp.get_term:  {t_iter - t_prev:0.4f} seconds')
             t_prev = t_iter
-            yield res
+
+            if fetch_profiles:
+                users_df = self.search_user_info_by_name(res, tp)
+                if users_df is not None:
+                    self._maybe_write_batch(
+                        users_df,
+                        write_to_disk,
+                        f'{job_name}/profiles/{t0}_{t1}',
+                        write_opts=kwargs.get('write_opts', self.write_opts)
+                    )
+                    t_iter = time.perf_counter()
+                    logger.info(f'finished tp.search_user_info_by_name:  {t_iter - t_prev:0.4f} seconds')
+                    t_prev = t_iter
+
+                yield res
 
         toc = time.perf_counter()
         logger.info(f'finished twint loop in:  {toc - tic:0.4f} seconds')
