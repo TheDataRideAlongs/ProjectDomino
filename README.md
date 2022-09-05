@@ -1,17 +1,16 @@
 # Project Domino
 
-## Scaling COVID public behavior change and anti-misinformation
+## Open source AI to scale the fight against misinformation
 
-* [Community Slack channel: #COVID](https://thedataridealongs.slack.com/) via an [open invite link](https://join.slack.com/t/thedataridealongs/shared_invite/zt-d06nq64h-P1_3sENXG4Gg0MjWh1jPEw)
+* [Community Slack channel](https://thedataridealongs.slack.com/) via an [open invite link](https://join.slack.com/t/thedataridealongs/shared_invite/zt-d06nq64h-P1_3sENXG4Gg0MjWh1jPEw)
 
 * Tutorials: [available Jupyter-based notebook analyses](tutorials.md)
 
-* Infra - ask for account access in Slack
+* Infra
   * [Private repository](https://github.com/graphistry/ProjectDomino-internal)
-  * Observability - [Grafana/prometheus](http://13.68.225.97:10007/d/n__-I5jZk/neo4j-4-dashboard?orgId=1) and Jupyter notebooks
-  * DB - Neo4j
-  * Orchestration - Prefect
-  * Key sharing - Keybase team
+  * Observability - Grafana/prometheus
+  * DB (optional) - Neo4j, S3 (parquet), local (csv/json/parquet)
+  * Orchestration - Prefect (single or multi)
   * CI - Github Actions
   * [Labeling funnel & feeds](https://docs.google.com/spreadsheets/d/1FqLYCJqPcxkVYKOn4uQzl0A_7MV4zkYOF94BAITvta0), [proposed extended schema](https://docs.google.com/spreadsheets/d/1VM8JfV23wsLGJ3fl3mGW3Wi3n9Z9-D1NWUfBc4s0M54), and [current knowledge graph schema](https://www.lucidchart.com/documents/edit/674bc883-d01a-449a-8666-5cfc841c54bb/0_0?shared=true)
 
@@ -24,11 +23,19 @@
 * Identifying at-risk behavior groups and viable local behavior change influencers
 * Automating high-precision interventions
 
+**Scale with community and industry to flip the asymmetries.** Key to our approach is focusing on scale:
+* Scaling technology through GPU computing and AI
+* Network effects through open source and providing foundations for others
+* Growth through public/private partnership that drive a sustainable team growth model
+Misinformation is traditionally difficult because of assymetry: attackers can continuously launch cheap & global-scale attacks, which overwhelems individual defenders. However, through scalable technology and network effects across defenders, we believe we can flip asymmetry to instead be an advantage for defenders.
+
+
 ## Data
 
 We are collecting, analyzing, and sharing data around:
 
-* COVID Twitter: Who is saying what and when, including around URLs
+* Twitter: Who is saying what and when, including around URLs, especially around COVID and medical misinfo
+* Additional campaigns initiated by our community and partners, such as around voter supression & pollution
 * Feeds: Correlations against labeled data such as bots, fact checks, and indicators of digital crime  
 * Scores: Bots, misinformation, crime, likely location, and more
 
@@ -38,7 +45,7 @@ While we cannot publish the raw data due due to compliance restrictions from our
 
 We are working with ethics groups to identify safe interventions along the following lines:
 
-* **Targeting of specific underserved issues**: Primary COVID public health issues such as unsafe social behavior, unsafe medicine, unsafe science, dangerous government policy influence, and adjacent issues such as fake charities, phishing,  malware, and hate group propaganda
+* **Targeting of specific underserved issues**: Ex: Public health issues such as unsafe social behavior, unsafe medicine, unsafe science, dangerous government policy influence, and adjacent issues such as fake charities, phishing,  malware, and hate group propaganda
 
 * **Help top social platforms harden themselves**: Trust and safety teams at top social networks need to be able to warn users about misinformation, de-trend it, and potentially take it down before it has served its purpose. The status quo is handling incidents months after the fact. We will provide real-time alert feeds and scoring APIs to help take action during the critical minutes before misinformation gains significant reach.
 
@@ -55,9 +62,9 @@ We are working with ethics groups to identify safe interventions along the follo
 * Twitter firehose monitor: 100K+ topical tweets/day
 * Data integration pipeline for sources of known scams, fraud, lies, bots, propaganda, extremism, and other misinformation sources
 * Misinformation knowledge graph connecting accounts, posts, reports, and models (1B+ nodes/edges)
-* Automated GPU / graph / machine learning pipeline: general classification (bot, community, ...) and targeted (clinical disinformation, ...): Nvidia RAPIDS, BERT, ...
+* Automated GPU / graph / machine learning pipeline: general classification (bot, community, ...) and targeted (clinical disinformation, ...): Nvidia RAPIDS, BERT, GNNs, ...
 * Automated alerting & reporting pipeline: Prefect, Streamlit
-* Interactive visual analytics environment for data scientists and analysts: GPU, graph, Jupyter, Streamlit, ML, ...
+* Interactive visual analytics environment for data scientists and analysts: GPU, Graphistry, graph, Jupyter, Streamlit, ML, ...
 
 ## How to help
 
@@ -119,6 +126,6 @@ We are actively seeking several forms of support:
 
 ## Contact
 
-Please contact [Leo Meyerovich, CEO @ Graphistry](https://www.linkedin.com/in/leo-meyerovich-09649219) and [Sean Griffin, CEO @ DisasterTech](https://www.linkedin.com/in/seanmichaelgriffin/) for support and information
+Please contact [Leo Meyerovich, CEO @ Graphistry](https://www.linkedin.com/in/leo-meyerovich-09649219) and [Sean Griffin, CEO @ DisasterTech](https://www.linkedin.com/in/seanmichaelgriffin/) for support and information.
 
 [Community Slack channel: #COVID](https://thedataridealongs.slack.com/) via an [open invite link](https://join.slack.com/t/thedataridealongs/shared_invite/zt-d06nq64h-P1_3sENXG4Gg0MjWh1jPEw)

@@ -114,6 +114,46 @@ DROP_COLS = ['withheld_in_countries']
 #############################
 
 
+
+def make_serializable(df):
+
+    try:
+        pa.Table.from_pandas(df)
+        return df
+    except:
+        logger.debug('Warning: df not serializable, attempt to clean')
+
+    try:
+        df_cleaned = df.infer_objects()
+        pa.Table.from_pandas(df_cleaned)
+        return df_cleaned
+    except:
+        logger.debug('Warning: df not serializable via infer_objects(), attempt per-column clean')
+
+    for col in [ 'quote_url', 'place']:
+        if col in df_cleaned.columns:
+            df_cleaned[col] = df_cleaned[col].astype(str)
+
+    bad_cols = []
+    fatal_cols = []
+    for col in df_cleaned.columns:
+        try:
+            pa.Table.from_pandas(df_cleaned[[col]])
+        except Exception as e:
+            try:
+                as_str = df_cleaned[col].astype(str)
+                df2 = df_cleaned[[col]]
+                df2[col] = as_str
+                pa.Table.from_pandas(df2)
+                #good, save
+                df_cleaned[col] = as_str
+                bad_cols.append(col)
+            except:
+                fatal_cols.append(col)
+    logger.debug('bad_cols: %s, fatal_cols (dropping): %s' , bad_cols, fatal_cols)
+    return df_cleaned.drop(fatal_cols, axis=1)
+
+
 class FirehoseJob:
     ###################
 
@@ -126,12 +166,14 @@ class FirehoseJob:
 
     def __init__(self, creds=[], neo4j_creds=None, TWEETS_PER_PROCESS=100, TWEETS_PER_ROWGROUP=5000, save_to_neo=False,
                  PARQUET_SAMPLE_RATE_TIME_S=None, debug=False, BATCH_LEN=100, writers={'snappy': None},
+                 tp = None,
                  write_to_disk: Optional[Literal['csv', 'json', 'parquet', 'parquet_s3']] = None,
                  write_opts: Optional[Any] = None
     ):
         self.queue = deque()
         self.writers = writers
         self.last_write_epoch = ''
+        self.tp = tp
         self.current_table = None
         self.schema = pa.schema([
             (name, t)
@@ -723,7 +765,8 @@ class FirehoseJob:
         elif write_to_disk == 'json':
             df.to_json(f'/output/{id}.json')
         elif write_to_disk == 'parquet':
-            df.to_parquet(f'/output/{id}.parquet', compression='snappy')
+            df_cleaned = make_serializable(df)
+            df_cleaned.to_parquet(f'/output/{id}.parquet', compression='snappy')
         elif write_to_disk == 'parquet_s3':
 
             #s3_filepath = 'dt-phase1/data.parquet'
@@ -738,31 +781,8 @@ class FirehoseJob:
             s3fs_instance = s3fs.S3FileSystem(**s3fs_options)
             filesystem = pyarrow.fs.PyFileSystem(pa.fs.FSSpecHandler(s3fs_instance))
 
-            df_cleaned = df.infer_objects()
-            for col in [ 'quote_url', 'place']:
-                if col in df_cleaned.columns:
-                    df_cleaned[col] = df_cleaned[col].astype(str)
-
-            try:
-                df_arr = pa.Table.from_pandas(df_cleaned)
-            except Exception as e:
-                logger.error('failed to convert df to pyarrow table, searching cols...')
-                bad_cols = []
-                for col in df_cleaned.columns:
-                    try:
-                        pa.Table.from_pandas(df_cleaned[[col]])
-                    except Exception as e:
-                        logger.error('failed to convert col %s to pyarrow table', col, exc_info=True)
-                        bad_cols.append(col)
-                try:
-                    for c in bad_cols:
-                        df_cleaned[c] = df_cleaned[c].astype(str)
-                    df_arr = pa.Table.from_pandas(df_cleaned)
-                except:
-                    logger.error('failed conversion with stringified bad cols (%s), proceeding without', bad_cols, exc_info=True)
-                    df_arr = pa.Table.from_pandas(
-                        df_cleaned[[x for x in df_cleaned.columns if x not in bad_cols]]
-                    )
+            df_cleaned = make_serializable(df)
+            df_arr = df_arr = pa.Table.from_pandas(df_cleaned)
 
             pq.write_to_dataset(
                 df_arr,
@@ -776,6 +796,41 @@ class FirehoseJob:
         else:
             raise ValueError(f'unknown write_to_disk format: {write_to_disk}')
 
+
+    _enriched_users = set()
+    def search_user_info_by_name(self, df, tp = None) -> Optional[pd.DataFrame]:
+        """
+        Where df has col 'user_name' or 'username' (return by search_time_range)
+        """
+        if df is None or len(df) == 0:
+            logger.debug('skipping search_user_info_by_name, df is empty')
+            return None
+        
+        col = None
+        for col in ['user_name', 'username']:
+            if col in df.columns:
+                break
+        if col is None:
+            logger.debug('skipping search_user_info_by_name, df has no user_name column: %s', df.columns)
+            return None
+        tp = tp or self.tp or TwintPool(is_tor=True)
+        user_names = df[[col]].drop_duplicates()[col].to_list()
+        unseen_user_names = [ user_name for user_name in user_names if user_name not in self._enriched_users ]
+        
+        lst = [tp._get_user_info(username=user) for user in unseen_user_names]
+        dfs = pd.concat(lst).drop_duplicates(subset=["id"])
+
+        seen_user_names = dfs['username'].to_list()
+        for user in seen_user_names:
+            self._enriched_users.add(user)
+
+        print('search_user_info_by_name cache hit rate (%s / %s) and twint hydration rate (%s / %s)' % (
+            len(user_names) - len(seen_user_names), len(user_names),
+            len(seen_user_names), len(unseen_user_names)
+        ))
+
+        return dfs
+
     def search_time_range(self,
                           Search="COVID",
                           Since="2020-01-01 20:00:00",
@@ -783,12 +838,12 @@ class FirehoseJob:
                           job_name=None,
                           tp=None,
                           write_to_disk: Optional[Literal['csv', 'json']] = None,
+                          fetch_profiles: bool = False,
                           **kwargs):
         tic = time.perf_counter()
         if job_name is None:
             job_name = "search_%s" % Search
-        if tp is None:
-            tp = TwintPool(is_tor=True)
+        tp = tp or self.tp or TwintPool(is_tor=True)
         logger.info('start search_time_range: %s -> %s', Since, Until)
         t_prev = time.perf_counter()
         for df, t0, t1 in tp._get_term(Search=Search, Since=Since, Until=Until, **kwargs):
@@ -796,28 +851,42 @@ class FirehoseJob:
             if self.save_to_neo:
                 logger.debug('writing to neo4j')
                 hydratetic = time.perf_counter()
-                chkd = (tp or TwintPool(is_tor=True)).check_hydrate(df)
+                chkd = tp.check_hydrate(df)
                 hydratetoc = time.perf_counter()
                 logger.info(f'finished checking for hydrate:  {hydratetoc - hydratetic:0.4f} seconds')
                 logger.info('search step df shape: %s', df.shape)
                 logger.info('chkd shape: %s', chkd.shape)
-
 
                 res = Neo4jDataAccess(self.neo4j_creds).save_twintdf_to_neo(chkd, job_name, job_id=None)
                 # df3 = Neo4jDataAccess(self.debug, self.neo4j_creds).save_df_to_graph(df2, job_name)
                 logger.info('wrote to neo4j, # %s' % (len(res) if not (res is None) else 0))
             else:
                 res = df
+
             self._maybe_write_batch(
                 res,
                 write_to_disk,
-                f'{job_name}/{t0}_{t1}',
+                f'{job_name}/tweets/{t0}_{t1}',
                 write_opts=kwargs.get('write_opts', self.write_opts)
             )
             t_iter = time.perf_counter()
             logger.info(f'finished tp.get_term:  {t_iter - t_prev:0.4f} seconds')
             t_prev = t_iter
-            yield res
+
+            if fetch_profiles:
+                users_df = self.search_user_info_by_name(res, tp)
+                if users_df is not None:
+                    self._maybe_write_batch(
+                        users_df,
+                        write_to_disk,
+                        f'{job_name}/profiles/{t0}_{t1}',
+                        write_opts=kwargs.get('write_opts', self.write_opts)
+                    )
+                    t_iter = time.perf_counter()
+                    logger.info(f'finished tp.search_user_info_by_name:  {t_iter - t_prev:0.4f} seconds')
+                    t_prev = t_iter
+
+                yield res
 
         toc = time.perf_counter()
         logger.info(f'finished twint loop in:  {toc - tic:0.4f} seconds')

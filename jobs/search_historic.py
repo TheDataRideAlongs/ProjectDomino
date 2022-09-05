@@ -19,7 +19,6 @@ from datetime import timedelta, datetime
 from prefect.engine.executors import DaskExecutor
 
 
-
 S3_BUCKET = "wzy-project-domino"
 
 pd.set_option('display.max_colwidth', None)
@@ -30,6 +29,14 @@ pd.set_option('display.width', 1000)
 def env_non_empty(x: str):
     return x in os.environ and os.environ[x]
 
+def str_to_bool (x: str):
+    if x in ['True', 'true', '1', 'TRUE']:
+        return True
+    elif x in ['False', 'false', '0', 'FALSE']:
+        return False
+    else:
+        raise ValueError('Cannot convert to bool: ' + x)
+
 stride_sec = int(os.environ['DOMINO_STRIDE_SEC']) if env_non_empty('DOMINO_STRIDE_SEC') else 30
 historic_stride_sec = int(os.environ['DOMINO_HISTORIC_STRIDE_SEC']) if env_non_empty('DOMINO_HISTORIC_STRIDE_SEC') else 60 * 60 * 24
 twint_stride_sec = int(os.environ['DOMINO_TWINT_STRIDE_SEC']) if env_non_empty('DOMINO_TWINT_STRIDE_SEC') else round(historic_stride_sec/2)
@@ -38,6 +45,7 @@ job_name = os.environ['DOMINO_JOB_NAME'] if env_non_empty('DOMINO_JOB_NAME') els
 start_date = pendulum.parse(os.environ['DOMINO_START_DATE']) if env_non_empty('DOMINO_START_DATE') else datetime.datetime.now() - datetime.timedelta(days=365)
 search = os.environ['DOMINO_SEARCH'] if env_non_empty('DOMINO_SEARCH') else "covid OR corona OR virus OR pandemic"
 write_format = os.environ['DOMINO_WRITE_FORMAT'] if env_non_empty('DOMINO_WRITE_FORMAT') else None
+fetch_profiles = str_to_bool(os.environ['DOMINO_FETCH_PROFILES']) if env_non_empty('DOMINO_FETCH_PROFILES') else False
 
 if write_format == 'parquet_s3':
     s3_filepath = os.environ['DOMINO_S3_FILEPATH'] if env_non_empty('DOMINO_S3_FILEPATH') else None
@@ -46,7 +54,8 @@ if write_format == 'parquet_s3':
     compression = os.environ['DOMINO_COMPRESSION'] if env_non_empty('DOMINO_COMPRESSION') else 'snappy'
 
 output_path = f'/output/{job_name}'
-os.makedirs(output_path, exist_ok=True)
+os.makedirs(f'{output_path}/tweets', exist_ok=True)
+os.makedirs(f'{output_path}/profiles', exist_ok=True)
 
 
 # FIXME unsafe when distributed
@@ -74,6 +83,7 @@ def run_stream():
     fh = FirehoseJob(
         PARQUET_SAMPLE_RATE_TIME_S=30,
         save_to_neo=False,
+        tp=tp,
         writers={},
         write_to_disk=write_format,
         write_opts=(
@@ -92,13 +102,13 @@ def run_stream():
     
     try:
         for df in fh.search_time_range(
-            tp=tp,
             Search=search,
             Since=datetime.strftime(start, "%Y-%m-%d %H:%M:%S"),
             Until=datetime.strftime(current, "%Y-%m-%d %H:%M:%S"),
             job_name=job_name,
             Limit=10000000,
-            stride_sec=twint_stride_sec
+            stride_sec=twint_stride_sec,
+            fetch_profiles = fetch_profiles
         ):
             print('got: %s', df.shape if df is not None else 'None')
     except Exception as e:
