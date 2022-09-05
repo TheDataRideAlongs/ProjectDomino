@@ -166,12 +166,14 @@ class FirehoseJob:
 
     def __init__(self, creds=[], neo4j_creds=None, TWEETS_PER_PROCESS=100, TWEETS_PER_ROWGROUP=5000, save_to_neo=False,
                  PARQUET_SAMPLE_RATE_TIME_S=None, debug=False, BATCH_LEN=100, writers={'snappy': None},
+                 tp = None,
                  write_to_disk: Optional[Literal['csv', 'json', 'parquet', 'parquet_s3']] = None,
                  write_opts: Optional[Any] = None
     ):
         self.queue = deque()
         self.writers = writers
         self.last_write_epoch = ''
+        self.tp = tp
         self.current_table = None
         self.schema = pa.schema([
             (name, t)
