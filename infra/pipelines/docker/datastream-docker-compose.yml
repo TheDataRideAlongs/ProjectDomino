@@ -11,6 +11,7 @@ version: '3'
 
 services:
   data-stream:
+      image: graphistry/datastream-agent
       build:
         context: ../../../
         dockerfile: infra/pipelines/docker/datastream-Dockerfile
@@ -38,6 +39,8 @@ services:
         DOMINO_JOB_NAME: ${DOMINO_JOB_NAME:-}
         DOMINO_SEARCH: ${DOMINO_SEARCH:-}
         DOMINO_WRITE_FORMAT: ${DOMINO_WRITE_FORMAT:-}
+        DOMINO_S3_FILEPATH: ${DOMINO_S3_FILEPATH:-}
+        DOMINO_COMPRESSION: ${DOMINO_COMPRESSION:-}
       logging:
         options:
           tag: 'ImageName:{{.ImageName}}/Name:{{.Name}}/ID:{{.ID}}/ImageFullID:{{.ImageFullID}}'

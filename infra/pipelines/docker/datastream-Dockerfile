@@ -5,7 +5,7 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 RUN pip install prefect==0.10.1 simplejson twarc neo4j boto3==1.12.39 \
-    pandas  pyarrow urlextract git+https://github.com/homm/yurl.git@1943161973aeb3b3cf2e1e9de6671673b8356161
+    pandas  pyarrow s3fs urlextract git+https://github.com/homm/yurl.git@1943161973aeb3b3cf2e1e9de6671673b8356161
 
 #RUN echo "ok6" && pip install git+https://github.com/TheDataRideAlongs/twint.git
 RUN pip install git+https://github.com/graphistry/twint.git

@@ -1,12 +1,15 @@
 ###
 
+from asyncore import write
 from collections import deque, defaultdict
 import datetime, gc, os, string, sys, time, uuid
-from typing import Literal, Optional
+from typing import Any, Literal, Optional
 import numpy as np
 import pandas as pd
 import pyarrow as pa
+import pyarrow.fs
 import pyarrow.parquet as pq
+import s3fs
 import simplejson as json  # nan serialization
 from twarc import Twarc
 
@@ -123,7 +126,8 @@ class FirehoseJob:
 
     def __init__(self, creds=[], neo4j_creds=None, TWEETS_PER_PROCESS=100, TWEETS_PER_ROWGROUP=5000, save_to_neo=False,
                  PARQUET_SAMPLE_RATE_TIME_S=None, debug=False, BATCH_LEN=100, writers={'snappy': None},
-                 write_to_disk: Optional[Literal['csv', 'json']] = None
+                 write_to_disk: Optional[Literal['csv', 'json', 'parquet', 'parquet_s3']] = None,
+                 write_opts: Optional[Any] = None
     ):
         self.queue = deque()
         self.writers = writers
@@ -136,6 +140,7 @@ class FirehoseJob:
         self.timer = Timer()
         self.debug = debug
         self.write_to_disk = write_to_disk
+        self.write_opts = write_opts
 
         self.twarc_pool = TwarcPool([
             Twarc(o['consumer_key'], o['consumer_secret'], o['access_token'], o['access_token_secret'])
@@ -354,7 +359,7 @@ class FirehoseJob:
 
     def flush(self, job_name="generic_job"):
         try:
-            if self.current_table is None or self.current_table.num_rows == 0:
+            if not hasattr(self, 'current_table') or self.current_table is None or self.current_table.num_rows == 0:
                 return
             logger.debug('writing to parquet then clearing current_table..')
             deferred_pq_exn = None
@@ -695,7 +700,13 @@ class FirehoseJob:
 
     ###############################
 
-    def _maybe_write_batch(self, df, write_to_disk: Optional[Literal['csv', 'json', 'parquet']] = None, id: Optional[str] = None):
+    def _maybe_write_batch(
+        self,
+        df,
+        write_to_disk: Optional[Literal['csv', 'json', 'parquet']] = None,
+        id: Optional[str] = None,
+        write_opts = {}
+    ):
         write_to_disk = write_to_disk or self.write_to_disk
 
         logger.info('_maybe_write_batch: write_to_disk=%s, id=%s', write_to_disk, id)
@@ -713,6 +724,31 @@ class FirehoseJob:
             df.to_json(f'/output/{id}.json')
         elif write_to_disk == 'parquet':
             df.to_parquet(f'/output/{id}.parquet', compression='snappy')
+        elif write_to_disk == 'parquet_s3':
+
+            #s3_filepath = 'dt-phase1/data.parquet'
+            s3_filepath = write_opts['s3_filepath']
+            s3fs_options = write_opts['s3fs_options'] #key=S3_ACCESS_KEY, secret=S3_SECRET_KEY
+            compression = (
+                write_opts['compression']
+                if 'compression' in write_opts and len(write_opts['compression']) > 0 else
+                'snappy'
+            )
+
+            s3fs_instance = s3fs.S3FileSystem(**s3fs_options)
+            filesystem = pyarrow.fs.PyFileSystem(pa.fs.FSSpecHandler(s3fs_instance))
+
+            df_cleaned = df.infer_objects()
+
+            pq.write_to_dataset(
+                pa.Table.from_pandas(df_cleaned),
+                f'{s3_filepath}/{id}.parquet',
+                filesystem=filesystem,
+                use_dictionary=True,
+                compression=compression,
+                version="2.4",
+            )
+
         else:
             raise ValueError(f'unknown write_to_disk format: {write_to_disk}')
 
@@ -730,6 +766,7 @@ class FirehoseJob:
         if tp is None:
             tp = TwintPool(is_tor=True)
         logger.info('start search_time_range: %s -> %s', Since, Until)
+        t_prev = time.perf_counter()
         for df, t0, t1 in tp._get_term(Search=Search, Since=Since, Until=Until, **kwargs):
             logger.info('hits %s to %s: %s', t0, t1, len(df))
             if self.save_to_neo:
@@ -744,16 +781,21 @@ class FirehoseJob:
 
                 res = Neo4jDataAccess(self.neo4j_creds).save_twintdf_to_neo(chkd, job_name, job_id=None)
                 # df3 = Neo4jDataAccess(self.debug, self.neo4j_creds).save_df_to_graph(df2, job_name)
-                toc = time.perf_counter()
-                logger.info(f'finished twint loop in:  {toc - tic:0.4f} seconds')
-
                 logger.info('wrote to neo4j, # %s' % (len(res) if not (res is None) else 0))
-
-                self._maybe_write_batch(df, write_to_disk, f'{job_name}/{t0}_{t1}')
-                yield res
             else:
-                self._maybe_write_batch(df, write_to_disk, f'{job_name}/{t0}_{t1}')
-                yield df
+                res = df
+            self._maybe_write_batch(
+                res,
+                write_to_disk,
+                f'{job_name}/{t0}_{t1}',
+                write_opts=kwargs.get('write_opts', self.write_opts)
+            )
+            t_iter = time.perf_counter()
+            logger.info(f'finished tp.get_term:  {t_iter - t_prev:0.4f} seconds')
+            t_prev = t_iter
+            yield res
 
+        toc = time.perf_counter()
+        logger.info(f'finished twint loop in:  {toc - tic:0.4f} seconds')
         logger.info('done search_time_range')
 

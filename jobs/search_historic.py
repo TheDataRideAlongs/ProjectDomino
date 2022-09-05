@@ -39,6 +39,12 @@ start_date = pendulum.parse(os.environ['DOMINO_START_DATE']) if env_non_empty('D
 search = os.environ['DOMINO_SEARCH'] if env_non_empty('DOMINO_SEARCH') else "covid OR corona OR virus OR pandemic"
 write_format = os.environ['DOMINO_WRITE_FORMAT'] if env_non_empty('DOMINO_WRITE_FORMAT') else None
 
+if write_format == 'parquet_s3':
+    s3_filepath = os.environ['DOMINO_S3_FILEPATH'] if env_non_empty('DOMINO_S3_FILEPATH') else None
+    AWS_ACCESS_KEY_ID = os.environ['AWS_ACCESS_KEY_ID']
+    AWS_SECRET_ACCESS_KEY = os.environ['AWS_SECRET_ACCESS_KEY']
+    compression = os.environ['DOMINO_COMPRESSION'] if env_non_empty('DOMINO_COMPRESSION') else 'snappy'
+
 output_path = f'/output/{job_name}'
 os.makedirs(output_path, exist_ok=True)
 
@@ -65,7 +71,24 @@ def run_stream():
     #2020-10-05 17:00:30-2020-10-05 17:01:00
     # 2020-10-06 22:10:00 to 2020-10-06 22:10:30:
     tp = TwintPool(is_tor=True)
-    fh = FirehoseJob(PARQUET_SAMPLE_RATE_TIME_S=30, save_to_neo=False, writers={}, write_to_disk=write_format)
+    fh = FirehoseJob(
+        PARQUET_SAMPLE_RATE_TIME_S=30,
+        save_to_neo=False,
+        writers={},
+        write_to_disk=write_format,
+        write_opts=(
+            {
+                's3_filepath': s3_filepath,
+                's3fs_options': {
+                    'key': AWS_ACCESS_KEY_ID,
+                    'secret': AWS_SECRET_ACCESS_KEY
+                },
+                'compression': compression
+            }
+            if write_format == 'parquet_s3' else
+            {}
+        )
+    )
     
     try:
         for df in fh.search_time_range(
