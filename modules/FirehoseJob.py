@@ -695,7 +695,7 @@ class FirehoseJob:
 
     ###############################
 
-    def _maybe_write_batch(self, df, write_to_disk: Optional[Literal['csv', 'json']] = None, id: Optional[str] = None):
+    def _maybe_write_batch(self, df, write_to_disk: Optional[Literal['csv', 'json', 'parquet']] = None, id: Optional[str] = None):
         write_to_disk = write_to_disk or self.write_to_disk
 
         logger.info('_maybe_write_batch: write_to_disk=%s, id=%s', write_to_disk, id)
@@ -711,6 +711,10 @@ class FirehoseJob:
             df.to_csv(f'/output/{id}.csv')
         elif write_to_disk == 'json':
             df.to_json(f'/output/{id}.json')
+        elif write_to_disk == 'parquet':
+            df.to_parquet(f'/output/{id}.parquet', compression='snappy')
+        else:
+            raise ValueError(f'unknown write_to_disk format: {write_to_disk}')
 
     def search_time_range(self,
                           Search="COVID",

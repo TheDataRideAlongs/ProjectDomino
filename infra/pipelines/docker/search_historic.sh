@@ -1,0 +1,24 @@
+#!/bin/bash
+set -ex
+
+DOMINO_JOB_NAME=${JOB_NAME:-historic_pfas_1}
+DOMINO_SEARCH=${SEARCH:-"pfas"}
+DOMINO_START_DATE=${START_DATE:-2022-01-01 00:00:00}
+DOMINO_STRIDE_SEC=${STRIDE_SEC:-30}
+DOMINO_HISTORIC_STRIDE_SEC=${HISTORIC_STRIDE_SEC:-86400}
+DOMINO_TWINT_STRIDE_SEC=${TWINT_STRIDE_SEC:-28800}
+DOMINO_WRITE_FORMAT=${WRITE_FORMAT:-parquet}
+
+docker-compose -f datastream-docker-compose.yml down -v
+docker-compose -f datastream-docker-compose.yml build # --no-cache
+JOB_FILE="search_historic.py" \
+DOMINO_JOB_NAME=$DOMINO_JOB_NAME \
+DOMINO_SEARCH=$DOMINO_SEARCH \
+DOMINO_START_DATE=$DOMINO_START_DATE \
+DOMINO_STRIDE_SEC=$DOMINO_STRIDE_SEC \
+DOMINO_HISTORIC_STRIDE_SEC=$DOMINO_HISTORIC_STRIDE_SEC \
+DOMINO_TWINT_STRIDE_SEC=$TWINT_STRIDE_SEC \
+DOMINO_WRITE_FORMAT=$DOMINO_WRITE_FORMAT \
+    docker-compose -f datastream-docker-compose.yml \
+        -p ${DOMINO_JOB_NAME} \
+        up --force-recreate data-stream  $@

@@ -37,6 +37,7 @@ delay_sec = int(os.environ['DOMINO_DELAY_SEC']) if env_non_empty('DOMINO_DELAY_S
 job_name = os.environ['DOMINO_JOB_NAME'] if env_non_empty('DOMINO_JOB_NAME') else "covid"
 start_date = pendulum.parse(os.environ['DOMINO_START_DATE']) if env_non_empty('DOMINO_START_DATE') else datetime.datetime.now() - datetime.timedelta(days=365)
 search = os.environ['DOMINO_SEARCH'] if env_non_empty('DOMINO_SEARCH') else "covid OR corona OR virus OR pandemic"
+write_format = os.environ['DOMINO_WRITE_FORMAT'] if env_non_empty('DOMINO_WRITE_FORMAT') else None
 
 output_path = f'/output/{job_name}'
 os.makedirs(output_path, exist_ok=True)
@@ -64,7 +65,7 @@ def run_stream():
     #2020-10-05 17:00:30-2020-10-05 17:01:00
     # 2020-10-06 22:10:00 to 2020-10-06 22:10:30:
     tp = TwintPool(is_tor=True)
-    fh = FirehoseJob(PARQUET_SAMPLE_RATE_TIME_S=30, save_to_neo=False, writers={}, write_to_disk='json')
+    fh = FirehoseJob(PARQUET_SAMPLE_RATE_TIME_S=30, save_to_neo=False, writers={}, write_to_disk=write_format)
     
     try:
         for df in fh.search_time_range(
