@@ -739,6 +739,8 @@ class FirehoseJob:
             filesystem = pyarrow.fs.PyFileSystem(pa.fs.FSSpecHandler(s3fs_instance))
 
             df_cleaned = df.infer_objects()
+            if 'quote_url' in df_cleaned.columns:
+                df_cleaned['quote_url'] = df_cleaned['quote_url'].astype(str)
 
             pq.write_to_dataset(
                 pa.Table.from_pandas(df_cleaned),
