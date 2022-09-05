@@ -816,15 +816,24 @@ class FirehoseJob:
         tp = tp or self.tp or TwintPool(is_tor=True)
         user_names = df[[col]].drop_duplicates()[col].to_list()
         unseen_user_names = [ user_name for user_name in user_names if user_name not in self._enriched_users ]
+
+        if len(unseen_user_names) == 0:
+            logger.debug('skipping search_user_info_by_name, all user names already enriched: %s / %s',
+                len(unseen_user_names), len(user_names))
+            return None
         
         lst = [tp._get_user_info(username=user) for user in unseen_user_names]
+        if all([len(x) is 0 for x in lst]):
+            logger.debug('ending search_user_info_by_name, no user info found for search of %s of %s users', len(unseen_user_names), len(user_names))
+            return None
+
         dfs = pd.concat(lst).drop_duplicates(subset=["id"])
 
         seen_user_names = dfs['username'].to_list()
         for user in seen_user_names:
             self._enriched_users.add(user)
 
-        print('search_user_info_by_name cache hit rate (%s / %s) and twint hydration rate (%s / %s)' % (
+        logger.debug('search_user_info_by_name cache hit rate (%s / %s) and twint hydration rate (%s / %s)' % (
             len(user_names) - len(seen_user_names), len(user_names),
             len(seen_user_names), len(unseen_user_names)
         ))
