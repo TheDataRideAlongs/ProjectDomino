@@ -739,11 +739,33 @@ class FirehoseJob:
             filesystem = pyarrow.fs.PyFileSystem(pa.fs.FSSpecHandler(s3fs_instance))
 
             df_cleaned = df.infer_objects()
-            if 'quote_url' in df_cleaned.columns:
-                df_cleaned['quote_url'] = df_cleaned['quote_url'].astype(str)
+            for col in [ 'quote_url', 'place']:
+                if col in df_cleaned.columns:
+                    df_cleaned[col] = df_cleaned[col].astype(str)
+
+            try:
+                df_arr = pa.Table.from_pandas(df_cleaned)
+            except Exception as e:
+                logger.error('failed to convert df to pyarrow table, searching cols...')
+                bad_cols = []
+                for col in df_cleaned.columns:
+                    try:
+                        pa.Table.from_pandas(df_cleaned[[col]])
+                    except Exception as e:
+                        logger.error('failed to convert col %s to pyarrow table', col, exc_info=True)
+                        bad_cols.append(col)
+                try:
+                    for c in bad_cols:
+                        df_cleaned[c] = df_cleaned[c].astype(str)
+                    df_arr = pa.Table.from_pandas(df_cleaned)
+                except:
+                    logger.error('failed conversion with stringified bad cols (%s), proceeding without', bad_cols, exc_info=True)
+                    df_arr = pa.Table.from_pandas(
+                        df_cleaned[[x for x in df_cleaned.columns if x not in bad_cols]]
+                    )
 
             pq.write_to_dataset(
-                pa.Table.from_pandas(df_cleaned),
+                df_arr,
                 f'{s3_filepath}/{id}.parquet',
                 filesystem=filesystem,
                 use_dictionary=True,
