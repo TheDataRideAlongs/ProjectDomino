@@ -705,7 +705,7 @@ class FirehoseJob:
         if id is None:
             raise ValueError('need id to write to disk')
         
-        logger.info(f'writing batch {id} to disk: shape {df.shape}')
+        print(f'writing batch {id} to disk: shape {df.shape}')
 
         if write_to_disk == 'csv':
             df.to_csv(f'/output/{id}.csv')
@@ -745,10 +745,10 @@ class FirehoseJob:
 
                 logger.info('wrote to neo4j, # %s' % (len(res) if not (res is None) else 0))
 
-                self._maybe_write_batch(df, write_to_disk, f'{job_name}_{t0}_{t1}')
+                self._maybe_write_batch(df, write_to_disk, f'{job_name}/{t0}_{t1}')
                 yield res
             else:
-                self._maybe_write_batch(df, write_to_disk, f'{job_name}_{t0}_{t1}')
+                self._maybe_write_batch(df, write_to_disk, f'{job_name}/{t0}_{t1}')
                 yield df
 
         logger.info('done search_time_range')
