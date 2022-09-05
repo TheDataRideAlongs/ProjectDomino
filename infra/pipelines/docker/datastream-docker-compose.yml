@@ -19,6 +19,7 @@ services:
       volumes:
         - /home/lmeyerov2/neo4jcreds.json:/secrets/neo4jcreds.json:ro
         - ./../../../jobs:/app:ro
+        - /home/lmeyerov/Work/ProjectDomino/output:/output
       environment:
         JOB_FILE: ${JOB_FILE:-search_by_date_job.py}
         TOPIC: ${TOPIC:-covid}
