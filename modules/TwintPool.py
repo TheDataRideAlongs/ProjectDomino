@@ -13,8 +13,8 @@ extractor = URLExtract()
 
 class TwintPool:
 
-    def __init__(self, is_tor=False):
-        self.config = twint.Config()
+    def __init__(self, is_tor=False, twint_config=None):
+        self.config = twint_config or twint.Config()
         self.config.Limit = 1000
         self.config.Pandas = True
         self.config.Hide_output = True

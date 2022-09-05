@@ -730,7 +730,7 @@ class FirehoseJob:
             if self.save_to_neo:
                 logger.debug('writing to neo4j')
                 hydratetic = time.perf_counter()
-                chkd = TwintPool(is_tor=True).check_hydrate(df)
+                chkd = (tp or TwintPool(is_tor=True)).check_hydrate(df)
                 hydratetoc = time.perf_counter()
                 logger.info(f'finished checking for hydrate:  {hydratetoc - hydratetic:0.4f} seconds')
                 logger.info('search step df shape: %s', df.shape)
