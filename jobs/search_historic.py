@@ -52,7 +52,7 @@ os.makedirs(output_path, exist_ok=True)
 # FIXME unsafe when distributed
 task_num = -1
 
-@task(log_stdout=True, skip_on_upstream_skip=True)
+@task(log_stdout=True, skip_on_upstream_skip=True, max_retries=3, retry_delay=timedelta(seconds=30))
 def run_stream():
 
     global task_num
