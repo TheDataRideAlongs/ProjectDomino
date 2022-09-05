@@ -167,3 +167,4 @@ __pycache__
 .idea
 
 neo4jcreds.json
+output/

@@ -1,7 +1,7 @@
 #!/bin/bash
 set -ex
 
-echo "Starting JOB_FILE ${JOB_FILE}, maybe TOPIC ${TOPIC}"
+echo "Starting JOB_FILE ${JOB_FILE}"
 
 service tor start
 
