@@ -74,6 +74,7 @@ def run_stream():
     fh = FirehoseJob(
         PARQUET_SAMPLE_RATE_TIME_S=30,
         save_to_neo=False,
+        tp=tp,
         writers={},
         write_to_disk=write_format,
         write_opts=(
@@ -92,7 +93,6 @@ def run_stream():
     
     try:
         for df in fh.search_time_range(
-            tp=tp,
             Search=search,
             Since=datetime.strftime(start, "%Y-%m-%d %H:%M:%S"),
             Until=datetime.strftime(current, "%Y-%m-%d %H:%M:%S"),
