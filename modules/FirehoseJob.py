@@ -114,6 +114,46 @@ DROP_COLS = ['withheld_in_countries']
 #############################
 
 
+
+def make_serializable(df):
+
+    try:
+        pa.Table.from_pandas(df)
+        return df
+    except:
+        logger.debug('Warning: df not serializable, attempt to clean')
+
+    try:
+        df_cleaned = df.infer_objects()
+        pa.Table.from_pandas(df_cleaned)
+        return df_cleaned
+    except:
+        logger.debug('Warning: df not serializable via infer_objects(), attempt per-column clean')
+
+    for col in [ 'quote_url', 'place']:
+        if col in df_cleaned.columns:
+            df_cleaned[col] = df_cleaned[col].astype(str)
+
+    bad_cols = []
+    fatal_cols = []
+    for col in df_cleaned.columns:
+        try:
+            pa.Table.from_pandas(df_cleaned[[col]])
+        except Exception as e:
+            try:
+                as_str = df_cleaned[col].astype(str)
+                df2 = df_cleaned[[col]]
+                df2[col] = as_str
+                pa.Table.from_pandas(df2)
+                #good, save
+                df_cleaned[col] = as_str
+                bad_cols.append(col)
+            except:
+                fatal_cols.append(col)
+    logger.debug('bad_cols: %s, fatal_cols (dropping): %s' , bad_cols, fatal_cols)
+    return df_cleaned.drop(fatal_cols, axis=1)
+
+
 class FirehoseJob:
     ###################
 
@@ -723,7 +763,8 @@ class FirehoseJob:
         elif write_to_disk == 'json':
             df.to_json(f'/output/{id}.json')
         elif write_to_disk == 'parquet':
-            df.to_parquet(f'/output/{id}.parquet', compression='snappy')
+            df_cleaned = make_serializable(df)
+            df_cleaned.to_parquet(f'/output/{id}.parquet', compression='snappy')
         elif write_to_disk == 'parquet_s3':
 
             #s3_filepath = 'dt-phase1/data.parquet'
@@ -738,31 +779,8 @@ class FirehoseJob:
             s3fs_instance = s3fs.S3FileSystem(**s3fs_options)
             filesystem = pyarrow.fs.PyFileSystem(pa.fs.FSSpecHandler(s3fs_instance))
 
-            df_cleaned = df.infer_objects()
-            for col in [ 'quote_url', 'place']:
-                if col in df_cleaned.columns:
-                    df_cleaned[col] = df_cleaned[col].astype(str)
-
-            try:
-                df_arr = pa.Table.from_pandas(df_cleaned)
-            except Exception as e:
-                logger.error('failed to convert df to pyarrow table, searching cols...')
-                bad_cols = []
-                for col in df_cleaned.columns:
-                    try:
-                        pa.Table.from_pandas(df_cleaned[[col]])
-                    except Exception as e:
-                        logger.error('failed to convert col %s to pyarrow table', col, exc_info=True)
-                        bad_cols.append(col)
-                try:
-                    for c in bad_cols:
-                        df_cleaned[c] = df_cleaned[c].astype(str)
-                    df_arr = pa.Table.from_pandas(df_cleaned)
-                except:
-                    logger.error('failed conversion with stringified bad cols (%s), proceeding without', bad_cols, exc_info=True)
-                    df_arr = pa.Table.from_pandas(
-                        df_cleaned[[x for x in df_cleaned.columns if x not in bad_cols]]
-                    )
+            df_cleaned = make_serializable(df)
+            df_arr = df_arr = pa.Table.from_pandas(df_cleaned)
 
             pq.write_to_dataset(
                 df_arr,
