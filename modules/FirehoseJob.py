@@ -825,7 +825,7 @@ class FirehoseJob:
 
         lst = [tp._get_user_info(username=user, ignore_errors=True) for user in unseen_user_names]
         lst = [x for x in lst if x is not None]
-        if all([len(x) is 0 for x in lst]):
+        if len(lst) == 0 or all([len(x) == 0 for x in lst]):
             logger.debug('ending search_user_info_by_name, no user info found for search of %s of %s users', len(unseen_user_names), len(user_names))
             return None
 
