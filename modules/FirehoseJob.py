@@ -4,6 +4,7 @@ from asyncore import write
 from codecs import ignore_errors
 from collections import deque, defaultdict
 import datetime, gc, os, string, sys, time, uuid
+from datetime import date
 from typing import Any, Literal, Optional
 import numpy as np
 import pandas as pd
@@ -13,6 +14,7 @@ import pyarrow.parquet as pq
 import s3fs
 import simplejson as json  # nan serialization
 from twarc import Twarc
+from twint.user import SuspendedUser
 
 from .Timer import Timer
 from .TwarcPool import TwarcPool
@@ -848,7 +850,7 @@ class FirehoseJob:
                           Until="2020-01-01 21:00:00",
                           job_name=None,
                           tp=None,
-                          write_to_disk: Optional[Literal['csv', 'json']] = None,
+                          write_to_disk: Optional[Literal['csv', 'json', 'parquet', 'parquet_s3']] = None,
                           fetch_profiles: bool = False,
                           **kwargs):
         tic = time.perf_counter()
@@ -902,4 +904,64 @@ class FirehoseJob:
         toc = time.perf_counter()
         logger.info(f'finished twint loop in:  {toc - tic:0.4f} seconds')
         logger.info('done search_time_range')
+
+    def get_timelines(self,
+                usernames,
+                job_name=None,
+                tp=None,
+                write_to_disk: Optional[Literal['csv', 'json', 'parquet', 'parquet_s3']] = None,
+                fetch_profiles: bool = False,
+                **kwargs):
+        tic = time.perf_counter()
+        if job_name is None:
+            job_name = "timeline_%s" % user
+        tp = tp or self.tp or TwintPool(is_tor=True)
+        for user in usernames:
+            logger.info('start user: %s', user)
+            t_prev = time.perf_counter()
+            now = date.today().strftime('%Y-%m-%d%H:%M:%S')
+            tp.reset_config()
+            try:
+                df = tp._get_timeline(username=user, **kwargs)
+                user_exists = True
+            except SuspendedUser:
+                logger.info(f'User {user} is suspended')
+                df = None
+                user_exists = False
+            if df is not None:
+                self._maybe_write_batch(
+                    df,
+                    write_to_disk,
+                    f'{job_name}/timelines/{user}',
+                    write_opts=kwargs.get('write_opts', self.write_opts)
+                )            
+
+            t_iter = time.perf_counter()
+            logger.info(f'finished tp._get_timeline ({user}):  {t_iter - t_prev:0.4f} seconds')
+            t_prev = t_iter
+
+            if fetch_profiles:
+                if user_exists:
+                    tp.reset_config()
+                    users_df = self.search_user_info_by_name(pd.DataFrame({'username': [user]}), tp)
+                else:
+                    users_df = pd.DataFrame({'username': [user], 'suspended': [True]})
+                if users_df is not None:
+                    self._maybe_write_batch(
+                        users_df,
+                        write_to_disk,
+                        f'{job_name}/profiles/{now}',
+                        write_opts=kwargs.get('write_opts', self.write_opts)
+                    )
+                    t_iter = time.perf_counter()
+                    logger.info(f'finished tp.search_user_info_by_name:  {t_iter - t_prev:0.4f} seconds')
+                    t_prev = t_iter
+
+            yield df
+
+        toc = time.perf_counter()
+        logger.info(f'finished twint loop in:  {toc - tic:0.4f} seconds')
+        logger.info('done get_timelines')
+
+
 

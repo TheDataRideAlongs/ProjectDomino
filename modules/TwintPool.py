@@ -7,29 +7,47 @@ import json
 import logging
 import time
 from twint.token import RefreshTokenException
+from twint.run import Profile
 
 logger = logging.getLogger()
 
 extractor = URLExtract()
 
+
+def reset_config(config, is_tor=False):
+    if config is None:
+        config = twint.Config()
+    config.Limit = 1000
+    config.Pandas = True
+    config.Hide_output = True
+    config.Verified = None
+    config.Username = None
+    config.User_full = False
+    config.Since = None
+    config.Until = None
+    config.Search = None
+    config.Retweets = None
+    if is_tor:
+        config.Proxy_host = 'localhost'
+        config.Proxy_port = "9050"
+        config.Proxy_type = "socks5"
+    else:
+        config.Proxy_host = None  # "tor"
+        config.Proxy_port = None  # "9050"
+        config.Proxy_type = None  # "socks5"
+    return config
+
+
 class TwintPool:
 
+    is_tor = False
+
     def __init__(self, is_tor=False, twint_config=None):
-        self.config = twint_config or twint.Config()
-        self.config.Limit = 1000
-        self.config.Pandas = True
-        self.config.Hide_output = True
-        self.config.Verified = None
-        self.config.Username = None
-        self.config.User_full = None
-        if is_tor:
-            self.config.Proxy_host = 'localhost'
-            self.config.Proxy_port = "9050"
-            self.config.Proxy_type = "socks5"
-        else:
-            self.config.Proxy_host = None  # "tor"
-            self.config.Proxy_port = None  # "9050"
-            self.config.Proxy_type = None  # "socks5"
+        self.is_tor = is_tor
+        self.config = reset_config(twint_config or twint.Config(), is_tor)
+
+    def reset_config(self, is_tor=None):
+        self.config = reset_config(self.config, is_tor if is_tor is not None else self.is_tor)
 
     def twint_loop(self, since, until, stride_sec=600, limit=None):
         def get_unix_time(time_str):
@@ -73,13 +91,17 @@ class TwintPool:
         toc = time.perf_counter()
         logger.info(f'finished get_term searching for tweets in:  {toc - tic:0.4f} seconds')
 
-    def _get_timeline(self, username, limit):
-        self.config.Retweets = True
-        self.config.Search = "from:" + username
-        self.config.Limit = limit
-        twint.run.Search(self.config)
+    def _get_timeline(self, username):
+        #self.config.Retweets = True
+        #self.config.Search = "from:" + username
+        #self.config.Limit = limit
+        #twint.run.Search(self.config)
+        self.config.Username = username
+        self.config.Pandas = True
+        twint.run.Profile(self.config)
         tweets_df = twint.storage.panda.Tweets_df
         return tweets_df
+
 
     def _get_user_info(self, username, ignore_errors=False):
         self.config.User_full = True
