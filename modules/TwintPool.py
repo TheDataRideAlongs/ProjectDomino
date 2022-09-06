@@ -6,6 +6,7 @@ import pandas as pd
 import json
 import logging
 import time
+from twint.token import RefreshTokenException
 
 logger = logging.getLogger()
 
@@ -87,6 +88,8 @@ class TwintPool:
         try:
             twint.run.Lookup(self.config)
             return twint.storage.panda.User_df
+        except RefreshTokenException as e:
+            raise e
         except Exception as e:
             if ignore_errors:
                 logger.error('Error getting user info for %s, proceeding because ignore_errors=True', username, exc_info=True)
