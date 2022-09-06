@@ -80,12 +80,18 @@ class TwintPool:
         tweets_df = twint.storage.panda.Tweets_df
         return tweets_df
 
-    def _get_user_info(self, username):
+    def _get_user_info(self, username, ignore_errors=False):
         self.config.User_full = True
         self.config.Username = username
         self.config.Pandas = True
-        twint.run.Lookup(self.config)
-        return twint.storage.panda.User_df
+        try:
+            twint.run.Lookup(self.config)
+            return twint.storage.panda.User_df
+        except Exception as e:
+            if ignore_errors:
+                logger.error('Error getting user info for %s, proceeding because ignore_errors=True', username, exc_info=True)
+                return None
+            raise e
 
     def check_hydrate(self, df):
 

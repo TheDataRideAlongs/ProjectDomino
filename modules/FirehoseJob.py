@@ -1,6 +1,7 @@
 ###
 
 from asyncore import write
+from codecs import ignore_errors
 from collections import deque, defaultdict
 import datetime, gc, os, string, sys, time, uuid
 from typing import Any, Literal, Optional
@@ -821,8 +822,9 @@ class FirehoseJob:
             logger.debug('skipping search_user_info_by_name, all user names already enriched: %s / %s',
                 len(unseen_user_names), len(user_names))
             return None
-        
-        lst = [tp._get_user_info(username=user) for user in unseen_user_names]
+
+        lst = [tp._get_user_info(username=user, ignore_errors=True) for user in unseen_user_names]
+        lst = [x for x in lst if x is not None]
         if all([len(x) is 0 for x in lst]):
             logger.debug('ending search_user_info_by_name, no user info found for search of %s of %s users', len(unseen_user_names), len(user_names))
             return None
